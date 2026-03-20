@@ -10,7 +10,6 @@ export default function Header() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   
-  // NOVO: Estado para controlar a abertura do menu hamburguer
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -33,7 +32,7 @@ export default function Header() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    setIsMenuOpen(false); // Fecha o menu ao sair
+    setIsMenuOpen(false);
     router.push('/');
   };
 
@@ -42,13 +41,11 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           
-          {/* Esquerda: Logo e Navegação Desktop */}
           <div className="flex items-center gap-6">
             <Link href="/" className="text-2xl font-extrabold text-blue-600 tracking-tighter hover:opacity-80 transition-opacity">
               EventAqui
             </Link>
             
-            {/* Navegação Desktop (Escondida no mobile) */}
             <nav className="hidden md:flex items-center space-x-6">
               <Link href="/" className="text-gray-600 hover:text-blue-600 font-medium text-sm transition-colors">
                 Explorar Eventos
@@ -56,7 +53,7 @@ export default function Header() {
               <Link href="/sobre" className="text-gray-600 hover:text-blue-600 font-medium text-sm transition-colors">
                 Sobre Nós
               </Link>
-              {/* Painel Adm movido para cá no desktop */}
+
               {!loading && user && (
                 <Link href="/admin" className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
                   Painel Administrativo
@@ -65,7 +62,6 @@ export default function Header() {
             </nav>
           </div>
 
-          {/* Direita: Ações do Usuário e Botão Hamburguer */}
           <div className="flex items-center gap-4">
             {!loading && (
               <>
@@ -94,19 +90,16 @@ export default function Header() {
               </>
             )}
 
-            {/* NOVO: Botão Hamburguer (Visível apenas no mobile) */}
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 focus:outline-none"
               aria-label="Toggle Menu"
             >
               {isMenuOpen ? (
-                // Ícone X (Fechar)
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               ) : (
-                // Ícone Hamburguer (Abrir)
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
@@ -129,7 +122,6 @@ export default function Header() {
               Painel Administrativo
             </Link>
           )}
-          {/* Botão Sair mobile (caso esteja escondido no sm na barra principal) */}
           {user && (
              <button 
               onClick={handleSignOut}
