@@ -11,11 +11,11 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
   
-  // Estados para listar eventos
+
   const [events, setEvents] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   
-  // Estados do formulário
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [eventDate, setEventDate] = useState('');
@@ -23,7 +23,6 @@ export default function AdminDashboard() {
   const [totalSpots, setTotalSpots] = useState('');
   const [image, setImage] = useState<File | null>(null);
 
-  // Carrega os eventos ao entrar na página
   const fetchEvents = async () => {
     const { data, error } = await supabase
       .from('events')
@@ -41,13 +40,12 @@ export default function AdminDashboard() {
       if (!session) {
         router.push('/login');
       } else {
-        fetchEvents(); // Só busca se estiver logado
+        fetchEvents();
       }
     };
     checkAdmin();
   }, [router]);
 
-  // Função para limpar o formulário
   const resetForm = () => {
     setEditingId(null);
     setTitle('');
@@ -66,7 +64,6 @@ export default function AdminDashboard() {
     try {
       let image_url = null;
 
-      // Se enviou uma imagem nova, faz o upload
       if (image) {
         const maxSize = 3 * 1024 * 1024;
         if (image.size > maxSize) throw new Error('Imagem excede 3MB.');
@@ -87,7 +84,6 @@ export default function AdminDashboard() {
         image_url = publicUrlData.publicUrl;
       }
 
-      // Monta os dados a serem salvos
       const payload: any = {
         title,
         description,
@@ -96,11 +92,9 @@ export default function AdminDashboard() {
         total_spots: parseInt(totalSpots, 10),
       };
 
-      // Só atualiza a imagem se uma nova foi enviada
       if (image_url) payload.image_url = image_url;
 
       if (editingId) {
-        // MODO EDIÇÃO
         const { error: updateError } = await supabase
           .from('events')
           .update(payload)
@@ -109,7 +103,6 @@ export default function AdminDashboard() {
         if (updateError) throw updateError;
         setMessage({ text: 'Evento atualizado com sucesso!', type: 'success' });
       } else {
-        // MODO CRIAÇÃO
         const { error: insertError } = await supabase
           .from('events')
           .insert(payload);
@@ -119,7 +112,7 @@ export default function AdminDashboard() {
       }
       
       resetForm();
-      fetchEvents(); // Recarrega a lista abaixo
+      fetchEvents();
 
     } catch (error: any) {
       setMessage({ text: error.message || 'Erro ao processar requisição', type: 'error' });
@@ -128,22 +121,20 @@ export default function AdminDashboard() {
     }
   };
 
-  // Preenche o formulário com os dados do evento clicado
   const handleEdit = (event: any) => {
     setEditingId(event.id);
     setTitle(event.title);
     setDescription(event.description || '');
-    // Ajusta a data para o formato do input datetime-local (YYYY-MM-DDThh:mm)
+
     const formattedDate = new Date(event.event_date).toISOString().slice(0, 16);
     setEventDate(formattedDate);
     setPrice(event.price.toString());
     setTotalSpots(event.total_spots.toString());
     setImage(null);
     
-    window.scrollTo({ top: 0, behavior: 'smooth' }); // Rola para o topo
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Função de Deleção com Confirmação
   const handleDelete = async (id: string) => {
     const isConfirmed = window.confirm("Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita e pode afetar ingressos vendidos.");
     
@@ -159,10 +150,9 @@ export default function AdminDashboard() {
       
       setMessage({ text: 'Evento excluído com sucesso.', type: 'success' });
       
-      // Se estava editando o evento que acabou de ser apagado, limpa o formulário
       if (editingId === id) resetForm();
       
-      fetchEvents(); // Atualiza a lista
+      fetchEvents();
     } catch (error: any) {
       setMessage({ text: 'Erro ao excluir evento. Verifique se há ingressos vinculados a ele.', type: 'error' });
     }
@@ -171,8 +161,7 @@ export default function AdminDashboard() {
   return (
     <main className="bg-gray-50 py-10 px-4 sm:px-6 lg:px-8 flex-grow">
       <div className="max-w-4xl mx-auto space-y-8">
-        
-        {/* Cabeçalho do Dashboard */}
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
           <div>
             <h1 className="text-2xl font-extrabold text-gray-900">Painel de Controle</h1>
@@ -189,7 +178,6 @@ export default function AdminDashboard() {
           </Link>
         </div>
 
-        {/* Formulário (Criação ou Edição) */}
         <div className={`bg-white shadow-sm border rounded-2xl overflow-hidden transition-colors ${editingId ? 'border-blue-400 ring-1 ring-blue-100' : 'border-gray-200'}`}>
           <div className="px-6 py-8 sm:p-10">
             <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
@@ -253,7 +241,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* NOVA SEÇÃO: Lista de Eventos Existentes */}
         <div className="bg-white shadow-sm border border-gray-200 rounded-2xl overflow-hidden mt-10">
           <div className="px-6 py-6 border-b border-gray-100 bg-gray-50">
             <h2 className="text-lg font-bold text-gray-900">Eventos Publicados ({events.length})</h2>
@@ -266,7 +253,7 @@ export default function AdminDashboard() {
               {events.map((evt) => (
                 <li key={evt.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50 transition-colors">
                   <div className="flex items-center gap-4">
-                    {/* Miniatura da Imagem */}
+                    
                     <div className="w-16 h-16 rounded-lg bg-gray-200 flex-shrink-0 overflow-hidden border border-gray-200">
                       {evt.image_url ? (
                         <img src={evt.image_url} alt="Capa" className="w-full h-full object-cover" />
@@ -275,7 +262,7 @@ export default function AdminDashboard() {
                       )}
                     </div>
                     
-                    {/* Dados Básicos */}
+                    
                     <div>
                       <h3 className="font-bold text-gray-900 line-clamp-1">{evt.title}</h3>
                       <p className="text-sm text-gray-500">
@@ -284,7 +271,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Botões de Ação */}
+                  
                   <div className="flex items-center gap-3 self-end sm:self-auto">
                     <button 
                       onClick={() => handleEdit(evt)}
