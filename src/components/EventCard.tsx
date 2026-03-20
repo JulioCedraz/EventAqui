@@ -11,7 +11,6 @@ interface EventCardProps {
 
 export default function EventCard({ id, title, description, event_date, price, image_url }: EventCardProps) {
   
-  // Formatação de data no estilo Sympla (Ex: DOM, 15 OUT • 19:00)
   const dateObj = new Date(event_date);
   const formattedDate = dateObj.toLocaleDateString('pt-BR', {
     weekday: 'short', day: '2-digit', month: 'short'
@@ -26,13 +25,10 @@ export default function EventCard({ id, title, description, event_date, price, i
     : `R$ ${price.toFixed(2).replace('.', ',')}`;
 
   return (
-    // Transformamos o Card inteiro num Link.
-    // h-full garante que todos fiquem da mesma altura na grade.
     <Link 
       href={`/evento/${id}`} 
       className="group h-full flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300"
     >
-      {/* 1. Imagem: Estritamente Paisagem (16:9) com object-cover */}
       <div className="relative w-full aspect-[16/9] bg-gray-100 overflow-hidden">
         {image_url ? (
           <img 
@@ -49,27 +45,22 @@ export default function EventCard({ id, title, description, event_date, price, i
         )}
       </div>
 
-      {/* 2. Conteúdo do Evento */}
       <div className="p-4 sm:p-5 flex flex-col flex-grow">
         
-        {/* Título do Evento */}
         <h3 className="text-lg font-bold text-gray-900 leading-tight line-clamp-2 mb-2 group-hover:text-blue-600 transition-colors">
           {title}
         </h3>
 
-        {/* Data e Hora */}
         <p className="text-sm text-gray-600 font-medium mb-1">
           {formattedDate} • {formattedTime}
         </p>
 
-        {/* Descrição/Local - Limitado a 1 linha para manter o card enxuto */}
         {description && (
           <p className="text-sm text-gray-500 line-clamp-1 mb-4">
             {description}
           </p>
         )}
 
-        {/* 3. Rodapé com Preço (mt-auto empurra para baixo) */}
         <div className="mt-auto pt-2">
           <span className="text-base font-bold text-gray-900">
             {formattedPrice}
