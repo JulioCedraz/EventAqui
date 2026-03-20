@@ -136,7 +136,7 @@ export default function EventDetails() {
             />
           </div>
         ) : (
-          <div className="w-full h-64 md:h-96 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+          <div className="w-full h-64 md:h-96 bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center">
             <span className="text-white font-bold text-2xl opacity-50">Sem Capa</span>
           </div>
         )}
