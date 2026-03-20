@@ -82,7 +82,7 @@ export default function QRCodeReader() {
           <h1 className="text-xl font-bold">Controle de Portaria</h1>
         </div>
 
-        <div id="leitor-qr" className="w-full bg-black min-h-[300px]" />
+        <div id="leitor-qr" className="w-full bg-black min-h-75" />
 
         <div className={`p-6 text-center transition-colors duration-300 ${bgColors[statusValidacao ?? 'null']}`}>
           {lendo && (
