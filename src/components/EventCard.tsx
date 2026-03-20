@@ -29,7 +29,7 @@ export default function EventCard({ id, title, description, event_date, price, i
       href={`/evento/${id}`} 
       className="group h-full flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300"
     >
-      <div className="relative w-full aspect-[16/9] bg-gray-100 overflow-hidden">
+      <div className="relative w-full aspect-video bg-gray-100 overflow-hidden">
         {image_url ? (
           <img 
             src={image_url} 
@@ -45,7 +45,7 @@ export default function EventCard({ id, title, description, event_date, price, i
         )}
       </div>
 
-      <div className="p-4 sm:p-5 flex flex-col flex-grow">
+      <div className="p-4 sm:p-5 flex flex-col grow">
         
         <h3 className="text-lg font-bold text-gray-900 leading-tight line-clamp-2 mb-2 group-hover:text-blue-600 transition-colors">
           {title}
