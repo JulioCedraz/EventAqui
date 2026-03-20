@@ -159,7 +159,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <main className="bg-gray-50 py-10 px-4 sm:px-6 lg:px-8 flex-grow">
+    <main className="bg-gray-50 py-10 px-4 sm:px-6 lg:px-8 grow">
       <div className="max-w-4xl mx-auto space-y-8">
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
@@ -254,7 +254,7 @@ export default function AdminDashboard() {
                 <li key={evt.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50 transition-colors">
                   <div className="flex items-center gap-4">
                     
-                    <div className="w-16 h-16 rounded-lg bg-gray-200 flex-shrink-0 overflow-hidden border border-gray-200">
+                    <div className="w-16 h-16 rounded-lg bg-gray-200 shrink-0 overflow-hidden border border-gray-200">
                       {evt.image_url ? (
                         <img src={evt.image_url} alt="Capa" className="w-full h-full object-cover" />
                       ) : (
