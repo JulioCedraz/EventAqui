@@ -13,7 +13,6 @@ export default function Home() {
 
   useEffect(() => {
     const fetchEvents = async () => {
-      // Busca todos os eventos no banco, ordenados do mais próximo ao mais distante
       const { data, error } = await supabase
         .from('events')
         .select('*')
@@ -34,7 +33,6 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gray-50 flex flex-col items-center">
       
-      {/* Seção de Boas-vindas (Hero Section) */}
       <section className="w-full bg-blue-600 text-white py-16 px-4 text-center">
         <div className="max-w-3xl mx-auto space-y-4">
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">
@@ -46,25 +44,21 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Seção da Vitrine de Eventos */}
       <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex-grow">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-2xl font-bold text-gray-900">Próximos Eventos</h2>
         </div>
 
         {loading ? (
-          // Efeito de carregamento (Spinner)
           <div className="flex justify-center items-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         ) : events.length === 0 ? (
-          // Mensagem caso não haja eventos cadastrados
           <div className="bg-white p-10 rounded-2xl shadow-sm border border-gray-200 text-center">
             <p className="text-gray-500 text-lg">Nenhum evento disponível no momento.</p>
             <p className="text-gray-400 text-sm mt-2">Volte novamente mais tarde!</p>
           </div>
         ) : (
-          // O Grid Responsivo que exibe os EventCards
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
             {events.map((event) => (
               <EventCard 
