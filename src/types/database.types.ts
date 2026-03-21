@@ -41,6 +41,7 @@ export type Database = {
           image_url?: string | null;
           created_at?: string | null;
         };
+        Relationships: [];
       };
 
       tickets: {
@@ -71,6 +72,7 @@ export type Database = {
           is_used?: boolean | null;
           created_at?: string | null;
         };
+        Relationships: [];
       };
     };
     Views: {
