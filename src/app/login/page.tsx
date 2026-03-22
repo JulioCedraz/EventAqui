@@ -15,33 +15,28 @@ export default function LoginPage() {
   const [precisaConfirmar, setPrecisaConfirmar] = useState(false);
 
   const [checkingEmail, setCheckingEmail] = useState(false);
-  const [emailStatus, setEmailStatus] = useState<"idle" | "available">("idle");
-  const [emailError, setEmailError] = useState("");
+  const [emailStatus, setEmailStatus] = useState<"idle" | "valid" | "invalid">("idle");
+  const [emailMessage, setEmailMessage] = useState("");
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [nome, setNome] = useState("");
   const [sobrenome, setSobrenome] = useState("");
   const [cpf, setCpf] = useState("");
-  const [ocupacao, setOcupacao] = useState<"profissional" | "estudante">(
-    "profissional",
-  );
+  const [ocupacao, setOcupacao] = useState<"profissional" | "estudante">("profissional");
 
   const handleEmailBlur = async () => {
-    setEmailError("");
     setEmailStatus("idle");
+    setEmailMessage("");
 
     if (!email) return;
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setEmailError(
-        "Por favor, digite um e-mail válido (ex: seu.nome@email.com).",
-      );
+      setEmailStatus("invalid");
+      setEmailMessage("Por favor, digite um e-mail válido (ex: seu.nome@email.com).");
       return;
     }
-
-    if (isLogin) return;
 
     setCheckingEmail(true);
     setErro("");
@@ -53,13 +48,24 @@ export default function LoginPage() {
 
       if (error) throw error;
 
-      if (exists) {
-        setErro(
-          "Identificamos que já possui um registo! Por favor, insira a sua senha.",
-        );
-        setIsLogin(true);
+      if (isLogin) {
+        if (exists) {
+          setEmailStatus("valid");
+          setEmailMessage("E-mail encontrado.");
+        } else {
+          setEmailStatus("invalid");
+          setEmailMessage("E-mail não cadastrado. Por favor, crie uma conta.");
+        }
       } else {
-        setEmailStatus("available");
+        if (exists) {
+          setErro("Identificamos que já possui um registo! Por favor, insira a sua senha.");
+          setIsLogin(true);
+          setEmailStatus("valid");
+          setEmailMessage("E-mail encontrado.");
+        } else {
+          setEmailStatus("valid");
+          setEmailMessage("E-mail disponível para cadastro.");
+        }
       }
     } catch (err) {
       console.error("Erro ao verificar e-mail:", err);
@@ -70,9 +76,7 @@ export default function LoginPage() {
 
   const handleRecuperarSenha = async () => {
     if (!email) {
-      setErro(
-        "Por favor, digite o seu e-mail no campo acima primeiro para recuperar a senha.",
-      );
+      setErro("Por favor, digite o seu e-mail no campo acima primeiro para recuperar a senha.");
       return;
     }
     setLoading(true);
@@ -86,9 +90,7 @@ export default function LoginPage() {
     if (error) {
       setErro(error.message);
     } else {
-      setSucesso(
-        "E-mail de recuperação enviado! Verifique a sua caixa de entrada.",
-      );
+      setSucesso("E-mail de recuperação enviado! Verifique a sua caixa de entrada.");
     }
     setLoading(false);
   };
@@ -106,9 +108,7 @@ export default function LoginPage() {
     if (error) {
       setErro("Erro ao reenviar: " + error.message);
     } else {
-      setSucesso(
-        "Novo link enviado com sucesso! Verifique também a pasta de Spam.",
-      );
+      setSucesso("Novo link enviado com sucesso! Verifique também a pasta de Spam.");
       setPrecisaConfirmar(false);
     }
     setLoading(false);
@@ -122,6 +122,10 @@ export default function LoginPage() {
     setPrecisaConfirmar(false);
 
     try {
+      if (emailStatus === "invalid") {
+        throw new Error("Verifique o e-mail informado antes de prosseguir.");
+      }
+
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -131,16 +135,12 @@ export default function LoginPage() {
         if (error) {
           if (error.message.includes("Email not confirmed")) {
             setPrecisaConfirmar(true);
-            throw new Error(
-              "Precisa de confirmar o seu e-mail antes de entrar. Verifique a sua caixa de entrada ou Spam!",
-            );
+            throw new Error("Precisa de confirmar o seu e-mail antes de entrar. Verifique a sua caixa de entrada ou Spam!");
           }
           throw new Error("E-mail ou senha incorretos.");
         }
 
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+        const { data: { session } } = await supabase.auth.getSession();
         const userEmail = session?.user?.email;
         const admins = ["seu-email-aqui@medicina.com"];
 
@@ -150,9 +150,6 @@ export default function LoginPage() {
           router.push("/tickets");
         }
       } else {
-        if (emailError)
-          throw new Error("Corrija o e-mail antes de prosseguir.");
-
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password: senha,
@@ -168,19 +165,13 @@ export default function LoginPage() {
 
         if (signUpError) throw signUpError;
 
-        if (
-          data.user &&
-          data.user.identities &&
-          data.user.identities.length === 0
-        ) {
+        if (data.user && data.user.identities && data.user.identities.length === 0) {
           setErro("Este e-mail já está em uso. Por favor, faça login.");
           setIsLogin(true);
           return;
         }
 
-        setSucesso(
-          "Quase lá! Enviámos um link de confirmação para o seu e-mail. Clique nele para ativar a conta.",
-        );
+        setSucesso("Quase lá! Enviámos um link de confirmação para o seu e-mail. Clique nele para ativar a conta.");
         setIsLogin(true);
         setSenha("");
       }
@@ -233,24 +224,26 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
-                    if (emailError) setEmailError("");
-                    if (!isLogin) setEmailStatus("idle");
+                    if (emailStatus !== "idle") {
+                      setEmailStatus("idle");
+                      setEmailMessage("");
+                    }
                   }}
                   onBlur={handleEmailBlur}
                   className={`block w-full px-4 py-2.5 border rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors ${
-                    emailStatus === "available" && !isLogin
+                    emailStatus === "valid"
                       ? "border-green-400 bg-green-50"
-                      : emailError
+                      : emailStatus === "invalid"
                         ? "border-red-400 bg-red-50"
                         : "border-gray-300"
                   }`}
                 />
-                {!isLogin && checkingEmail && (
+                {checkingEmail && (
                   <span className="absolute right-3 top-3 text-xs text-gray-400">
                     A verificar...
                   </span>
                 )}
-                {!isLogin && emailStatus === "available" && (
+                {!checkingEmail && emailStatus === "valid" && (
                   <svg
                     className="absolute right-3 top-3 w-5 h-5 text-green-500"
                     fill="none"
@@ -266,9 +259,13 @@ export default function LoginPage() {
                   </svg>
                 )}
               </div>
-              {emailError && (
-                <p className="mt-1.5 text-sm text-red-600 font-medium animate-in fade-in">
-                  {emailError}
+              {emailMessage && (
+                <p
+                  className={`mt-1.5 text-sm font-medium animate-in fade-in ${
+                    emailStatus === "valid" ? "text-green-600" : "text-red-600"
+                  }`}
+                >
+                  {emailMessage}
                 </p>
               )}
             </div>
@@ -395,8 +392,8 @@ export default function LoginPage() {
                 setIsLogin(!isLogin);
                 setErro("");
                 setSucesso("");
-                setEmailError("");
                 setEmailStatus("idle");
+                setEmailMessage("");
                 setPrecisaConfirmar(false);
               }}
               className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
