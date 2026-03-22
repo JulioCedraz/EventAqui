@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
+import Link from 'next/link';
 
 export default function Header() {
   const router = useRouter();
@@ -66,10 +66,18 @@ export default function Header() {
             {!loading && (
               <>
                 {user ? (
-                  <div className="flex items-center gap-3">
-                    <Link href="/tickets" className="text-sm font-medium text-blue-600 bg-blue-50 px-4 py-2 rounded-full hover:bg-blue-100 transition-colors whitespace-nowrap">
-                    Meus Ingressos
+                  <div className="flex items-center gap-4">
+                    <Link href="/profile" className="items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors hidden sm:flex">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      Meu Perfil
                     </Link>
+
+                    <Link href="/tickets" className="text-sm font-medium text-blue-600 bg-blue-50 px-4 py-2 rounded-full hover:bg-blue-100 transition-colors whitespace-nowrap">
+                      Meus Ingressos
+                    </Link>
+                    
                     <button 
                       onClick={handleSignOut}
                       className="text-sm font-medium text-red-500 hover:text-red-700 transition-colors hidden sm:block"
@@ -109,6 +117,7 @@ export default function Header() {
         </div>
       </div>
 
+      {/* ====== MENU MOBILE ====== */}
       <div className={`md:hidden ${isMenuOpen ? 'block' : 'hidden'} border-t border-gray-100 bg-gray-50`}>
         <nav className="px-4 pt-4 pb-6 space-y-3 shadow-inner">
           <Link href="/" onClick={() => setIsMenuOpen(false)} className="block text-gray-700 hover:text-blue-600 font-medium p-2 rounded-md hover:bg-white transition-colors">
@@ -122,13 +131,24 @@ export default function Header() {
               Painel Administrativo
             </Link>
           )}
+          
           {user && (
-             <button 
-              onClick={handleSignOut}
-              className="block w-full text-left text-red-500 hover:text-red-700 font-medium p-2 rounded-md hover:bg-white transition-colors sm:hidden"
-            >
-              Sair da Conta
-            </button>
+            <>
+              <div className="border-t border-gray-200 my-2 pt-2"></div>
+              
+              <Link href="/profile" onClick={() => setIsMenuOpen(false)} className="block text-gray-700 hover:text-blue-600 font-medium p-2 rounded-md hover:bg-white transition-colors">
+                Meu Perfil
+              </Link>
+              <Link href="/tickets" onClick={() => setIsMenuOpen(false)} className="block text-gray-700 hover:text-blue-600 font-medium p-2 rounded-md hover:bg-white transition-colors">
+                Meus Ingressos
+              </Link>
+              <button 
+                onClick={handleSignOut}
+                className="block w-full text-left text-red-500 hover:text-red-700 font-medium p-2 rounded-md hover:bg-white transition-colors"
+              >
+                Sair da Conta
+              </button>
+            </>
           )}
         </nav>
       </div>
