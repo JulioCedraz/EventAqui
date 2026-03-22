@@ -87,11 +87,8 @@ export default function Header() {
                   </div>
                 ) : (
                   <div className="flex items-center gap-3">
-                    <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
-                      Entrar
-                    </Link>
                     <Link href="/login" className="text-sm font-medium text-white bg-blue-600 px-5 py-2 rounded-full hover:bg-blue-700 transition-colors shadow-sm hidden sm:block">
-                      Criar Conta
+                      Entrar
                     </Link>
                   </div>
                 )}
@@ -120,14 +117,14 @@ export default function Header() {
       {/* ====== MENU MOBILE ====== */}
       <div className={`md:hidden ${isMenuOpen ? 'block' : 'hidden'} border-t border-gray-100 bg-gray-50`}>
         <nav className="px-4 pt-4 pb-6 space-y-3 shadow-inner">
-          <Link href="/" onClick={() => setIsMenuOpen(false)} className="block text-gray-700 hover:text-blue-600 font-medium p-2 rounded-md hover:bg-white transition-colors">
-            Explorar Eventos
+          <Link href="/login" onClick={() => setIsMenuOpen(false)} className="block text-gray-700 font-medium p-2 rounded-md transition-colors">
+            Entrar
           </Link>
-          <Link href="/sobre" onClick={() => setIsMenuOpen(false)} className="block text-gray-700 hover:text-blue-600 font-medium p-2 rounded-md hover:bg-white transition-colors">
+          <Link href="/sobre" onClick={() => setIsMenuOpen(false)} className="block text-gray-700 font-medium p-2 rounded-md transition-colors">
             Sobre Nós
           </Link>
           {!loading && user && (
-            <Link href="/admin" onClick={() => setIsMenuOpen(false)} className="block text-gray-700 hover:text-blue-600 font-medium p-2 rounded-md hover:bg-white transition-colors">
+            <Link href="/admin" onClick={() => setIsMenuOpen(false)} className="block text-gray-700 font-medium p-2 rounded-md transition-colors">
               Painel Administrativo
             </Link>
           )}
@@ -136,15 +133,15 @@ export default function Header() {
             <>
               <div className="border-t border-gray-200 my-2 pt-2"></div>
               
-              <Link href="/profile" onClick={() => setIsMenuOpen(false)} className="block text-gray-700 hover:text-blue-600 font-medium p-2 rounded-md hover:bg-white transition-colors">
+              <Link href="/profile" onClick={() => setIsMenuOpen(false)} className="block text-gray-700 font-medium p-2 rounded-md transition-colors">
                 Meu Perfil
               </Link>
-              <Link href="/tickets" onClick={() => setIsMenuOpen(false)} className="block text-gray-700 hover:text-blue-600 font-medium p-2 rounded-md hover:bg-white transition-colors">
+              <Link href="/tickets" onClick={() => setIsMenuOpen(false)} className="block text-gray-700 font-medium p-2 rounded-md  transition-colors">
                 Meus Ingressos
               </Link>
               <button 
                 onClick={handleSignOut}
-                className="block w-full text-left text-red-500 hover:text-red-700 font-medium p-2 rounded-md hover:bg-white transition-colors"
+                className="block w-full text-left text-red-500 font-medium p-2 rounded-md  transition-colors"
               >
                 Sair da Conta
               </button>
