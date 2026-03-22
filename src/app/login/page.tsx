@@ -15,7 +15,7 @@ export default function LoginPage() {
   const [precisaConfirmar, setPrecisaConfirmar] = useState(false);
 
   const [checkingEmail, setCheckingEmail] = useState(false);
-  const [emailStatus, setEmailStatus] = useState<"idle" | "valid" | "invalid">("idle");
+  const [emailStatus, setEmailStatus] = useState <"idle" | "valid" | "invalid"> ("idle");
   const [emailMessage, setEmailMessage] = useState("");
 
   const [email, setEmail] = useState("");
@@ -23,7 +23,7 @@ export default function LoginPage() {
   const [nome, setNome] = useState("");
   const [sobrenome, setSobrenome] = useState("");
   const [cpf, setCpf] = useState("");
-  const [ocupacao, setOcupacao] = useState<"profissional" | "estudante">("profissional");
+  const [ocupacao, setOcupacao] = useState< "estudante" | "profissional" > ( "estudante" );
 
   const handleEmailBlur = async () => {
     setEmailStatus("idle");
@@ -76,7 +76,9 @@ export default function LoginPage() {
 
   const handleRecuperarSenha = async () => {
     if (!email) {
-      setErro("Por favor, digite o seu e-mail no campo acima primeiro para recuperar a senha.");
+      setErro(
+        "Por favor, digite o seu e-mail no campo acima primeiro para recuperar a senha.",
+      );
       return;
     }
     setLoading(true);
@@ -90,7 +92,9 @@ export default function LoginPage() {
     if (error) {
       setErro(error.message);
     } else {
-      setSucesso("E-mail de recuperação enviado! Verifique a sua caixa de entrada.");
+      setSucesso(
+        "E-mail de recuperação enviado! Verifique a sua caixa de entrada.",
+      );
     }
     setLoading(false);
   };
@@ -108,7 +112,9 @@ export default function LoginPage() {
     if (error) {
       setErro("Erro ao reenviar: " + error.message);
     } else {
-      setSucesso("Novo link enviado com sucesso! Verifique também a pasta de Spam.");
+      setSucesso(
+        "Novo link enviado com sucesso! Verifique também a pasta de Spam.",
+      );
       setPrecisaConfirmar(false);
     }
     setLoading(false);
@@ -135,15 +141,22 @@ export default function LoginPage() {
         if (error) {
           if (error.message.includes("Email not confirmed")) {
             setPrecisaConfirmar(true);
-            throw new Error("Precisa de confirmar o seu e-mail antes de entrar. Verifique a sua caixa de entrada ou Spam!");
+            throw new Error(
+              "Precisa de confirmar o seu e-mail antes de entrar. Verifique a sua caixa de entrada ou Spam!",
+            );
           }
           throw new Error("E-mail ou senha incorretos.");
         }
 
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         const userEmail = session?.user?.email;
 
-        const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
+        const admins =
+          process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(",").map((email) =>
+            email.trim(),
+          ) || [];
 
         if (userEmail && admins.includes(userEmail)) {
           router.push("/admin");
@@ -166,13 +179,19 @@ export default function LoginPage() {
 
         if (signUpError) throw signUpError;
 
-        if (data.user && data.user.identities && data.user.identities.length === 0) {
+        if (
+          data.user &&
+          data.user.identities &&
+          data.user.identities.length === 0
+        ) {
           setErro("Este e-mail já está em uso. Por favor, faça login.");
           setIsLogin(true);
           return;
         }
 
-        setSucesso("Quase lá! Enviámos um link de confirmação para o seu e-mail. Clique nele para ativar a conta.");
+        setSucesso(
+          "Quase lá! Enviámos um link de confirmação para o seu e-mail. Clique nele para ativar a conta.",
+        );
         setIsLogin(true);
         setSenha("");
       }
@@ -184,15 +203,15 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+    <main className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-md">
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 tracking-tight">
           {isLogin ? "Acesse sua conta" : "Crie a sua conta"}
         </h2>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md transition-all duration-300">
-        <div className="bg-white py-8 px-4 shadow-sm sm:rounded-2xl sm:px-10 border border-gray-100">
+      <div className="mt-8 mx-auto w-full max-w-md transition-all duration-300">
+        <div className="bg-white py-6 px-6 shadow-sm rounded-2xl border border-gray-100">
           <form className="space-y-5" onSubmit={handleSubmit}>
             {erro && (
               <div className="bg-red-50 border border-red-100 text-red-600 text-sm p-3 rounded-xl text-center font-medium animate-in fade-in">
@@ -231,7 +250,7 @@ export default function LoginPage() {
                     }
                   }}
                   onBlur={handleEmailBlur}
-                  className={`block w-full px-4 py-2.5 border rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors ${
+                  className={`block w-full px-4 py-2.5 border rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors ${
                     emailStatus === "valid"
                       ? "border-green-400 bg-green-50"
                       : emailStatus === "invalid"
@@ -283,7 +302,7 @@ export default function LoginPage() {
                       required={!isLogin}
                       value={nome}
                       onChange={(e) => setNome(e.target.value)}
-                      className="mt-1 block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="mt-1 block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
                     />
                   </div>
                   <div>
@@ -295,7 +314,7 @@ export default function LoginPage() {
                       required={!isLogin}
                       value={sobrenome}
                       onChange={(e) => setSobrenome(e.target.value)}
-                      className="mt-1 block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="mt-1 block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
                     />
                   </div>
                 </div>
@@ -312,7 +331,7 @@ export default function LoginPage() {
                     value={cpf}
                     onChange={(e) => setCpf(e.target.value)}
                     placeholder="000.000.000-00"
-                    className="mt-1 block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="mt-1 block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
                   />
                 </div>
 
@@ -325,19 +344,6 @@ export default function LoginPage() {
                       <input
                         type="radio"
                         name="ocupacao"
-                        value="profissional"
-                        checked={ocupacao === "profissional"}
-                        onChange={(e) => setOcupacao(e.target.value as any)}
-                        className="w-4 h-4 text-blue-600 border-gray-300"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">
-                        Profissional
-                      </span>
-                    </label>
-                    <label className="flex items-center cursor-pointer">
-                      <input
-                        type="radio"
-                        name="ocupacao"
                         value="estudante"
                         checked={ocupacao === "estudante"}
                         onChange={(e) => setOcupacao(e.target.value as any)}
@@ -345,6 +351,19 @@ export default function LoginPage() {
                       />
                       <span className="ml-2 text-sm text-gray-700">
                         Estudante
+                      </span>
+                    </label>
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="ocupacao"
+                        value="profissional"
+                        checked={ocupacao === "profissional"}
+                        onChange={(e) => setOcupacao(e.target.value as any)}
+                        className="w-4 h-4 text-blue-600 border-gray-300"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">
+                        Profissional
                       </span>
                     </label>
                   </div>
@@ -373,7 +392,7 @@ export default function LoginPage() {
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
                 minLength={6}
-                className="mt-1 block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
+                className="mt-1 block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors"
               />
             </div>
 
@@ -400,7 +419,7 @@ export default function LoginPage() {
               className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
             >
               {isLogin
-                ? "Ainda não tem conta? Registe-se"
+                ? "Ainda não tem conta? Cadastre-se"
                 : "Já tem uma conta? Fazer login"}
             </button>
           </div>
