@@ -9,7 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      
       events: {
         Row: {
           id: string;
@@ -79,7 +78,12 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      check_email_exists: {
+        Args: {
+          lookup_email: string;
+        };
+        Returns: boolean;
+      };
     };
     Enums: {
       [_ in never]: never;
