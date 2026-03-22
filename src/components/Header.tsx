@@ -47,9 +47,6 @@ export default function Header() {
             </Link>
             
             <nav className="hidden md:flex items-center space-x-6">
-              <Link href="/" className="text-gray-600 hover:text-blue-600 font-medium text-sm transition-colors">
-                Explorar Eventos
-              </Link>
               <Link href="/sobre" className="text-gray-600 hover:text-blue-600 font-medium text-sm transition-colors">
                 Sobre Nós
               </Link>
@@ -67,11 +64,11 @@ export default function Header() {
               <>
                 {user ? (
                   <div className="flex items-center gap-4">
-                    <Link href="/profile" className="items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors hidden sm:flex">
+                    <Link href="/profile" className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
-                      Meu Perfil
+                      <span>Meu Perfil</span>
                     </Link>
 
                     <Link href="/tickets" className="text-sm font-medium text-blue-600 bg-blue-50 px-4 py-2 rounded-full hover:bg-blue-100 transition-colors whitespace-nowrap">
@@ -87,7 +84,7 @@ export default function Header() {
                   </div>
                 ) : (
                   <div className="flex items-center gap-3">
-                    <Link href="/login" className="text-sm font-medium text-white bg-blue-600 px-5 py-2 rounded-full hover:bg-blue-700 transition-colors shadow-sm hidden sm:block">
+                    <Link href="/login" className="text-sm font-medium text-white bg-blue-600 px-5 py-2 rounded-full hover:bg-blue-700 transition-colors shadow-sm">
                       Entrar
                     </Link>
                   </div>
@@ -117,9 +114,6 @@ export default function Header() {
       {/* ====== MENU MOBILE ====== */}
       <div className={`md:hidden ${isMenuOpen ? 'block' : 'hidden'} border-t border-gray-100 bg-gray-50`}>
         <nav className="px-4 pt-4 pb-6 space-y-3 shadow-inner">
-          <Link href="/login" onClick={() => setIsMenuOpen(false)} className="block text-gray-700 font-medium p-2 rounded-md transition-colors">
-            Entrar
-          </Link>
           <Link href="/sobre" onClick={() => setIsMenuOpen(false)} className="block text-gray-700 font-medium p-2 rounded-md transition-colors">
             Sobre Nós
           </Link>
