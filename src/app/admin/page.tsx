@@ -8,14 +8,15 @@ import Link from 'next/link';
 export default function AdminDashboard() {
   const router = useRouter();
   
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [authorized, setAuthorized] = useState(false);
+  
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
   
-
   const [events, setEvents] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   
-
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [eventDate, setEventDate] = useState('');
@@ -37,12 +38,19 @@ export default function AdminDashboard() {
   useEffect(() => {
     const checkAdmin = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push('/login');
+      const userEmail = session?.user?.email;
+
+      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
+
+      if (!session || !userEmail || !admins.includes(userEmail)) {
+        router.push('/');
       } else {
+        setAuthorized(true);
         fetchEvents();
       }
+      setIsCheckingAuth(false);
     };
+
     checkAdmin();
   }, [router]);
 
@@ -158,6 +166,19 @@ export default function AdminDashboard() {
     }
   };
 
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center space-y-3">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-gray-500 font-medium">Verificando permissões...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!authorized) return null;
+
   return (
     <main className="bg-gray-50 py-10 px-4 sm:px-6 lg:px-8 grow">
       <div className="max-w-4xl mx-auto space-y-8">
@@ -262,7 +283,6 @@ export default function AdminDashboard() {
                       )}
                     </div>
                     
-                    
                     <div>
                       <h3 className="font-bold text-gray-900 line-clamp-1">{evt.title}</h3>
                       <p className="text-sm text-gray-500">
@@ -271,7 +291,6 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  
                   <div className="flex items-center gap-3 self-end sm:self-auto">
                     <button 
                       onClick={() => handleEdit(evt)}
