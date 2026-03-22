@@ -142,7 +142,8 @@ export default function LoginPage() {
 
         const { data: { session } } = await supabase.auth.getSession();
         const userEmail = session?.user?.email;
-        const admins = ["seu-email-aqui@medicina.com"];
+
+        const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
 
         if (userEmail && admins.includes(userEmail)) {
           router.push("/admin");
