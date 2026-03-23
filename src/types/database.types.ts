@@ -51,6 +51,7 @@ export type Database = {
           buyer_email: string;
           payment_status: string | null;
           is_used: boolean | null;
+          quantity: number;
           created_at: string | null;
         };
         Insert: {
@@ -60,6 +61,7 @@ export type Database = {
           buyer_email: string;
           payment_status?: string | null;
           is_used?: boolean | null;
+          quantity?: number;
           created_at?: string | null;
         };
         Update: {
@@ -69,9 +71,18 @@ export type Database = {
           buyer_email?: string;
           payment_status?: string | null;
           is_used?: boolean | null;
+          quantity?: number;
           created_at?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "tickets_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          }
+        ];
       };
     };
     Views: {
