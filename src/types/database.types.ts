@@ -53,6 +53,9 @@ export type Database = {
           is_used: boolean | null;
           quantity: number;
           created_at: string | null;
+          pix_qr_code: string | null;
+          pix_qr_code_base64: string | null;
+          expires_at: string | null;
         };
         Insert: {
           id?: string;
@@ -63,6 +66,9 @@ export type Database = {
           is_used?: boolean | null;
           quantity?: number;
           created_at?: string | null;
+          pix_qr_code?: string | null;
+          pix_qr_code_base64?: string | null;
+          expires_at?: string | null;
         };
         Update: {
           id?: string;
@@ -73,6 +79,9 @@ export type Database = {
           is_used?: boolean | null;
           quantity?: number;
           created_at?: string | null;
+          pix_qr_code?: string | null;
+          pix_qr_code_base64?: string | null;
+          expires_at?: string | null;
         };
         Relationships: [
           {
