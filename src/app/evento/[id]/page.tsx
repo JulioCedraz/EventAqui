@@ -26,12 +26,7 @@ export default function EventDetails() {
     setLoading(true);
 
     try {
-      const { data: eventData, error: eventError } = await supabase
-        .from('events')
-        .select('*')
-        .eq('id', id) 
-        .single();
-
+      const { data: eventData, error: eventError } = await supabase.from('events').select('*').eq('id', id).single();
       if (eventError) throw eventError;
       setEvent(eventData);
 
@@ -45,7 +40,14 @@ export default function EventDetails() {
           .eq('payment_status', 'pending')
           .maybeSingle(); 
         
-        setPendingTicket(pendingData);
+        if (pendingData) {
+          if (pendingData.expires_at && new Date(pendingData.expires_at) < new Date()) {
+            await supabase.from('tickets').update({ payment_status: 'cancelled' }).eq('id', pendingData.id);
+            setPendingTicket(null);
+          } else {
+            setPendingTicket(pendingData);
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -87,14 +89,14 @@ export default function EventDetails() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        router.push('/login');
-        return;
-      }
+      if (!session) { router.push('/login'); return; }
 
       const validQuantity = Number(quantity) || 1;
       const totalPrice = event!.price * validQuantity;
+
+      const expirationDate = new Date();
+      expirationDate.setMinutes(expirationDate.getMinutes() + 30);
+      const isoExpiration = expirationDate.toISOString();
 
       const newTicket = {
         event_id: event!.id,
@@ -102,20 +104,17 @@ export default function EventDetails() {
         buyer_email: session.user.email!,
         payment_status: 'pending',
         quantity: validQuantity,
-        is_used: false
+        is_used: false,
+        expires_at: isoExpiration
       };
 
-      const { data: createdTicket, error: supabaseError } = await supabase
-        .from('tickets')
-        .insert(newTicket as any)
-        .select()
-        .single();
-
-      if (supabaseError) throw supabaseError;
-
-      if (!createdTicket) {
-        throw new Error('Não foi possível obter os dados do ingresso criado.');
+      const { data: createdTicket, error: supabaseError } = await supabase.from('tickets').insert(newTicket as any).select().single();
+      
+      if (supabaseError || !createdTicket) {
+        throw new Error('Erro ao registrar o ingresso no banco de dados.');
       }
+
+      setMessage({ text: 'Gerando PIX seguro...', type: 'info' });
       
       const res = await fetch('/api/payment', {
         method: 'POST',
@@ -124,20 +123,26 @@ export default function EventDetails() {
           title: `${event!.title} (${validQuantity}x)`, 
           price: totalPrice,
           email: session.user.email,
-          ticketId: createdTicket.id
+          ticketId: createdTicket.id,
+          expires_at: isoExpiration
         })
       });
 
       const paymentResponse = await res.json();
+      if (!res.ok) throw new Error(paymentResponse.erro || 'Falha ao gerar o PIX');
 
-      if (!res.ok) {
-        throw new Error(paymentResponse.erro || 'Falha ao gerar o PIX');
+      const { error: updateError } = await supabase.from('tickets').update({
+        pix_qr_code: paymentResponse.qr_code,
+        pix_qr_code_base64: paymentResponse.qr_code_base64
+      }).eq('id', createdTicket.id);
+
+      if (updateError) {
+        console.error("ALERTA: Falha ao salvar o QR Code no banco:", updateError);
       }
 
       setPixData(paymentResponse);
-      setMessage({ text: 'PIX gerado com sucesso! Realize o pagamento.', type: 'success' });
-      setPendingTicket(createdTicket);
-
+      setMessage({ text: 'PIX gerado! Realize o pagamento em até 30 minutos.', type: 'success' });
+      setPendingTicket({ ...createdTicket, expires_at: isoExpiration });
       setShowConfirmModal(false);
 
     } catch (error: any) {
