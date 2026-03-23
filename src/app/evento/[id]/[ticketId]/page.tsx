@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../../lib/supabase';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 
 export default function ResumePaymentPage() {
   const router = useRouter();
@@ -144,7 +145,14 @@ export default function ResumePaymentPage() {
       <div className="max-w-xl w-full bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="bg-blue-600 p-6 text-center">
           <h1 className="text-2xl font-extrabold text-white">Finalizar Pagamento</h1>
-          <p className="text-blue-100 mt-1">{eventDetails?.title}</p>
+          <p className="mt-1">
+            <Link 
+              href={`/evento/${eventId}`} 
+              className="text-blue-100 hover:text-white hover:underline transition-colors"
+            >
+              {eventDetails?.title}
+            </Link>
+          </p>
         </div>
 
         <div className="p-8">
