@@ -16,11 +16,10 @@ export default function EventDetails() {
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
-  
   const [quantity, setQuantity] = useState<number | string>(1);
   const [pendingTicket, setPendingTicket] = useState<any | null>(null);
-  
   const [pixData, setPixData] = useState<{ qr_code: string; qr_code_base64: string } | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const fetchEventAndStatus = useCallback(async () => {
     if (!id) return;
@@ -117,8 +116,6 @@ export default function EventDetails() {
       if (!createdTicket) {
         throw new Error('Não foi possível obter os dados do ingresso criado.');
       }
-
-      setMessage({ text: 'A gerar PIX seguro...', type: 'info' });
       
       const res = await fetch('/api/payment', {
         method: 'POST',
@@ -141,8 +138,11 @@ export default function EventDetails() {
       setMessage({ text: 'PIX gerado com sucesso! Realize o pagamento.', type: 'success' });
       setPendingTicket(createdTicket);
 
+      setShowConfirmModal(false);
+
     } catch (error: any) {
       setMessage({ text: error.message || 'Erro ao processar compra.', type: 'error' });
+      setShowConfirmModal(false);
     } finally {
       setBuying(false);
     }
@@ -195,7 +195,67 @@ export default function EventDetails() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 relative">
+
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 overflow-hidden transform transition-all">
+            <h3 className="text-2xl font-extrabold text-gray-900 mb-6 text-center border-b border-gray-100 pb-4">
+              Resumo do Pedido
+            </h3>
+            
+            <div className="space-y-4 mb-8">
+              <div className="flex justify-between items-center text-gray-600">
+                <span className="font-medium">Ingresso ({quantity}x)</span>
+                <span>R$ {event.price.toFixed(2).replace('.', ',')} / cada</span>
+              </div>
+              
+              <div className="flex justify-between items-center text-gray-600">
+                <span className="font-medium">Modalidade de Pagamento</span>
+                <span className="flex gap-2 items-center justify-center">
+                  Pix<img
+                    src="/pix.svg"
+                    alt="Logo PIX"
+                    className="h-6"
+                  />
+                </span>
+              </div>
+              
+              <div className="pt-4 mt-2 border-t border-gray-200 flex justify-between items-center bg-gray-50 p-4 rounded-xl">
+                <span className="text-gray-900 font-bold">Total a pagar:</span>
+                <span className="text-2xl font-black text-blue-600">
+                  R$ {(event.price * (Number(quantity) || 1)).toFixed(2).replace('.', ',')}
+                </span>
+              </div>
+              <p className="text-xs text-center text-gray-500 mt-2">
+                O código PIX será gerado na próxima tela e terá validade temporária.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button 
+                onClick={() => setShowConfirmModal(false)}
+                disabled={buying}
+                className="flex-1 px-4 py-3 bg-white border border-gray-300 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleBuy}
+                disabled={buying}
+                className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors flex justify-center items-center shadow-md disabled:bg-blue-400"
+              >
+                {buying ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                ) : (
+                  'Confirmar e Gerar PIX'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-200">
         
         {event.image_url ? (
@@ -358,15 +418,11 @@ export default function EventDetails() {
               </div>
 
               <button 
-                onClick={handleBuy}
+                onClick={() => setShowConfirmModal(true)}
                 disabled={buying}
                 className="w-full bg-blue-600 text-white font-bold text-lg py-4 rounded-xl hover:bg-blue-700 transition-colors disabled:bg-blue-300 flex justify-center items-center shadow-md"
               >
-                {buying ? (
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                ) : (
-                  'Comprar Agora'
-                )}
+                Comprar Agora
               </button>
             </div>
           )}
