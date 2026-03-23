@@ -244,23 +244,24 @@ export default function ProfilePage() {
                   <input
                     type="radio"
                     name="occupation"
-                    value="profissional"
-                    checked={occupation === 'profissional'}
-                    onChange={(e) => setOccupation(e.target.value as any)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">Profissional</span>
-                </label>
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="radio"
-                    name="occupation"
                     value="estudante"
                     checked={occupation === 'estudante'}
                     onChange={(e) => setOccupation(e.target.value as any)}
                     className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                   />
                   <span className="ml-2 text-sm text-gray-700">Estudante</span>
+                </label>
+                
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="occupation"
+                    value="profissional"
+                    checked={occupation === 'profissional'}
+                    onChange={(e) => setOccupation(e.target.value as any)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Profissional</span>
                 </label>
               </div>
             </div>
