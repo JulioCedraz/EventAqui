@@ -23,6 +23,7 @@ export default function AdminDashboard() {
   const [price, setPrice] = useState('');
   const [totalSpots, setTotalSpots] = useState('');
   const [image, setImage] = useState<File | null>(null);
+  const [imageError, setImageError] = useState('');
 
   const fetchEvents = async () => {
     const { data, error } = await supabase
@@ -62,10 +63,46 @@ export default function AdminDashboard() {
     setPrice('');
     setTotalSpots('');
     setImage(null);
+    setImageError('');
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImageError('');
+    const file = e.target.files?.[0] || null;
+
+    if (!file) {
+      setImage(null);
+      return;
+    }
+
+    const maxSize = 3 * 1024 * 1024;
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+    if (!allowedTypes.includes(file.type)) {
+      setImageError('Formato inválido. Por favor, selecione uma imagem JPEG, PNG ou WEBP.');
+      setImage(null);
+      e.target.value = '';
+      return;
+    }
+
+    if (file.size > maxSize) {
+      setImageError('A imagem excede o tamanho máximo permitido de 3MB.');
+      setImage(null);
+      e.target.value = '';
+      return;
+    }
+
+    setImage(file);
   };
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
+
+    if (imageError) {
+      setMessage({ text: 'Corrija o erro da imagem antes de salvar.', type: 'error' });
+      return;
+    }
+
     setLoading(true);
     setMessage({ text: '', type: '' });
 
@@ -139,6 +176,7 @@ export default function AdminDashboard() {
     setPrice(event.price.toString());
     setTotalSpots(event.total_spots.toString());
     setImage(null);
+    setImageError('');
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -203,11 +241,11 @@ export default function AdminDashboard() {
           <div className="px-6 py-8 sm:p-10">
             <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
               <h2 className="text-xl font-bold text-gray-900">
-                {editingId ? '✏️ Editando Evento' : 'Criar Novo Evento'}
+                {editingId ? 'Editando Evento' : 'Criar Novo Evento'}
               </h2>
               {editingId && (
                 <button onClick={resetForm} className="text-sm font-medium text-gray-500 hover:text-red-600 transition-colors">
-                  Cancelar Edição
+                  Descartar Alterações
                 </button>
               )}
             </div>
@@ -249,7 +287,25 @@ export default function AdminDashboard() {
                   <label className="block text-sm font-semibold text-gray-700 mb-1">
                     Capa do Evento {editingId && <span className="text-blue-500 font-normal">(Deixe em branco para manter a atual)</span>}
                   </label>
-                  <input type="file" accept="image/jpeg, image/png, image/webp" onChange={(e) => setImage(e.target.files?.[0] || null)} className="block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
+                  <input 
+                    type="file" 
+                    accept="image/jpeg, image/png, image/webp" 
+                    onChange={handleImageChange} 
+                    className={`block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold cursor-pointer transition-colors ${
+                      imageError 
+                        ? 'file:bg-red-50 file:text-red-700 hover:file:bg-red-100' 
+                        : 'file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100'
+                    }`} 
+                  />
+                  {imageError ? (
+                    <p className="mt-2 text-sm font-medium text-red-600 animate-in fade-in">
+                      {imageError}
+                    </p>
+                  ) : (
+                    <p className="mt-2 text-sm text-gray-500">
+                      JPEG, PNG ou WEBP, menor que 3MB.
+                    </p>
+                  )}
                 </div>
               </div>
 
