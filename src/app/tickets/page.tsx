@@ -53,11 +53,29 @@ export default function MyTickets() {
 
       if (error) throw error;
       
-      alert('Pedido cancelado com sucesso.');
       fetchTickets();
     } catch (error) {
       console.error('Erro ao cancelar:', error);
       alert('Erro ao cancelar o pedido. Tente novamente.');
+    }
+  };
+
+  const handleDeleteTicket = async (ticketId: string) => {
+    const isConfirmed = window.confirm('Tem certeza que deseja excluir este pedido? Esta ação é irreversível.');
+    if (!isConfirmed) return;
+
+    try {
+      const { error } = await supabase
+        .from('tickets')
+        .delete()
+        .eq('id', ticketId);
+
+      if (error) throw error;
+      
+      fetchTickets();
+    } catch (error) {
+      console.error('Erro ao excluir:', error);
+      alert('Erro ao excluir o pedido. Tente novamente.');
     }
   };
 
@@ -135,6 +153,15 @@ export default function MyTickets() {
                         Continuar Pagamento
                       </button>
                     </div>
+                  )}
+
+                  {ticket.payment_status === 'cancelled' && (
+                    <button 
+                      onClick={() => handleDeleteTicket(ticket.id)} 
+                      className="bg-white text-gray-400 border border-gray-200 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors w-full sm:w-auto mt-2 sm:mt-0"
+                    >
+                      Excluir Pedido
+                    </button>
                   )}
                 </div>
               </div>
