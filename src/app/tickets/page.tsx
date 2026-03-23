@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function MyTickets() {
   const router = useRouter();
@@ -86,7 +87,11 @@ export default function MyTickets() {
               <div key={ticket.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4 hover:border-blue-200 transition-colors">
                 
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">{ticket.events?.title}</h2>
+                  <h2 className="text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors">
+                    <Link href={`/evento/${ticket.event_id}`}>
+                      {ticket.events?.title}
+                    </Link>
+                  </h2>
                   <p className="text-gray-500 text-sm mb-3">
                     {new Date(ticket.events?.event_date).toLocaleString('pt-BR')}
                   </p>
