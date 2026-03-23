@@ -3,7 +3,8 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { titulo, preco, email, ticketId } = body;
+    
+    const { title, price, email, ticketId } = body;
 
     if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
       throw new Error('Chave do Mercado Pago não configurada no servidor.');
@@ -19,8 +20,8 @@ export async function POST(request: Request) {
         'X-Idempotency-Key': idempotencyKey
       },
       body: JSON.stringify({
-        transaction_amount: Number(preco),
-        description: `Ingresso: ${titulo}`,
+        transaction_amount: Number(price),
+        description: `Ingresso: ${title}`,
         payment_method_id: 'pix',
         payer: {
           email: email,
