@@ -127,7 +127,7 @@ export default function MyTickets() {
                         onClick={() => router.push(`/evento/${ticket.event_id}/${ticket.id}`)} 
                         className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm w-full sm:w-auto"
                       >
-                        Pagar PIX
+                        Continuar Pagamento
                       </button>
                     </div>
                   )}
