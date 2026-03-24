@@ -17,6 +17,8 @@ export async function POST(request: Request) {
       payment_method_id: 'pix',
       payer: { email: email },
       date_of_expiration: expires_at,
+      external_reference: ticketId,
+      notification_url: 'https://eventaqui.vercel.app/api/webhook'
     };
 
     const response = await fetch('https://api.mercadopago.com/v1/payments', {
