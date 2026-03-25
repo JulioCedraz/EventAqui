@@ -10,6 +10,7 @@ export default function MyTickets() {
   
   const [tickets, setTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copiedTicketId, setCopiedTicketId] = useState<string | null>(null);
 
   const fetchTickets = useCallback(async () => {
     setLoading(true);
@@ -135,9 +136,14 @@ export default function MyTickets() {
                           {ticket.id}
                         </p>
                         <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(ticket.id);
-                            alert('Código copiado!');
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(ticket.id);
+                              setCopiedTicketId(ticket.id);
+                              setTimeout(() => setCopiedTicketId(null), 2000);
+                            } catch (error) {
+                              console.error('Erro ao copiar', error);
+                            }
                           }}
                           className="p-1.5 text-blue-600 hover:bg-blue-100 hover:text-blue-800 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300"
                           title="Copiar código"
@@ -147,6 +153,12 @@ export default function MyTickets() {
                           </svg>
                         </button>
                       </div>
+
+                      {copiedTicketId === ticket.id && (
+                        <p className="text-xs text-green-600 font-medium mt-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                          ✓ Código copiado
+                        </p>
+                      )}
                     </div>
                   )}
                   
