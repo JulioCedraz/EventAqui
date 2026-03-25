@@ -20,7 +20,8 @@ export default function EventDetails() {
   const [pendingTicket, setPendingTicket] = useState<any | null>(null);
   const [pixData, setPixData] = useState<{ qr_code: string; qr_code_base64: string } | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-
+  const [copiedPix, setCopiedPix] = useState(false);
+  
   const fetchEventAndStatus = useCallback(async () => {
     if (!id) return;
     setLoading(true);
@@ -157,30 +158,14 @@ export default function EventDetails() {
     if (!pixData?.qr_code) return;
 
     try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(pixData.qr_code);
-        alert('Código PIX copiado!');
-      } else {
-        const textArea = document.createElement("textarea");
-        textArea.value = pixData.qr_code;
-        textArea.style.position = "absolute";
-        textArea.style.left = "-999999px";
-        document.body.prepend(textArea);
-        textArea.select();
-        
-        try {
-          document.execCommand('copy');
-          alert('Código PIX copiado!');
-        } catch (fallbackError) {
-          console.error('Erro no fallback de cópia:', fallbackError);
-          alert('O seu navegador bloqueou a cópia automática. Por favor, selecione e copie o código manualmente.');
-        } finally {
-          textArea.remove();
-        }
-      }
+      await navigator.clipboard.writeText(pixData.qr_code);
+      
+      setCopiedPix(true);
+      setTimeout(() => setCopiedPix(false), 2000);
+      
     } catch (error) {
       console.error('Falha ao copiar PIX:', error);
-      alert('Erro ao copiar. Tente novamente.');
+      alert('Erro ao copiar. Por favor, selecione e copie o código manualmente.');
     }
   };
 
@@ -321,19 +306,29 @@ export default function EventDetails() {
               
               <div className="mb-6">
                 <p className="text-sm font-medium text-gray-700 mb-2">Ou copie o código (PIX Copia e Cola):</p>
-                <div className="flex gap-2">
-                  <input 
-                    type="text" 
-                    readOnly 
-                    value={pixData.qr_code} 
-                    className="w-full text-sm p-3 border border-gray-300 rounded-lg bg-white text-gray-600 focus:outline-none" 
-                  />
-                  <button 
-                    onClick={copyPix}
-                    className="bg-gray-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors whitespace-nowrap"
-                  >
-                    Copiar
-                  </button>
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      readOnly 
+                      value={pixData.qr_code} 
+                      className="w-full text-sm p-3 border border-gray-300 rounded-lg bg-white text-gray-600 focus:outline-none" 
+                    />
+                    <button 
+                      onClick={copyPix}
+                      className={`px-6 py-3 rounded-lg font-medium transition-colors whitespace-nowrap min-w-30 flex justify-center items-center text-white ${
+                        copiedPix ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-900 hover:bg-gray-800'
+                      }`}
+                    >
+                      {copiedPix ? 'Copiado ✓' : 'Copiar'}
+                    </button>
+                  </div>
+                  
+                  {copiedPix && (
+                    <p className="text-xs text-green-600 font-medium text-left animate-in fade-in slide-in-from-top-1 duration-200">
+                      ✓ Código PIX copiado com sucesso!
+                    </p>
+                  )}
                 </div>
               </div>
 
