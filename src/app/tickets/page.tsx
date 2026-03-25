@@ -130,7 +130,23 @@ export default function MyTickets() {
                   {ticket.payment_status === 'approved' && !ticket.is_used && (
                     <div className="bg-blue-50 px-4 py-3 rounded-xl border border-blue-100 w-full sm:w-auto text-center sm:text-right">
                       <p className="text-xs text-blue-600 font-bold uppercase tracking-wider mb-1">Código de Entrada</p>
-                      <p className="text-sm font-mono text-gray-900 break-all bg-white px-2 py-1 rounded border border-blue-100">{ticket.id}</p>
+                      <div className="flex items-center justify-center sm:justify-end gap-2">
+                        <p className="text-sm font-mono text-gray-900 break-all bg-white px-2 py-1 rounded border border-blue-100">
+                          {ticket.id}
+                        </p>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(ticket.id);
+                            alert('Código copiado!');
+                          }}
+                          className="p-1.5 text-blue-600 hover:bg-blue-100 hover:text-blue-800 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300"
+                          title="Copiar código"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   )}
                   
