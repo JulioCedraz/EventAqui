@@ -7,13 +7,13 @@ export async function POST(request: Request) {
     const authHeader = request.headers.get('Authorization');
 
     if (!authHeader) {
-      return NextResponse.json({ erro: 'Não autorizado. Faça login como admin.' }, { status: 401 });
+      return NextResponse.json({ error: 'Não autorizado. Faça login como admin.' }, { status: 401 });
     }
 
     const { ticketId } = await request.json();
 
     if (!ticketId) {
-      return NextResponse.json({ erro: 'QR Code inválido ou vazio.' }, { status: 400 });
+      return NextResponse.json({ error: 'QR Code inválido ou vazio.' }, { status: 400 });
     }
 
     const userScopedSupabase = createClient(
@@ -28,35 +28,66 @@ export async function POST(request: Request) {
       }
     );
 
-    const { data: ticket, error: erroBusca } = await userScopedSupabase
+    // 1. Busca APENAS o ingresso primeiro
+    const { data: ticket, error: fetchError } = await userScopedSupabase
       .from('tickets')
-      .select('id, payment_status, is_used, buyer_name')
+      .select('id, payment_status, is_used, user_id, buyer_name')
       .eq('id', ticketId)
       .single();
 
-    if (erroBusca || !ticket) {
-      return NextResponse.json({ status: 'invalido', mensagem: 'Ingresso não encontrado ou sem permissão de leitura.' });
+    if (fetchError || !ticket) {
+      console.error('Erro na busca do ingresso:', fetchError);
+      return NextResponse.json({ status: 'invalid', message: 'Ingresso não encontrado ou sem permissão de leitura.' });
     }
 
+    // 2. Busca o perfil em uma requisição separada usando o user_id do ingresso
+    let userProfile = null;
+    if (ticket.user_id) {
+      const { data: profileData, error: profileError } = await userScopedSupabase
+        .from('profiles')
+        .select('first_name, last_name, cpf, occupation')
+        .eq('id', ticket.user_id)
+        .single();
+        
+      if (profileError) {
+        console.error('Aviso: Perfil não encontrado para este usuário.', profileError);
+      } else {
+        userProfile = profileData;
+      }
+    }
+
+    // 3. Monta o nome completo (com fallback para o buyer_name antigo caso o perfil não exista)
+    const buyerFullName = userProfile?.first_name 
+      ? `${userProfile.first_name} ${userProfile.last_name}` 
+      : (ticket.buyer_name || 'Usuário Desconhecido');
+
     if (ticket.payment_status !== 'approved') {
-      return NextResponse.json({ status: 'pendente', mensagem: `O pagamento de ${ticket.buyer_name} ainda não foi confirmado.` });
+      return NextResponse.json({ status: 'pending', message: `O pagamento de ${buyerFullName} ainda não foi confirmado.` });
     }
 
     if (ticket.is_used) {
-      return NextResponse.json({ status: 'usado', mensagem: `Atenção: O ingresso de ${ticket.buyer_name} JÁ FOI UTILIZADO.` });
+      return NextResponse.json({ status: 'used', message: `Atenção: O ingresso de ${buyerFullName} JÁ FOI UTILIZADO.` });
     }
 
-    const { error: erroUpdate } = await userScopedSupabase
+    const { error: updateError } = await userScopedSupabase
       .from('tickets')
       .update({ is_used: true })
       .eq('id', ticketId);
 
-    if (erroUpdate) throw new Error('Falha ao atualizar o banco de dados.');
+    if (updateError) throw new Error('Falha ao atualizar o banco de dados.');
 
-    return NextResponse.json({ status: 'sucesso', mensagem: `Entrada Liberada! Bem-vindo(a), ${ticket.buyer_name}.` });
+    return NextResponse.json({ 
+      status: 'success', 
+      message: 'Entrada Liberada!',
+      userData: {
+        fullName: buyerFullName,
+        cpf: userProfile?.cpf || 'Não informado',
+        occupation: userProfile?.occupation || 'Não informada'
+      }
+    });
 
   } catch (error) {
-    console.error('Erro na validação:', error);
-    return NextResponse.json({ erro: 'Erro interno no servidor.' }, { status: 500 });
+    console.error('Validation error:', error);
+    return NextResponse.json({ error: 'Erro interno no servidor.' }, { status: 500 });
   }
 }
