@@ -28,7 +28,6 @@ export async function POST(request: Request) {
       }
     );
 
-    // 1. Busca APENAS o ingresso primeiro
     const { data: ticket, error: fetchError } = await userScopedSupabase
       .from('tickets')
       .select('id, payment_status, is_used, user_id, buyer_name')
@@ -40,7 +39,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ status: 'invalid', message: 'Ingresso não encontrado ou sem permissão de leitura.' });
     }
 
-    // 2. Busca o perfil em uma requisição separada usando o user_id do ingresso
     let userProfile = null;
     if (ticket.user_id) {
       const { data: profileData, error: profileError } = await userScopedSupabase
@@ -56,7 +54,6 @@ export async function POST(request: Request) {
       }
     }
 
-    // 3. Monta o nome completo (com fallback para o buyer_name antigo caso o perfil não exista)
     const buyerFullName = userProfile?.first_name 
       ? `${userProfile.first_name} ${userProfile.last_name}` 
       : (ticket.buyer_name || 'Usuário Desconhecido');
