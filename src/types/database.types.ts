@@ -43,10 +43,44 @@ export type Database = {
         Relationships: [];
       };
 
+      profiles: {
+        Row: {
+          id: string;
+          first_name: string | null;
+          last_name: string | null;
+          cpf: string | null;
+          occupation: string | null;
+        };
+        Insert: {
+          id: string;
+          first_name?: string | null;
+          last_name?: string | null;
+          cpf?: string | null;
+          occupation?: string | null;
+        };
+        Update: {
+          id?: string;
+          first_name?: string | null;
+          last_name?: string | null;
+          cpf?: string | null;
+          occupation?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ];
+      };
+
       tickets: {
         Row: {
           id: string;
           event_id: string;
+          user_id: string | null;
           buyer_name: string;
           buyer_email: string;
           payment_status: string | null;
@@ -60,6 +94,7 @@ export type Database = {
         Insert: {
           id?: string;
           event_id: string;
+          user_id?: string | null;
           buyer_name: string;
           buyer_email: string;
           payment_status?: string | null;
@@ -73,6 +108,7 @@ export type Database = {
         Update: {
           id?: string;
           event_id?: string;
+          user_id?: string | null;
           buyer_name?: string;
           buyer_email?: string;
           payment_status?: string | null;
@@ -89,6 +125,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           }
         ];
