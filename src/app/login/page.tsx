@@ -8,22 +8,22 @@ export default function LoginPage() {
   const router = useRouter();
 
   const [isLogin, setIsLogin] = useState(true);
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const [erro, setErro] = useState("");
-  const [sucesso, setSucesso] = useState("");
-  const [precisaConfirmar, setPrecisaConfirmar] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
-  const [checkingEmail, setCheckingEmail] = useState(false);
-  const [emailStatus, setEmailStatus] = useState <"idle" | "valid" | "invalid"> ("idle");
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [emailStatus, setEmailStatus] = useState<"idle" | "valid" | "invalid">("idle");
   const [emailMessage, setEmailMessage] = useState("");
 
   const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
-  const [nome, setNome] = useState("");
-  const [sobrenome, setSobrenome] = useState("");
+  const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [cpf, setCpf] = useState("");
-  const [ocupacao, setOcupacao] = useState< "estudante" | "profissional" > ( "estudante" );
+  const [occupation, setOccupation] = useState<"estudante" | "profissional">("estudante");
 
   const handleEmailBlur = async () => {
     setEmailStatus("idle");
@@ -38,15 +38,15 @@ export default function LoginPage() {
       return;
     }
 
-    setCheckingEmail(true);
-    setErro("");
+    setIsCheckingEmail(true);
+    setErrorMsg("");
 
     try {
-      const { data: exists, error } = await supabase.rpc("check_email_exists", {
+      const { data: exists, error: checkError } = await supabase.rpc("check_email_exists", {
         lookup_email: email,
       });
 
-      if (error) throw error;
+      if (checkError) throw checkError;
 
       if (isLogin) {
         if (exists) {
@@ -58,7 +58,7 @@ export default function LoginPage() {
         }
       } else {
         if (exists) {
-          setErro("Identificamos que já possui um registo! Por favor, insira a sua senha.");
+          setErrorMsg("Identificamos que já possui um registo! Por favor, insira a sua senha.");
           setIsLogin(true);
           setEmailStatus("valid");
           setEmailMessage("E-mail encontrado.");
@@ -70,62 +70,62 @@ export default function LoginPage() {
     } catch (err) {
       console.error("Erro ao verificar e-mail:", err);
     } finally {
-      setCheckingEmail(false);
+      setIsCheckingEmail(false);
     }
   };
 
-  const handleRecuperarSenha = async () => {
+  const handlePasswordRecovery = async () => {
     if (!email) {
-      setErro(
-        "Por favor, digite o seu e-mail no campo acima primeiro para recuperar a senha.",
+      setErrorMsg(
+        "Por favor, digite o seu e-mail no campo acima primeiro para recuperar a senha."
       );
       return;
     }
-    setLoading(true);
-    setErro("");
-    setSucesso("");
+    setIsLoading(true);
+    setErrorMsg("");
+    setSuccessMsg("");
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { error: recoveryError } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
 
-    if (error) {
-      setErro(error.message);
+    if (recoveryError) {
+      setErrorMsg(recoveryError.message);
     } else {
-      setSucesso(
-        "E-mail de recuperação enviado! Verifique a sua caixa de entrada.",
+      setSuccessMsg(
+        "E-mail de recuperação enviado! Verifique a sua caixa de entrada."
       );
     }
-    setLoading(false);
+    setIsLoading(false);
   };
 
-  const handleReenviarConfirmacao = async () => {
-    setLoading(true);
-    setErro("");
-    setSucesso("");
+  const handleResendConfirmation = async () => {
+    setIsLoading(true);
+    setErrorMsg("");
+    setSuccessMsg("");
 
-    const { error } = await supabase.auth.resend({
+    const { error: resendError } = await supabase.auth.resend({
       type: "signup",
       email: email,
     });
 
-    if (error) {
-      setErro("Erro ao reenviar: " + error.message);
+    if (resendError) {
+      setErrorMsg("Erro ao reenviar: " + resendError.message);
     } else {
-      setSucesso(
-        "Novo link enviado com sucesso! Verifique também a pasta de Spam.",
+      setSuccessMsg(
+        "Novo link enviado com sucesso! Verifique também a pasta de Spam."
       );
-      setPrecisaConfirmar(false);
+      setNeedsConfirmation(false);
     }
-    setLoading(false);
+    setIsLoading(false);
   };
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setErro("");
-    setSucesso("");
-    setPrecisaConfirmar(false);
+    setIsLoading(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+    setNeedsConfirmation(false);
 
     try {
       if (emailStatus === "invalid") {
@@ -133,16 +133,16 @@ export default function LoginPage() {
       }
 
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
-          password: senha,
+          password,
         });
 
-        if (error) {
-          if (error.message.includes("Email not confirmed")) {
-            setPrecisaConfirmar(true);
+        if (signInError) {
+          if (signInError.message.includes("Email not confirmed")) {
+            setNeedsConfirmation(true);
             throw new Error(
-              "Precisa de confirmar o seu e-mail antes de entrar. Verifique a sua caixa de entrada ou Spam!",
+              "Precisa de confirmar o seu e-mail antes de entrar. Verifique a sua caixa de entrada ou Spam!"
             );
           }
           throw new Error("E-mail ou senha incorretos.");
@@ -154,8 +154,8 @@ export default function LoginPage() {
         const userEmail = session?.user?.email;
 
         const admins =
-          process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(",").map((email) =>
-            email.trim(),
+          process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(",").map((adminEmail) =>
+            adminEmail.trim()
           ) || [];
 
         if (userEmail && admins.includes(userEmail)) {
@@ -164,15 +164,15 @@ export default function LoginPage() {
           router.push("/tickets");
         }
       } else {
-        const { data, error: signUpError } = await supabase.auth.signUp({
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
-          password: senha,
+          password,
           options: {
             data: {
-              first_name: nome,
-              last_name: sobrenome,
-              cpf: cpf || null,
-              occupation: ocupacao,
+              first_name: firstName,
+              last_name: lastName,
+              cpf: cpf,
+              occupation: occupation,
             },
           },
         });
@@ -180,25 +180,25 @@ export default function LoginPage() {
         if (signUpError) throw signUpError;
 
         if (
-          data.user &&
-          data.user.identities &&
-          data.user.identities.length === 0
+          signUpData.user &&
+          signUpData.user.identities &&
+          signUpData.user.identities.length === 0
         ) {
-          setErro("Este e-mail já está em uso. Por favor, faça login.");
+          setErrorMsg("Este e-mail já está em uso. Por favor, faça login.");
           setIsLogin(true);
           return;
         }
 
-        setSucesso(
-          "Quase lá! Enviámos um link de confirmação para o seu e-mail. Clique nele para ativar a conta.",
+        setSuccessMsg(
+          "Quase lá! Enviámos um link de confirmação para o seu e-mail. Clique nele para ativar a conta."
         );
         setIsLogin(true);
-        setSenha("");
+        setPassword("");
       }
     } catch (err: any) {
-      setErro(err.message);
+      setErrorMsg(err.message);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -213,13 +213,13 @@ export default function LoginPage() {
       <div className="mt-8 mx-auto w-full max-w-md transition-all duration-300">
         <div className="bg-white py-6 px-6 shadow-sm rounded-2xl border border-gray-100">
           <form className="space-y-5" onSubmit={handleSubmit}>
-            {erro && (
+            {errorMsg && (
               <div className="bg-red-50 border border-red-100 text-red-600 text-sm p-3 rounded-xl text-center font-medium animate-in fade-in">
-                {erro}
-                {precisaConfirmar && (
+                {errorMsg}
+                {needsConfirmation && (
                   <button
                     type="button"
-                    onClick={handleReenviarConfirmacao}
+                    onClick={handleResendConfirmation}
                     className="mt-3 w-full py-2 px-4 border border-red-200 rounded-lg text-sm font-bold text-red-700 bg-red-100 hover:bg-red-200 transition-colors"
                   >
                     Reenviar link de confirmação
@@ -227,9 +227,9 @@ export default function LoginPage() {
                 )}
               </div>
             )}
-            {sucesso && (
+            {successMsg && (
               <div className="bg-green-50 border border-green-100 text-green-600 text-sm p-3 rounded-xl text-center font-medium animate-in fade-in">
-                {sucesso}
+                {successMsg}
               </div>
             )}
 
@@ -258,12 +258,12 @@ export default function LoginPage() {
                         : "border-gray-300"
                   }`}
                 />
-                {checkingEmail && (
+                {isCheckingEmail && (
                   <span className="absolute right-3 top-3 text-xs text-gray-400">
                     A verificar...
                   </span>
                 )}
-                {!checkingEmail && emailStatus === "valid" && (
+                {!isCheckingEmail && emailStatus === "valid" && (
                   <svg
                     className="absolute right-3 top-3 w-5 h-5 text-green-500"
                     fill="none"
@@ -300,8 +300,8 @@ export default function LoginPage() {
                     <input
                       type="text"
                       required={!isLogin}
-                      value={nome}
-                      onChange={(e) => setNome(e.target.value)}
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
                       className="mt-1 block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
                     />
                   </div>
@@ -312,8 +312,8 @@ export default function LoginPage() {
                     <input
                       type="text"
                       required={!isLogin}
-                      value={sobrenome}
-                      onChange={(e) => setSobrenome(e.target.value)}
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
                       className="mt-1 block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
                     />
                   </div>
@@ -321,13 +321,11 @@ export default function LoginPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    CPF{" "}
-                    <span className="text-gray-400 font-normal">
-                      (Opcional)
-                    </span>
+                    CPF
                   </label>
                   <input
                     type="text"
+                    required={!isLogin}
                     value={cpf}
                     onChange={(e) => setCpf(e.target.value)}
                     placeholder="000.000.000-00"
@@ -345,8 +343,8 @@ export default function LoginPage() {
                         type="radio"
                         name="ocupacao"
                         value="estudante"
-                        checked={ocupacao === "estudante"}
-                        onChange={(e) => setOcupacao(e.target.value as any)}
+                        checked={occupation === "estudante"}
+                        onChange={(e) => setOccupation(e.target.value as any)}
                         className="w-4 h-4 text-blue-600 border-gray-300"
                       />
                       <span className="ml-2 text-sm text-gray-700">
@@ -358,8 +356,8 @@ export default function LoginPage() {
                         type="radio"
                         name="ocupacao"
                         value="profissional"
-                        checked={ocupacao === "profissional"}
-                        onChange={(e) => setOcupacao(e.target.value as any)}
+                        checked={occupation === "profissional"}
+                        onChange={(e) => setOccupation(e.target.value as any)}
                         className="w-4 h-4 text-blue-600 border-gray-300"
                       />
                       <span className="ml-2 text-sm text-gray-700">
@@ -379,7 +377,7 @@ export default function LoginPage() {
                 {isLogin && (
                   <button
                     type="button"
-                    onClick={handleRecuperarSenha}
+                    onClick={handlePasswordRecovery}
                     className="text-xs font-medium text-blue-600 hover:text-blue-500 transition-colors"
                   >
                     Esqueci minha senha
@@ -389,8 +387,8 @@ export default function LoginPage() {
               <input
                 type="password"
                 required
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 minLength={6}
                 className="mt-1 block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors"
               />
@@ -398,10 +396,10 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={isLoading}
               className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300 transition-all active:scale-[0.98]"
             >
-              {loading ? "A processar..." : isLogin ? "Entrar" : "Criar Conta"}
+              {isLoading ? "A processar..." : isLogin ? "Entrar" : "Criar Conta"}
             </button>
           </form>
 
@@ -410,11 +408,11 @@ export default function LoginPage() {
               type="button"
               onClick={() => {
                 setIsLogin(!isLogin);
-                setErro("");
-                setSucesso("");
+                setErrorMsg("");
+                setSuccessMsg("");
                 setEmailStatus("idle");
                 setEmailMessage("");
-                setPrecisaConfirmar(false);
+                setNeedsConfirmation(false);
               }}
               className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
             >
