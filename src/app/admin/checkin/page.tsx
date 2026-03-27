@@ -13,7 +13,11 @@ export default function CheckinPage() {
   
   const [ticketId, setTicketId] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ status: 'sucesso' | 'erro' | 'aviso' | null, mensagem: string }>({ status: null, mensagem: '' });
+  const [result, setResult] = useState<{ 
+    status: 'success' | 'error' | 'warning' | null, 
+    message: string,
+    userData?: { fullName: string, cpf: string, occupation: string }
+  }>({ status: null, message: '' });
   
   const [isScanning, setIsScanning] = useState(false);
   
@@ -80,7 +84,7 @@ export default function CheckinPage() {
     if (!idToValidate) return;
 
     setLoading(true);
-    setResult({ status: null, mensagem: '' });
+    setResult({ status: null, message: '' });
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -98,20 +102,24 @@ export default function CheckinPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setResult({ status: 'erro', mensagem: data.erro || 'Erro ao validar ingresso.' });
+        setResult({ status: 'error', message: data.error || 'Erro ao validar ingresso.' });
         return;
       }
 
-      if (data.status === 'sucesso') {
-        setResult({ status: 'sucesso', mensagem: data.mensagem });
-      } else if (data.status === 'usado' || data.status === 'invalido') {
-        setResult({ status: 'erro', mensagem: data.mensagem });
-      } else if (data.status === 'pendente') {
-        setResult({ status: 'aviso', mensagem: data.mensagem });
+      if (data.status === 'success') {
+        setResult({ 
+          status: 'success', 
+          message: data.message,
+          userData: data.userData 
+        });
+      } else if (data.status === 'used' || data.status === 'invalid') {
+        setResult({ status: 'error', message: data.message });
+      } else if (data.status === 'pending') {
+        setResult({ status: 'warning', message: data.message });
       }
 
     } catch (error) {
-      setResult({ status: 'erro', mensagem: 'Falha de conexão com o servidor.' });
+      setResult({ status: 'error', message: 'Falha de conexão com o servidor.' });
     } finally {
       setLoading(false);
       setTicketId('');
@@ -195,28 +203,57 @@ export default function CheckinPage() {
 
           {result.status && (
             <div className={`mt-8 p-6 rounded-2xl border-2 text-center animate-in fade-in slide-in-from-bottom-4 ${
-              result.status === 'sucesso' ? 'bg-green-50 border-green-200 text-green-800' : 
-              result.status === 'aviso' ? 'bg-yellow-50 border-yellow-200 text-yellow-800' : 
+              result.status === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 
+              result.status === 'warning' ? 'bg-yellow-50 border-yellow-200 text-yellow-800' : 
               'bg-red-50 border-red-200 text-red-800'
             }`}>
               <div className="flex justify-center mb-2">
-                {result.status === 'sucesso' && (
+                {result.status === 'success' && (
                   <svg className="w-10 h-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 )}
-                {result.status === 'erro' && (
+                {result.status === 'error' && (
                   <svg className="w-10 h-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 )}
-                {result.status === 'aviso' && (
+                {result.status === 'warning' && (
                   <svg className="w-10 h-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                 )}
               </div>
-              <p className="text-xl font-bold">{result.mensagem}</p>
+              <p className="text-xl font-bold">{result.message}</p>
+
+              {result.status === 'success' && result.userData && (
+                <div className="mt-6 bg-white border border-green-200 rounded-xl p-5 text-left shadow-sm inline-block w-full max-w-sm">
+                  <p className="text-xs uppercase tracking-wider text-green-600 font-bold mb-3 border-b border-green-100 pb-2">
+                    Conferência Obrigatória
+                  </p>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium">Nome do Titular</p>
+                      <p className="text-lg font-bold text-gray-900">{result.userData.fullName}</p>
+                    </div>
+                    
+                    <div className="flex justify-between items-end gap-4">
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium">CPF</p>
+                        <p className="text-md font-mono font-semibold text-gray-800">{result.userData.cpf}</p>
+                      </div>
+                      
+                      <div className="text-right">
+                        <p className="text-xs text-gray-500 font-medium">Ocupação</p>
+                        <p className="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                          {result.userData.occupation || 'Não informada'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
