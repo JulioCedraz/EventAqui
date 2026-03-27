@@ -76,16 +76,22 @@ export default function CheckinPage() {
   const handleCheckin = async (e?: React.SyntheticEvent | null, scannedId?: string) => {
     if (e) e.preventDefault();
     
-    const idToValidate = scannedId || ticketId.trim();
+    const idToValidate = (scannedId || ticketId).trim();
     if (!idToValidate) return;
 
     setLoading(true);
     setResult({ status: null, mensagem: '' });
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
       const res = await fetch('/api/checkin', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ ticketId: idToValidate })
       });
 
