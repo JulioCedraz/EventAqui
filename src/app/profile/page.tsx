@@ -32,39 +32,63 @@ const formatCPF = (value: string) => {
 export default function ProfilePage() {
   const router = useRouter();
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState({ text: '', type: '' });
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [alertMessage, setAlertMessage] = useState({ text: '', type: '' });
 
+  const [userId, setUserId] = useState<string | null>(null);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [cpf, setCpf] = useState('');
   const [hasCpfInitially, setHasCpfInitially] = useState(false);
   const [cpfStatus, setCpfStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
   const [cpfMessage, setCpfMessage] = useState('');
+
+  const [originalEmail, setOriginalEmail] = useState('');
   const [email, setEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [occupation, setOccupation] = useState<'profissional' | 'estudante'>('profissional');
 
   useEffect(() => {
     const loadProfile = async () => {
-      const { data: { user }, error } = await supabase.auth.getUser();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-      if (error || !user) {
+      if (authError || !user) {
         router.push('/login');
         return;
       }
 
+      setUserId(user.id);
       setEmail(user.email || '');
-      setFirstName(user.user_metadata?.first_name || '');
-      setLastName(user.user_metadata?.last_name || '');
-      
-      const userCpf = user.user_metadata?.cpf || '';
-      setCpf(userCpf);
-      setHasCpfInitially(!!userCpf);
+      setOriginalEmail(user.email || '');
 
-      setOccupation(user.user_metadata?.occupation || 'profissional');
-      setLoading(false);
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, cpf, occupation')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Erro ao carregar o perfil da base de dados:', profileError.message);
+      }
+
+      if (profileData) {
+        setFirstName(profileData.first_name || '');
+        setLastName(profileData.last_name || '');
+
+        const userCpf = profileData.cpf || '';
+        setCpf(userCpf);
+        setHasCpfInitially(!!userCpf);
+
+        const fetchedOccupation = profileData.occupation;
+        if (fetchedOccupation === 'estudante' || fetchedOccupation === 'profissional') {
+          setOccupation(fetchedOccupation);
+        } else {
+          setOccupation('estudante');
+        }
+      }
+
+      setIsLoading(false);
     };
 
     loadProfile();
@@ -88,35 +112,49 @@ export default function ProfilePage() {
 
   const handleUpdateProfile = async (e: React.SyntheticEvent) => {
     e.preventDefault();
-    setSaving(true);
-    setMessage({ text: '', type: '' });
+    setIsSaving(true);
+    setAlertMessage({ text: '', type: '' });
 
     if (!hasCpfInitially && cpf && !validateCPF(cpf)) {
       setCpfStatus('invalid');
       setCpfMessage('Corrija o CPF antes de salvar.');
-      setSaving(false);
+      setIsSaving(false);
       return;
     }
 
     try {
-      const updates: any = {
-        data: {
+      const authUpdates: { email?: string; password?: string } = {};
+      if (email !== originalEmail) authUpdates.email = email;
+      if (newPassword) authUpdates.password = newPassword;
+
+      if (Object.keys(authUpdates).length > 0) {
+        const { error: authUpdateError } = await supabase.auth.updateUser(authUpdates);
+        if (authUpdateError) throw authUpdateError;
+      }
+
+      if (userId) {
+        const profileUpdates: {
+          first_name: string;
+          last_name: string;
+          occupation: string;
+          cpf?: string;
+        } = {
           first_name: firstName,
           last_name: lastName,
           occupation: occupation,
+        };
+
+        if (!hasCpfInitially && cpf) {
+          profileUpdates.cpf = cpf;
         }
-      };
 
-      if (!hasCpfInitially && cpf) {
-        updates.data.cpf = cpf;
+        const { error: profileUpdateError } = await supabase
+          .from('profiles')
+          .update(profileUpdates)
+          .eq('id', userId);
+
+        if (profileUpdateError) throw profileUpdateError;
       }
-
-      if (email) updates.email = email;
-      if (newPassword) updates.password = newPassword;
-
-      const { error } = await supabase.auth.updateUser(updates);
-
-      if (error) throw error;
 
       if (!hasCpfInitially && cpf) {
         setHasCpfInitially(true);
@@ -125,20 +163,21 @@ export default function ProfilePage() {
       }
 
       setNewPassword('');
-      
-      setMessage({ 
-        text: 'Perfil atualizado com sucesso! (Se alterou o e-mail, verifique a sua caixa de entrada para confirmar).', 
-        type: 'success' 
+      if (email !== originalEmail) setOriginalEmail(email);
+
+      setAlertMessage({
+        text: 'Perfil atualizado com sucesso! (Se alterou o e-mail, verifique a sua caixa de entrada para confirmar).',
+        type: 'success'
       });
 
     } catch (err: any) {
-      setMessage({ text: err.message, type: 'error' });
+      setAlertMessage({ text: err.message, type: 'error' });
     } finally {
-      setSaving(false);
+      setIsSaving(false);
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <p className="text-gray-500 font-medium">Carregando seu perfil...</p>
@@ -149,10 +188,10 @@ export default function ProfilePage() {
   return (
     <main className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-xl mx-auto">
-        
+
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Meu Perfil</h1>
-          <button 
+          <button
             onClick={() => router.back()}
             className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
           >
@@ -162,14 +201,14 @@ export default function ProfilePage() {
 
         <div className="bg-white py-8 px-6 shadow-sm sm:rounded-2xl border border-gray-100">
           <form onSubmit={handleUpdateProfile} className="space-y-6">
-            
-            {message.text && (
+
+            {alertMessage.text && (
               <div className={`p-4 rounded-xl text-sm font-medium animate-in fade-in ${
-                message.type === 'error' 
-                  ? 'bg-red-50 text-red-600 border border-red-100' 
+                alertMessage.type === 'error'
+                  ? 'bg-red-50 text-red-600 border border-red-100'
                   : 'bg-green-50 text-green-600 border border-green-100'
               }`}>
-                {message.text}
+                {alertMessage.text}
               </div>
             )}
 
@@ -213,8 +252,8 @@ export default function ProfilePage() {
                   disabled={hasCpfInitially}
                   placeholder="000.000.000-00"
                   className={`block w-full px-4 py-2.5 border rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors ${
-                    hasCpfInitially 
-                      ? 'bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed' 
+                    hasCpfInitially
+                      ? 'bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed'
                       : cpfStatus === 'valid'
                         ? 'border-green-400 bg-green-50'
                         : cpfStatus === 'invalid'
@@ -246,19 +285,19 @@ export default function ProfilePage() {
                     name="occupation"
                     value="estudante"
                     checked={occupation === 'estudante'}
-                    onChange={(e) => setOccupation(e.target.value as any)}
+                    onChange={() => setOccupation('estudante')}
                     className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                   />
                   <span className="ml-2 text-sm text-gray-700">Estudante</span>
                 </label>
-                
+
                 <label className="flex items-center cursor-pointer">
                   <input
                     type="radio"
                     name="occupation"
                     value="profissional"
                     checked={occupation === 'profissional'}
-                    onChange={(e) => setOccupation(e.target.value as any)}
+                    onChange={() => setOccupation('profissional')}
                     className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                   />
                   <span className="ml-2 text-sm text-gray-700">Profissional</span>
@@ -305,13 +344,13 @@ export default function ProfilePage() {
               >
                 Encerrar Sessão
               </button>
-              
+
               <button
                 type="submit"
-                disabled={saving}
+                disabled={isSaving}
                 className="flex justify-center py-2.5 px-6 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300 transition-all active:scale-[0.98]"
               >
-                {saving ? 'Salvando...' : 'Salvar alterações'}
+                {isSaving ? 'A guardar...' : 'Guardar alterações'}
               </button>
             </div>
 
