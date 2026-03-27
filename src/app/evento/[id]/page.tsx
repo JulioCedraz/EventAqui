@@ -101,7 +101,10 @@ export default function EventDetails() {
 
       const newTicket = {
         event_id: event!.id,
-        buyer_name: session.user.user_metadata?.full_name || 'Usuário',
+        user_id: session.user.id,
+        buyer_name: session.user.user_metadata?.first_name 
+          ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name || ''}`.trim()
+          : (session.user.user_metadata?.full_name || 'Usuário'),
         buyer_email: session.user.email!,
         payment_status: 'pending',
         quantity: validQuantity,
@@ -109,7 +112,7 @@ export default function EventDetails() {
         expires_at: isoExpiration
       };
 
-      const { data: createdTicket, error: supabaseError } = await supabase.from('tickets').insert(newTicket as any).select().single();
+      const { data: createdTicket, error: supabaseError } = await supabase.from('tickets').insert(newTicket).select().single();
       
       if (supabaseError || !createdTicket) {
         throw new Error('Erro ao registrar o ingresso no banco de dados.');
