@@ -43,6 +43,7 @@ export default function ProfilePage() {
   const [isTokenSent, setIsTokenSent] = useState(false);
   const [deleteToken, setDeleteToken] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [modalError, setModalError] = useState('');
 
   const [userId, setUserId] = useState<string | null>(null);
   const [firstName, setFirstName] = useState('');
@@ -187,7 +188,7 @@ export default function ProfilePage() {
 
   const handleSendDeleteToken = async () => {
     setIsSendingToken(true);
-    setAlertMessage({ text: '', type: '' });
+    setModalError(''); 
     
     try {
       const { error } = await supabase.auth.reauthenticate();
@@ -198,7 +199,7 @@ export default function ProfilePage() {
       
       setIsTokenSent(true);
     } catch (err: any) {
-      setAlertMessage({ text: err.message, type: 'error' });
+      setModalError(err.message);
     } finally {
       setIsSendingToken(false);
     }
@@ -206,18 +207,17 @@ export default function ProfilePage() {
 
   const handleDeleteAccount = async () => {
     if (!deleteToken || deleteToken.length < 6) {
-      setAlertMessage({ text: 'Por favor, digite o código de 6 dígitos válido.', type: 'error' });
+      setModalError('Por favor, digite o código de 6 dígitos válido.');
       return;
     }
 
     setIsDeleting(true);
-    setAlertMessage({ text: '', type: '' });
+    setModalError('');
 
     try {
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        email: email,
-        token: deleteToken,
-        type: 'email' 
+      const { error: verifyError } = await supabase.auth.updateUser({
+        nonce: deleteToken,
+        data: { deletion_requested: true } 
       });
 
       if (verifyError) {
@@ -246,7 +246,7 @@ export default function ProfilePage() {
       router.push('/login');
 
     } catch (err: any) {
-      setAlertMessage({ text: err.message, type: 'error' });
+      setModalError(err.message);
       setIsDeleting(false);
     }
   };
@@ -255,6 +255,7 @@ export default function ProfilePage() {
     setIsDeleteModalOpen(false);
     setIsTokenSent(false);
     setDeleteToken('');
+    setModalError('');
   };
 
   if (isLoading) {
@@ -485,7 +486,13 @@ export default function ProfilePage() {
       {isDeleteModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
-            
+      
+            {modalError && (
+              <div className="bg-red-50 border border-red-100 text-red-600 text-sm p-3 rounded-xl mb-4 font-medium animate-in fade-in">
+                {modalError}
+              </div>
+            )}
+
             {!isTokenSent ? (
               /* ETAPA 1: AVISO E ENVIO DE E-MAIL */
               <>
@@ -526,7 +533,7 @@ export default function ProfilePage() {
                 </div>
               </>
             ) : (
-              /* ETAPA 2: TOKEN E EXCLUZÃO DEFINITIVA */
+              /* ETAPA 2: TOKEN E EXCLUSÃO DEFINITIVA */
               <>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
