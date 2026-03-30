@@ -50,6 +50,11 @@ export type Database = {
           last_name: string | null;
           cpf: string | null;
           occupation: string | null;
+          birth_date: string | null;
+          university: string | null;
+          course: string | null;
+          area: string | null;
+          specialty: string | null;
         };
         Insert: {
           id: string;
@@ -57,6 +62,11 @@ export type Database = {
           last_name?: string | null;
           cpf?: string | null;
           occupation?: string | null;
+          birth_date?: string | null;
+          university?: string | null;
+          course?: string | null;
+          area?: string | null;
+          specialty?: string | null;
         };
         Update: {
           id?: string;
@@ -64,6 +74,11 @@ export type Database = {
           last_name?: string | null;
           cpf?: string | null;
           occupation?: string | null;
+          birth_date?: string | null;
+          university?: string | null;
+          course?: string | null;
+          area?: string | null;
+          specialty?: string | null;
         };
         Relationships: [
           {
