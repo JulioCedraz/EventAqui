@@ -23,6 +23,8 @@ export default function ProfilePage() {
   const [cpfStatus, setCpfStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
   const [cpfMessage, setCpfMessage] = useState('');
   const [birthDate, setBirthDate] = useState('');
+  const [birthDateStatus, setBirthDateStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
+  const [birthDateMessage, setBirthDateMessage] = useState('');
   const [occupation, setOccupation] = useState<'profissional' | 'estudante'>('estudante');
   const [university, setUniversity] = useState("");
   const [customUniversity, setCustomUniversity] = useState("");
@@ -226,6 +228,8 @@ export default function ProfilePage() {
               cpfStatus={cpfStatus} setCpfStatus={setCpfStatus}
               cpfMessage={cpfMessage} setCpfMessage={setCpfMessage}
               birthDate={birthDate} setBirthDate={setBirthDate}
+              birthDateStatus={birthDateStatus} setBirthDateStatus={setBirthDateStatus}
+              birthDateMessage={birthDateMessage} setBirthDateMessage={setBirthDateMessage}
               occupation={occupation} setOccupation={setOccupation}
               course={course} setCourse={setCourse}
               customCourse={customCourse} setCustomCourse={setCustomCourse}
