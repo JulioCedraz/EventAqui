@@ -23,6 +23,10 @@ export default function LoginPage() {
   const [cpf, setCpf] = useState("");
   const [cpfStatus, setCpfStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
   const [cpfMessage, setCpfMessage] = useState('');
+  const [showCpfModal, setShowCpfModal] = useState(false);
+  const [cpfConflictEmail, setCpfConflictEmail] = useState("");
+  const [recoveryEmailInput, setRecoveryEmailInput] = useState("");
+  const [modalError, setModalError] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [birthDateStatus, setBirthDateStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
   const [birthDateMessage, setBirthDateMessage] = useState('');
@@ -124,6 +128,33 @@ export default function LoginPage() {
     setIsLoading(false);
   };
 
+  const handleSendRecoveryFromModal = async () => {
+    if (!recoveryEmailInput) {
+      setModalError("Por favor, digite o seu e-mail completo.");
+      return;
+    }
+    setIsLoading(true);
+    setModalError("");
+    
+    const { error } = await supabase.auth.resetPasswordForEmail(recoveryEmailInput, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      setModalError("O e-mail digitado não corresponde ou ocorreu uma falha.");
+    } else {
+      setSuccessMsg("E-mail de recuperação enviado com sucesso! Verifique a sua caixa de entrada e a pasta de Spam.");
+      setShowCpfModal(false);
+      setRecoveryEmailInput("");
+      setCpf("");
+      setCpfStatus('idle');
+      setCpfMessage('');
+      setIsLogin(true);
+    }
+  };
+
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -165,6 +196,14 @@ export default function LoginPage() {
           setCpfStatus('invalid');
           setCpfMessage('Corrija o CPF antes de criar a conta.');
           throw new Error("CPF inválido. Verifique os números digitados.");
+        }
+
+        if (cpfStatus === 'invalid') {
+          throw new Error("Não é possível prosseguir com um CPF inválido ou já cadastrado.");
+        }
+
+        if (birthDateStatus === 'invalid') {
+          throw new Error("Corrija a sua data de nascimento antes de prosseguir.");
         }
 
         const finalUniversity = university === "Outra" ? customUniversity : university;
@@ -209,7 +248,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 px-6 lg:px-8">
+    <main className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 px-6 lg:px-8 relative">
       <div className="mx-auto w-full max-w-md">
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 tracking-tight">
           {isLogin ? "Acesse sua conta" : "Crie a sua conta"}
@@ -279,6 +318,12 @@ export default function LoginPage() {
                 cpf={cpf} setCpf={setCpf}
                 cpfStatus={cpfStatus} setCpfStatus={setCpfStatus}
                 cpfMessage={cpfMessage} setCpfMessage={setCpfMessage}
+                
+                onCpfExists={(maskedEmail) => {
+                  setCpfConflictEmail(maskedEmail);
+                  setShowCpfModal(true);
+                }}
+
                 birthDate={birthDate} setBirthDate={setBirthDate}
                 birthDateStatus={birthDateStatus} setBirthDateStatus={setBirthDateStatus}
                 birthDateMessage={birthDateMessage} setBirthDateMessage={setBirthDateMessage}
@@ -318,7 +363,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || (!isLogin && cpfStatus === 'invalid')}
               className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300 transition-all active:scale-[0.98]"
             >
               {isLoading ? "Processando..." : isLogin ? "Entrar" : "Criar Conta"}
@@ -343,6 +388,69 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      {showCpfModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+            
+            {modalError && (
+              <div className="bg-red-50 border border-red-100 text-red-600 text-sm p-3 rounded-xl mb-4 font-medium animate-in fade-in">
+                {modalError}
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center shrink-0">
+                <svg className="w-6 h-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">CPF já cadastrado</h3>
+            </div>
+            
+            <p className="text-sm text-gray-600 mb-2">
+              Identificamos que este CPF já está vinculado à conta <strong>{cpfConflictEmail}</strong>.
+            </p>
+            <p className="text-sm text-gray-600 mb-4 text-justify">
+              Para sua segurança, não é possível criar duas contas com o mesmo documento. Se esta conta for sua, confirme o e-mail completo abaixo para receber um link de recuperação de senha.
+            </p>
+
+            <input
+              type="email"
+              placeholder="Digite o e-mail completo..."
+              value={recoveryEmailInput}
+              onChange={(e) => setRecoveryEmailInput(e.target.value)}
+              className="w-full text-sm py-2.5 px-4 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 mb-6"
+            />
+            
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
+              <button 
+                type="button"
+                onClick={() => {
+                  setShowCpfModal(false);
+                  setCpf('');
+                  setCpfStatus('idle');
+                  setCpfMessage('');
+                  setRecoveryEmailInput("");
+                  setModalError("");
+                }} 
+                disabled={isLoading}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors disabled:opacity-50"
+              >
+                Voltar
+              </button>
+              <button 
+                type="button"
+                onClick={handleSendRecoveryFromModal} 
+                disabled={isLoading || !recoveryEmailInput}
+                className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors disabled:opacity-50"
+              >
+                {isLoading ? 'Enviando...' : 'Recuperar Senha'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
