@@ -36,6 +36,35 @@ export const validateCPF = (cpf: string) => {
   return true;
 };
 
+export const validateBirthDate = (dateStr: string) => {
+  if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return false;
+
+  const parts = dateStr.split('/');
+  const day = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  const year = parseInt(parts[2], 10);
+
+  if (year < 1900 || year > new Date().getFullYear() || month === 0 || month > 12) {
+    return false;
+  }
+
+  const maxDays = new Date(year, month, 0).getDate();
+  if (day === 0 || day > maxDays) {
+    return false;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const minDate = new Date(today);
+  minDate.setFullYear(today.getFullYear() - 10);
+  const inputDate = new Date(year, month - 1, day);
+  if (inputDate > minDate) {
+    return false;
+  }
+
+  return true;
+};
+
 export const formatCPF = (value: string) => {
   return value
     .replace(/\D/g, '')
@@ -61,6 +90,8 @@ interface PersonalDataFieldsProps {
   cpfStatus: 'idle' | 'valid' | 'invalid'; setCpfStatus: (val: 'idle' | 'valid' | 'invalid') => void;
   cpfMessage: string; setCpfMessage: (val: string) => void;
   birthDate: string; setBirthDate: (val: string) => void;
+  birthDateStatus: 'idle' | 'valid' | 'invalid'; setBirthDateStatus: (val: 'idle' | 'valid' | 'invalid') => void;
+  birthDateMessage: string; setBirthDateMessage: (val: string) => void;
   occupation: 'estudante' | 'profissional'; setOccupation: (val: 'estudante' | 'profissional') => void;
   course: string; setCourse: (val: string) => void;
   customCourse: string; setCustomCourse: (val: string) => void;
@@ -74,7 +105,8 @@ interface PersonalDataFieldsProps {
 export default function PersonalDataFields({
   firstName, setFirstName, lastName, setLastName,
   cpf, setCpf, hasCpfInitially = false, cpfStatus, setCpfStatus, cpfMessage, setCpfMessage,
-  birthDate, setBirthDate, occupation, setOccupation,
+  birthDate, setBirthDate, birthDateStatus, setBirthDateStatus, birthDateMessage, setBirthDateMessage,
+  occupation, setOccupation,
   course, setCourse, customCourse, setCustomCourse,
   university, setUniversity, customUniversity, setCustomUniversity,
   area, setArea, customArea, setCustomArea,
@@ -93,6 +125,21 @@ export default function PersonalDataFields({
     } else {
       setCpfStatus('invalid');
       setCpfMessage('CPF inválido. Verifique os números digitados.');
+    }
+  };
+
+  const handleBirthDateBlur = () => {
+    if (!birthDate || birthDate.length < 10) {
+      setBirthDateStatus('idle');
+      setBirthDateMessage('');
+      return;
+    }
+    if (validateBirthDate(birthDate)) {
+      setBirthDateStatus('valid');
+      setBirthDateMessage('');
+    } else {
+      setBirthDateStatus('invalid');
+      setBirthDateMessage('Data inválida.');
     }
   };
 
@@ -164,17 +211,43 @@ export default function PersonalDataFields({
             </p>
           )}
         </div>
+        
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Data de Nascimento</label>
-          <input
-            type="text"
-            required
-            value={birthDate}
-            onChange={(e) => setBirthDate(formatBirthDate(e.target.value))}
-            placeholder="DD/MM/AAAA"
-            maxLength={10}
-            className="block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              required
+              value={birthDate}
+              onChange={(e) => {
+                setBirthDate(formatBirthDate(e.target.value));
+                if (birthDateStatus !== 'idle') {
+                  setBirthDateStatus('idle');
+                  setBirthDateMessage('');
+                }
+              }}
+              onBlur={handleBirthDateBlur}
+              placeholder="DD/MM/AAAA"
+              maxLength={10}
+              className={`block w-full px-4 py-2.5 border rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors ${
+                birthDateStatus === 'valid'
+                  ? 'border-green-400 bg-green-50'
+                  : birthDateStatus === 'invalid'
+                    ? 'border-red-400 bg-red-50'
+                    : 'border-gray-300'
+              }`}
+            />
+            {birthDateStatus === 'valid' && (
+              <svg className="absolute right-3 top-3 w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </div>
+          {birthDateMessage && (
+            <p className={`mt-1.5 text-sm font-medium animate-in fade-in ${birthDateStatus === 'valid' ? 'text-green-600' : 'text-red-600'}`}>
+              {birthDateMessage}
+            </p>
+          )}
         </div>
       </div>
 
