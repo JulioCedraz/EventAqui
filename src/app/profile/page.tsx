@@ -3,66 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
-
-const UNIVERSITIES_LIST = [
-  "UFBA", "UFRB", "UFOB", "UNEB", "UEFS", "UESC", "UESB", 
-  "EBMSP (Bahiana)", "UCSal", "UNIVASF", "UNIFACS", 
-  "UnidomPedro", "Zarns", "Estácio"
-];
-
-const COURSES_LIST = [
-  "Medicina", "Farmácia", "Nutrição", "Enfermagem", "Fisioterapia", 
-  "Odontologia", "Psicologia", "Direito", "Engenharia", 
-  "Administração", "Tecnologia da Informação ou relacionado", 
-  "Arquitetura e Urbanismo", "Medicina Veterinária"
-];
-
-const AREAS_LIST = [
-  "Medicina", "Farmácia", "Nutrição", "Enfermagem", "Fisioterapia", 
-  "Odontologia", "Psicologia", "Direito", "Engenharia", 
-  "Tecnologia (TI)", "Administração / Negócios"
-];
-
-const SPECIALTIES_LIST = [
-  "Anestesiologia", "Cardiologia", "Cirurgia Geral", "Clínica Médica", 
-  "Dermatologia", "Gastroenterologia", "Ginecologia e Obstetrícia", 
-  "Medicina de Família", "Nefrologia", "Oftalmologia", 
-  "Ortopedia e Traumatologia", "Patologia", "Pediatria", 
-  "Psiquiatria", "Radiologia", "Geral / Outra", "Sem especialidade"
-];
-
-const validateCPF = (cpf: string) => {
-  cpf = cpf.replace(/[^\d]+/g, '');
-  if (cpf === '' || cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
-  let add = 0;
-  for (let i = 0; i < 9; i++) add += parseInt(cpf.charAt(i)) * (10 - i);
-  let rev = 11 - (add % 11);
-  if (rev === 10 || rev === 11) rev = 0;
-  if (rev !== parseInt(cpf.charAt(9))) return false;
-  add = 0;
-  for (let i = 0; i < 10; i++) add += parseInt(cpf.charAt(i)) * (11 - i);
-  rev = 11 - (add % 11);
-  if (rev === 10 || rev === 11) rev = 0;
-  if (rev !== parseInt(cpf.charAt(10))) return false;
-  return true;
-};
-
-const formatCPF = (value: string) => {
-  return value
-    .replace(/\D/g, '')
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d{1,2})/, '$1-$2')
-    .replace(/(-\d{2})\d+?$/, '$1');
-};
-
-const formatBirthDate = (value: string) => {
-  return value
-    .replace(/\D/g, '')
-    .replace(/(\d{2})(\d)/, '$1/$2')
-    .replace(/(\d{2})(\d)/, '$1/$2')
-    .replace(/(\d{4})\d+?$/, '$1');
-};
+import PersonalDataFields, { validateCPF, UNIVERSITIES_LIST, COURSES_LIST } from '../../components/PersonalDataFields';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -70,8 +11,10 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [alertMessage, setAlertMessage] = useState({ text: '', type: '' });
-
   const [userId, setUserId] = useState<string | null>(null);
+  const [originalEmail, setOriginalEmail] = useState('');
+  const [email, setEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [cpf, setCpf] = useState('');
@@ -80,17 +23,10 @@ export default function ProfilePage() {
   const [cpfMessage, setCpfMessage] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [occupation, setOccupation] = useState<'profissional' | 'estudante'>('estudante');
-  const [originalEmail, setOriginalEmail] = useState('');
-  const [email, setEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-
-  // Estudante
   const [university, setUniversity] = useState("");
   const [customUniversity, setCustomUniversity] = useState("");
   const [course, setCourse] = useState("");
   const [customCourse, setCustomCourse] = useState("");
-
-  // Profissional
   const [area, setArea] = useState("");
   const [customArea, setCustomArea] = useState("");
   const [specialty, setSpecialty] = useState("");
@@ -162,7 +98,7 @@ export default function ProfilePage() {
 
         const dbArea = profileData.area || '';
         if (dbArea) {
-          if (AREAS_LIST.includes(dbArea)) {
+          if (COURSES_LIST.includes(dbArea)) {
             setArea(dbArea);
           } else {
             setArea("Outra");
@@ -177,22 +113,6 @@ export default function ProfilePage() {
 
     loadProfile();
   }, [router]);
-
-  const handleCpfBlur = () => {
-    if (hasCpfInitially || !cpf) {
-      setCpfStatus('idle');
-      setCpfMessage('');
-      return;
-    }
-
-    if (validateCPF(cpf)) {
-      setCpfStatus('valid');
-      setCpfMessage('CPF válido.');
-    } else {
-      setCpfStatus('invalid');
-      setCpfMessage('CPF inválido. Verifique os números digitados.');
-    }
-  };
 
   const handleUpdateProfile = async (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -368,226 +288,23 @@ export default function ProfilePage() {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-                <input
-                  type="text"
-                  required
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Sobrenome</label>
-                <input
-                  type="text"
-                  required
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className="block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">CPF</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={cpf}
-                    onChange={(e) => {
-                      setCpf(formatCPF(e.target.value));
-                      if (cpfStatus !== 'idle') {
-                        setCpfStatus('idle');
-                        setCpfMessage('');
-                      }
-                    }}
-                    onBlur={handleCpfBlur}
-                    disabled={hasCpfInitially}
-                    placeholder="000.000.000-00"
-                    className={`block w-full px-4 py-2.5 border rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors ${
-                      hasCpfInitially
-                        ? 'bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed'
-                        : cpfStatus === 'valid'
-                          ? 'border-green-400 bg-green-50'
-                          : cpfStatus === 'invalid'
-                            ? 'border-red-400 bg-red-50'
-                            : 'border-gray-300'
-                    }`}
-                  />
-                  {!hasCpfInitially && cpfStatus === 'valid' && (
-                    <svg className="absolute right-3 top-3 w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                </div>
-                {cpfMessage && !hasCpfInitially && (
-                  <p className={`mt-1.5 text-sm font-medium animate-in fade-in ${
-                    cpfStatus === 'valid' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {cpfMessage}
-                  </p>
-                )}
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Data de Nascimento</label>
-                <input
-                  type="text"
-                  required
-                  value={birthDate}
-                  onChange={(e) => setBirthDate(formatBirthDate(e.target.value))}
-                  placeholder="DD/MM/AAAA"
-                  maxLength={10}
-                  className="block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Ocupação</label>
-              <div className="flex gap-4">
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="radio"
-                    name="occupation"
-                    value="estudante"
-                    checked={occupation === 'estudante'}
-                    onChange={() => setOccupation('estudante')}
-                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">Estudante</span>
-                </label>
-
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="radio"
-                    name="occupation"
-                    value="profissional"
-                    checked={occupation === 'profissional'}
-                    onChange={() => setOccupation('profissional')}
-                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">Profissional</span>
-                </label>
-              </div>
-            </div>
-
-            {/* --- BLOCO ESTUDANTE --- */}
-            {occupation === "estudante" && (
-              <div className="space-y-4 pt-2 border-t border-gray-100 animate-in fade-in slide-in-from-top-2 duration-300">
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Curso</label>
-                  <select
-                    required={occupation === "estudante"}
-                    value={course}
-                    onChange={(e) => setCourse(e.target.value)}
-                    className="block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors bg-white"
-                  >
-                    <option value="" disabled>Selecione seu curso</option>
-                    {COURSES_LIST.map(c => <option key={c} value={c}>{c}</option>)}
-                    <option value="Outro">Outro</option>
-                  </select>
-                </div>
-
-                {course === "Outro" && (
-                  <div className="animate-in fade-in slide-in-from-top-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Qual curso?</label>
-                    <input
-                      type="text"
-                      required={occupation === "estudante" && course === "Outro"}
-                      value={customCourse}
-                      onChange={(e) => setCustomCourse(e.target.value)}
-                      placeholder="Digite o nome do seu curso"
-                      className="block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Instituição de Ensino</label>
-                  <select
-                    required={occupation === "estudante"}
-                    value={university}
-                    onChange={(e) => setUniversity(e.target.value)}
-                    className="block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors bg-white"
-                  >
-                    <option value="" disabled>Selecione sua universidade</option>
-                    {UNIVERSITIES_LIST.map(u => <option key={u} value={u}>{u}</option>)}
-                    <option value="Outra">Outra</option>
-                  </select>
-                </div>
-
-                {university === "Outra" && (
-                  <div className="animate-in fade-in slide-in-from-top-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Qual faculdade?</label>
-                    <input
-                      type="text"
-                      required={occupation === "estudante" && university === "Outra"}
-                      value={customUniversity}
-                      onChange={(e) => setCustomUniversity(e.target.value)}
-                      placeholder="Digite o nome da instituição"
-                      className="block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {occupation === "profissional" && (
-              <div className="space-y-4 pt-2 border-t border-gray-100 animate-in fade-in slide-in-from-top-2 duration-300">
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Área de Atuação</label>
-                  <select
-                    required={occupation === "profissional"}
-                    value={area}
-                    onChange={(e) => {
-                      setArea(e.target.value);
-                      if (e.target.value !== "Medicina") setSpecialty("");
-                    }}
-                    className="block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors bg-white"
-                  >
-                    <option value="" disabled>Selecione sua área</option>
-                    {AREAS_LIST.map(a => <option key={a} value={a}>{a}</option>)}
-                    <option value="Outra">Outra</option>
-                  </select>
-                </div>
-
-                {area === "Outra" && (
-                  <div className="animate-in fade-in slide-in-from-top-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Qual Área?</label>
-                    <input
-                      type="text"
-                      required={occupation === "profissional" && area === "Outra"}
-                      value={customArea}
-                      onChange={(e) => setCustomArea(e.target.value)}
-                      placeholder="Digite a sua área de atuação"
-                      className="block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
-                    />
-                  </div>
-                )}
-
-                {area === "Medicina" && (
-                  <div className="animate-in fade-in slide-in-from-top-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Especialidade Médica</label>
-                    <select
-                      required={occupation === "profissional" && area === "Medicina"}
-                      value={specialty}
-                      onChange={(e) => setSpecialty(e.target.value)}
-                      className="block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors bg-white"
-                    >
-                      <option value="" disabled>Selecione sua especialidade</option>
-                      {SPECIALTIES_LIST.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  </div>
-                )}
-              </div>
-            )}
+            <PersonalDataFields
+              firstName={firstName} setFirstName={setFirstName}
+              lastName={lastName} setLastName={setLastName}
+              cpf={cpf} setCpf={setCpf}
+              hasCpfInitially={hasCpfInitially}
+              cpfStatus={cpfStatus} setCpfStatus={setCpfStatus}
+              cpfMessage={cpfMessage} setCpfMessage={setCpfMessage}
+              birthDate={birthDate} setBirthDate={setBirthDate}
+              occupation={occupation} setOccupation={setOccupation}
+              course={course} setCourse={setCourse}
+              customCourse={customCourse} setCustomCourse={setCustomCourse}
+              university={university} setUniversity={setUniversity}
+              customUniversity={customUniversity} setCustomUniversity={setCustomUniversity}
+              area={area} setArea={setArea}
+              customArea={customArea} setCustomArea={setCustomArea}
+              specialty={specialty} setSpecialty={setSpecialty}
+            />
 
             <hr className="border-gray-100" />
 
@@ -685,7 +402,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* MODAL DE CONFIRMAÇÃO (2 ETAPAS) */}
       {isDeleteModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
