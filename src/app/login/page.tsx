@@ -136,15 +136,26 @@ export default function LoginPage() {
     setIsLoading(true);
     setModalError("");
     
-    const { error } = await supabase.auth.resetPasswordForEmail(recoveryEmailInput, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
+    try {
+      const { data: isMatch, error: matchError } = await supabase.rpc('verify_cpf_email_match', {
+        p_cpf: cpf,
+        p_email: recoveryEmailInput.trim()
+      });
 
-    setIsLoading(false);
+      if (matchError) throw matchError;
 
-    if (error) {
-      setModalError("O e-mail digitado não corresponde ou ocorreu uma falha.");
-    } else {
+      if (!isMatch) {
+        setModalError("O e-mail digitado não corresponde ao cadastrado com este CPF.");
+        setIsLoading(false);
+        return;
+      }
+
+      const { error } = await supabase.auth.resetPasswordForEmail(recoveryEmailInput.trim(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
       setSuccessMsg("E-mail de recuperação enviado com sucesso! Verifique a sua caixa de entrada e a pasta de Spam.");
       setShowCpfModal(false);
       setRecoveryEmailInput("");
@@ -152,6 +163,11 @@ export default function LoginPage() {
       setCpfStatus('idle');
       setCpfMessage('');
       setIsLogin(true);
+
+    } catch (err: any) {
+      setModalError("Ocorreu uma falha ao tentar recuperar a senha. Tente novamente.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
