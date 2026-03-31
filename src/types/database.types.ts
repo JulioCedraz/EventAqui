@@ -162,6 +162,12 @@ export type Database = {
         };
         Returns: boolean;
       };
+      check_cpf_exists: {
+        Args: {
+          lookup_cpf: string;
+        };
+        Returns: string | null;
+      };
     };
     Enums: {
       [_ in never]: never;
