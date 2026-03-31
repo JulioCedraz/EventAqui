@@ -286,7 +286,6 @@ export default function ProfilePage() {
             </div>
           </form>
 
-          {/* O COMPONENTE LGPD AQUI */}
           <PrivacySettings email={email} />
 
         </div>
