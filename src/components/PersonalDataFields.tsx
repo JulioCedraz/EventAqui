@@ -1,5 +1,7 @@
 'use client';
 
+import { supabase } from '../lib/supabase';
+
 export const UNIVERSITIES_LIST = [
   "UFBA", "UFRB", "UFOB", "UNEB", "UEFS", "UESC", "UESB", 
   "EBMSP (Bahiana)", "UCSal", "UNIVASF", "UNIFACS", 
@@ -89,6 +91,7 @@ interface PersonalDataFieldsProps {
   hasCpfInitially?: boolean;
   cpfStatus: 'idle' | 'valid' | 'invalid'; setCpfStatus: (val: 'idle' | 'valid' | 'invalid') => void;
   cpfMessage: string; setCpfMessage: (val: string) => void;
+  onCpfExists?: (maskedEmail: string) => void;
   birthDate: string; setBirthDate: (val: string) => void;
   birthDateStatus: 'idle' | 'valid' | 'invalid'; setBirthDateStatus: (val: 'idle' | 'valid' | 'invalid') => void;
   birthDateMessage: string; setBirthDateMessage: (val: string) => void;
@@ -104,7 +107,7 @@ interface PersonalDataFieldsProps {
 
 export default function PersonalDataFields({
   firstName, setFirstName, lastName, setLastName,
-  cpf, setCpf, hasCpfInitially = false, cpfStatus, setCpfStatus, cpfMessage, setCpfMessage,
+  cpf, setCpf, hasCpfInitially = false, cpfStatus, setCpfStatus, cpfMessage, setCpfMessage, onCpfExists,
   birthDate, setBirthDate, birthDateStatus, setBirthDateStatus, birthDateMessage, setBirthDateMessage,
   occupation, setOccupation,
   course, setCourse, customCourse, setCustomCourse,
@@ -113,15 +116,35 @@ export default function PersonalDataFields({
   specialty, setSpecialty
 }: PersonalDataFieldsProps) {
 
-  const handleCpfBlur = () => {
+  const handleCpfBlur = async () => {
     if (hasCpfInitially || !cpf) {
       setCpfStatus('idle');
       setCpfMessage('');
       return;
     }
+    
     if (validateCPF(cpf)) {
       setCpfStatus('valid');
-      setCpfMessage('CPF válido.');
+      setCpfMessage('Verificando...');
+
+      try {
+        const { data: maskedEmail, error } = await supabase.rpc('check_cpf_exists', { lookup_cpf: cpf });
+        
+        if (error) throw error;
+
+        if (maskedEmail) {
+          setCpfStatus('invalid');
+          setCpfMessage('Este CPF já está em uso.');
+          if (onCpfExists) onCpfExists(maskedEmail);
+        } else {
+          setCpfStatus('valid');
+          setCpfMessage('CPF válido e disponível.');
+        }
+      } catch (err) {
+        console.error("Erro ao verificar CPF:", err);
+        setCpfStatus('valid');
+        setCpfMessage('CPF válido.');
+      }
     } else {
       setCpfStatus('invalid');
       setCpfMessage('CPF inválido. Verifique os números digitados.');
