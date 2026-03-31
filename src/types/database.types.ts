@@ -168,6 +168,13 @@ export type Database = {
         };
         Returns: string | null;
       };
+      verify_cpf_email_match: {
+        Args: {
+          p_cpf: string;
+          p_email: string;
+        };
+        Returns: boolean;
+      };
     };
     Enums: {
       [_ in never]: never;
