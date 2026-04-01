@@ -274,7 +274,7 @@ export default function EventDetails() {
               <div>
                 <span className="block text-sm font-medium text-gray-500 mb-1">Data e Hora</span>
                 <span className="block text-lg text-gray-900 font-semibold">
-                  {new Date(event.event_date).toLocaleString('pt-BR')}
+                  {event.event_date ? new Date(event.event_date).toLocaleString('pt-BR') : 'Sem data definida'}
                 </span>
               </div>
               <div>
