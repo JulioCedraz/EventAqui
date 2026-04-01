@@ -7,6 +7,7 @@ export type DialogConfig = {
   message?: string;
   confirmText?: string;
   onConfirm?: () => Promise<void> | void;
+  
   conflictEmail?: string;
   userEmail?: string;
   inputValue?: string;
@@ -47,27 +48,29 @@ export default function SmartModal({ dialog, onClose, isProcessing = false }: Sm
   const confirmBtnClass = dialog.type === 'confirm' ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700';
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 sm:p-8 text-center transform transition-all scale-in-95">
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-10 text-center transform transition-all scale-in-95">
         
         {dialog.modalError && (
-          <div className="bg-red-50 border border-red-100 text-red-600 text-sm p-3 rounded-xl mb-4 font-medium animate-in fade-in slide-in-from-top-2">
+          <div className="bg-red-50 border border-red-100 text-red-600 text-sm sm:text-base p-3 rounded-xl mb-5 font-medium animate-in fade-in slide-in-from-top-2">
             {dialog.modalError}
           </div>
         )}
 
-        <div className={`mx-auto flex items-center justify-center h-14 w-14 rounded-full mb-5 ${iconBg}`}>
-          {icon}
+        <div className={`mx-auto flex items-center justify-center h-16 w-16 sm:h-20 sm:w-20 rounded-full mb-6 ${iconBg}`}>
+          <div className="transform scale-110 sm:scale-125">
+            {icon}
+          </div>
         </div>
         
-        <h3 className="text-xl font-bold text-gray-900 mb-2">{dialog.title}</h3>
+        <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900 mb-4">{dialog.title}</h3>
 
         {dialog.type === 'cpf_conflict' ? (
           <>
-            <p className="text-sm text-gray-600 mb-2 text-center">
-              Identificamos que este CPF já está vinculado à conta <strong>{dialog.conflictEmail}</strong>.
+            <p className="text-sm sm:text-base leading-relaxed text-gray-600 mb-3 text-center">
+              Identificamos que este CPF já está vinculado à conta <strong className="break-all">{dialog.conflictEmail}</strong>.
             </p>
-            <p className="text-sm text-gray-500 mb-6 text-center">
+            <p className="text-sm sm:text-base leading-relaxed text-gray-500 mb-8 text-center">
               Confirme o e-mail completo abaixo para receber um link de recuperação de senha.
             </p>
             <input
@@ -75,31 +78,31 @@ export default function SmartModal({ dialog, onClose, isProcessing = false }: Sm
               placeholder="Digite o e-mail completo..."
               value={dialog.inputValue || ''}
               onChange={dialog.onInputChange}
-              className="w-full text-sm py-3 px-4 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 mb-6 transition-colors"
+              className="w-full text-sm sm:text-base py-3.5 px-4 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 mb-8 transition-colors"
             />
           </>
         ) : dialog.type === 'password_recovery' ? (
           <>
-            <p className="text-sm text-gray-600 mb-3 text-center">
+            <p className="text-sm sm:text-base leading-relaxed text-gray-600 mb-3 text-center">
               Enviaremos um link de recuperação para o e-mail:
             </p>
-            <p className="text-base font-bold text-gray-900 mb-6 text-center bg-gray-50 py-3 rounded-xl border border-gray-200 break-all px-3">
+            <p className="text-base sm:text-lg font-bold text-gray-900 mb-6 text-center bg-gray-50 py-3 sm:py-4 rounded-xl border border-gray-200 break-all px-4">
               {dialog.userEmail}
             </p>
-            <p className="text-sm text-gray-500 mb-8 text-center">
+            <p className="text-sm sm:text-base leading-relaxed text-gray-500 mb-8 text-center">
               Verifique se o endereço está correto antes de confirmar o envio.
             </p>
           </>
         ) : (
-          <p className="text-sm text-gray-500 mb-8">{dialog.message}</p>
+          <p className="text-sm sm:text-base leading-relaxed text-gray-500 mb-8">{dialog.message}</p>
         )}
 
-        <div className="flex flex-col-reverse sm:flex-row gap-3 justify-center">
+        <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 justify-center">
           {showCancelButton && (
             <button
               onClick={onClose}
               disabled={isProcessing}
-              className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50"
+              className="flex-1 px-4 py-3.5 bg-gray-100 text-gray-700 font-bold sm:text-base rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50"
             >
               Voltar
             </button>
@@ -107,10 +110,10 @@ export default function SmartModal({ dialog, onClose, isProcessing = false }: Sm
           <button
             onClick={showCancelButton ? dialog.onConfirm : onClose}
             disabled={isProcessing || (dialog.type === 'cpf_conflict' && !dialog.inputValue)}
-            className={`flex-1 px-4 py-3 font-bold rounded-xl transition-colors text-white shadow-sm disabled:opacity-70 flex justify-center items-center ${confirmBtnClass}`}
+            className={`flex-1 px-4 py-3.5 font-bold sm:text-base rounded-xl transition-colors text-white shadow-sm disabled:opacity-70 flex justify-center items-center ${confirmBtnClass}`}
           >
             {isProcessing ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             ) : (
               showCancelButton ? dialog.confirmText : 'Entendi'
             )}
