@@ -264,18 +264,24 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 px-6 lg:px-8 relative">
+    <main className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 px-6 lg:px-8 relative overflow-hidden">
       <div className="mx-auto w-full max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 tracking-tight">
+        <h2 
+          key={isLogin ? "title-login" : "title-signup"}
+          className="mt-6 text-center text-3xl font-extrabold text-gray-900 tracking-tight animate-in fade-in slide-in-from-top-4 duration-500"
+        >
           {isLogin ? "Acesse sua conta" : "Crie a sua conta"}
         </h2>
       </div>
 
-      <div className="mt-8 mx-auto w-full max-w-md transition-all duration-300">
-        <div className="bg-white py-6 px-6 shadow-sm rounded-2xl border border-gray-100">
+      <div className="mt-8 mx-auto w-full max-w-md">
+        <div 
+          key={isLogin ? "form-login" : "form-signup"}
+          className="bg-white py-8 px-6 shadow-xl shadow-blue-900/5 rounded-3xl border border-gray-100 animate-in fade-in zoom-in-95 slide-in-from-bottom-8 duration-500 ease-out"
+        >
           <form className="space-y-5" onSubmit={handleSubmit}>
             {errorMsg && (
-              <div className="bg-red-50 border border-red-100 text-red-600 text-sm p-3 rounded-xl text-center font-medium animate-in fade-in">
+              <div className="bg-red-50 border border-red-100 text-red-600 text-sm p-3 rounded-xl text-center font-medium animate-in fade-in slide-in-from-top-2">
                 {errorMsg}
                 {needsConfirmation && (
                   <button
@@ -289,7 +295,7 @@ export default function LoginPage() {
               </div>
             )}
             {successMsg && (
-              <div className="bg-green-50 border border-green-100 text-green-600 text-sm p-3 rounded-xl text-center font-medium animate-in fade-in">
+              <div className="bg-green-50 border border-green-100 text-green-600 text-sm p-3 rounded-xl text-center font-medium animate-in fade-in slide-in-from-top-2">
                 {successMsg}
               </div>
             )}
@@ -309,49 +315,51 @@ export default function LoginPage() {
                     }
                   }}
                   onBlur={handleEmailBlur}
-                  className={`block w-full px-4 py-2.5 border rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors ${
+                  className={`block w-full px-4 py-3 border rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors ${
                     emailStatus === "valid" ? "border-green-400 bg-green-50" : emailStatus === "invalid" ? "border-red-400 bg-red-50" : "border-gray-300"
                   }`}
                 />
-                {isCheckingEmail && <span className="absolute right-3 top-3 text-xs text-gray-400">Verificando...</span>}
+                {isCheckingEmail && <span className="absolute right-4 top-3.5 text-xs font-medium text-gray-400 animate-pulse">Verificando...</span>}
                 {!isCheckingEmail && emailStatus === "valid" && (
-                  <svg className="absolute right-3 top-3 w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="absolute right-4 top-3.5 w-5 h-5 text-green-500 animate-in zoom-in" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 )}
               </div>
               {emailMessage && (
-                <p className={`mt-1.5 text-sm font-medium animate-in fade-in ${emailStatus === "valid" ? "text-green-600" : "text-red-600"}`}>
+                <p className={`mt-1.5 text-sm font-medium animate-in fade-in slide-in-from-top-1 ${emailStatus === "valid" ? "text-green-600" : "text-red-600"}`}>
                   {emailMessage}
                 </p>
               )}
             </div>
 
             {!isLogin && (
-              <PersonalDataFields
-                firstName={firstName} setFirstName={setFirstName}
-                lastName={lastName} setLastName={setLastName}
-                cpf={cpf} setCpf={setCpf}
-                cpfStatus={cpfStatus} setCpfStatus={setCpfStatus}
-                cpfMessage={cpfMessage} setCpfMessage={setCpfMessage}
-                
-                onCpfExists={(maskedEmail) => {
-                  setCpfConflictEmail(maskedEmail);
-                  setShowCpfModal(true);
-                }}
+              <div className="animate-in fade-in slide-in-from-top-4 duration-500 delay-100 fill-mode-both">
+                <PersonalDataFields
+                  firstName={firstName} setFirstName={setFirstName}
+                  lastName={lastName} setLastName={setLastName}
+                  cpf={cpf} setCpf={setCpf}
+                  cpfStatus={cpfStatus} setCpfStatus={setCpfStatus}
+                  cpfMessage={cpfMessage} setCpfMessage={setCpfMessage}
+                  
+                  onCpfExists={(maskedEmail) => {
+                    setCpfConflictEmail(maskedEmail);
+                    setShowCpfModal(true);
+                  }}
 
-                birthDate={birthDate} setBirthDate={setBirthDate}
-                birthDateStatus={birthDateStatus} setBirthDateStatus={setBirthDateStatus}
-                birthDateMessage={birthDateMessage} setBirthDateMessage={setBirthDateMessage}
-                occupation={occupation} setOccupation={setOccupation}
-                course={course} setCourse={setCourse}
-                customCourse={customCourse} setCustomCourse={setCustomCourse}
-                university={university} setUniversity={setUniversity}
-                customUniversity={customUniversity} setCustomUniversity={setCustomUniversity}
-                area={area} setArea={setArea}
-                customArea={customArea} setCustomArea={setCustomArea}
-                specialty={specialty} setSpecialty={setSpecialty}
-              />
+                  birthDate={birthDate} setBirthDate={setBirthDate}
+                  birthDateStatus={birthDateStatus} setBirthDateStatus={setBirthDateStatus}
+                  birthDateMessage={birthDateMessage} setBirthDateMessage={setBirthDateMessage}
+                  occupation={occupation} setOccupation={setOccupation}
+                  course={course} setCourse={setCourse}
+                  customCourse={customCourse} setCustomCourse={setCustomCourse}
+                  university={university} setUniversity={setUniversity}
+                  customUniversity={customUniversity} setCustomUniversity={setCustomUniversity}
+                  area={area} setArea={setArea}
+                  customArea={customArea} setCustomArea={setCustomArea}
+                  specialty={specialty} setSpecialty={setSpecialty}
+                />
+              </div>
             )}
 
             <div>
@@ -373,20 +381,25 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 minLength={6}
-                className="mt-1 block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors"
+                className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors"
               />
             </div>
 
             <button
               type="submit"
               disabled={isLoading || (!isLogin && cpfStatus === 'invalid')}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300 transition-all active:scale-[0.98]"
+              className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-md shadow-blue-600/20 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300 disabled:shadow-none transition-all active:scale-[0.98] mt-2"
             >
-              {isLoading ? "Processando..." : isLogin ? "Entrar" : "Criar Conta"}
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Processando...
+                </div>
+              ) : isLogin ? "Entrar" : "Criar Conta"}
             </button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-8 text-center border-t border-gray-100 pt-6">
             <button
               type="button"
               onClick={() => {
@@ -406,29 +419,29 @@ export default function LoginPage() {
       </div>
 
       {showCpfModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-300">
             
             {modalError && (
-              <div className="bg-red-50 border border-red-100 text-red-600 text-sm p-3 rounded-xl mb-4 font-medium animate-in fade-in">
+              <div className="bg-red-50 border border-red-100 text-red-600 text-sm p-3 rounded-xl mb-4 font-medium animate-in fade-in slide-in-from-top-2">
                 {modalError}
               </div>
             )}
 
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center shrink-0">
-                <svg className="w-6 h-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="flex flex-col items-center text-center mb-6">
+              <div className="w-14 h-14 rounded-full bg-yellow-100 flex items-center justify-center shrink-0 mb-4">
+                <svg className="w-7 h-7 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold text-gray-900">CPF já cadastrado</h3>
+              <h3 className="text-xl font-bold text-gray-900">CPF já cadastrado</h3>
             </div>
             
-            <p className="text-sm text-gray-600 mb-2">
+            <p className="text-sm text-gray-600 mb-2 text-center">
               Identificamos que este CPF já está vinculado à conta <strong>{cpfConflictEmail}</strong>.
             </p>
-            <p className="text-sm text-gray-600 mb-4 text-justify">
-              Para sua segurança, não é possível criar duas contas com o mesmo documento. Se esta conta for sua, confirme o e-mail completo abaixo para receber um link de recuperação de senha.
+            <p className="text-sm text-gray-500 mb-6 text-center">
+              Confirme o e-mail completo abaixo para receber um link de recuperação de senha.
             </p>
 
             <input
@@ -436,10 +449,10 @@ export default function LoginPage() {
               placeholder="Digite o e-mail completo..."
               value={recoveryEmailInput}
               onChange={(e) => setRecoveryEmailInput(e.target.value)}
-              className="w-full text-sm py-2.5 px-4 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 mb-6"
+              className="w-full text-sm py-3 px-4 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 mb-6 transition-colors"
             />
             
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
+            <div className="flex flex-col-reverse sm:flex-row justify-center gap-3">
               <button 
                 type="button"
                 onClick={() => {
@@ -451,7 +464,7 @@ export default function LoginPage() {
                   setModalError("");
                 }} 
                 disabled={isLoading}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-3 text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors disabled:opacity-50"
               >
                 Voltar
               </button>
@@ -459,9 +472,13 @@ export default function LoginPage() {
                 type="button"
                 onClick={handleSendRecoveryFromModal} 
                 disabled={isLoading || !recoveryEmailInput}
-                className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors disabled:opacity-50 flex justify-center items-center"
               >
-                {isLoading ? 'Enviando...' : 'Recuperar Senha'}
+                {isLoading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  'Recuperar Senha'
+                )}
               </button>
             </div>
           </div>
