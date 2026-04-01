@@ -4,10 +4,12 @@ import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
 import PersonalDataFields, { validateCPF } from "../../components/PersonalDataFields";
+import SmartModal, { DialogConfig } from "../../components/SmartModal";
 
 export default function LoginPage() {
   const router = useRouter();
 
+  // Estados do Formulário
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -16,6 +18,8 @@ export default function LoginPage() {
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [emailStatus, setEmailStatus] = useState<"idle" | "valid" | "invalid">("idle");
   const [emailMessage, setEmailMessage] = useState("");
+  
+  // Dados do Usuário
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -23,10 +27,6 @@ export default function LoginPage() {
   const [cpf, setCpf] = useState("");
   const [cpfStatus, setCpfStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
   const [cpfMessage, setCpfMessage] = useState('');
-  const [showCpfModal, setShowCpfModal] = useState(false);
-  const [cpfConflictEmail, setCpfConflictEmail] = useState("");
-  const [recoveryEmailInput, setRecoveryEmailInput] = useState("");
-  const [modalError, setModalError] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [birthDateStatus, setBirthDateStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
   const [birthDateMessage, setBirthDateMessage] = useState('');
@@ -38,6 +38,15 @@ export default function LoginPage() {
   const [area, setArea] = useState("");
   const [customArea, setCustomArea] = useState("");
   const [specialty, setSpecialty] = useState("");
+
+  // Estados dos Modais
+  const [dialog, setDialog] = useState<DialogConfig | null>(null);
+  const [showCpfModal, setShowCpfModal] = useState(false);
+  const [showRecoveryModal, setShowRecoveryModal] = useState(false);
+  const [isModalProcessing, setIsModalProcessing] = useState(false);
+  const [cpfConflictEmail, setCpfConflictEmail] = useState("");
+  const [recoveryEmailInput, setRecoveryEmailInput] = useState("");
+  const [modalError, setModalError] = useState("");
 
   const handleEmailBlur = async () => {
     setEmailStatus("idle");
@@ -88,25 +97,40 @@ export default function LoginPage() {
     }
   };
 
-  const handlePasswordRecovery = async () => {
+  const handlePasswordRecovery = () => {
     if (!email) {
       setErrorMsg("Por favor, digite o seu e-mail no campo acima primeiro para recuperar a senha.");
       return;
     }
-    setIsLoading(true);
-    setErrorMsg("");
-    setSuccessMsg("");
+    setShowRecoveryModal(true);
+  };
+
+  const confirmPasswordRecovery = async () => {
+    setIsModalProcessing(true);
 
     const { error: recoveryError } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
 
+    setShowRecoveryModal(false);
+
     if (recoveryError) {
-      setErrorMsg(recoveryError.message);
+      setDialog({
+        isOpen: true,
+        type: 'alert',
+        title: 'Erro ao Enviar',
+        message: recoveryError.message
+      });
     } else {
-      setSuccessMsg("E-mail de recuperação enviado! Verifique a sua caixa de entrada.");
+      setDialog({
+        isOpen: true,
+        type: 'success',
+        title: 'E-mail Enviado',
+        message: 'E-mail de recuperação enviado! Verifique a sua caixa de entrada e pasta de Spam.'
+      });
     }
-    setIsLoading(false);
+    
+    setIsModalProcessing(false);
   };
 
   const handleResendConfirmation = async () => {
@@ -133,7 +157,7 @@ export default function LoginPage() {
       setModalError("Por favor, digite o seu e-mail completo.");
       return;
     }
-    setIsLoading(true);
+    setIsModalProcessing(true);
     setModalError("");
     
     try {
@@ -146,7 +170,7 @@ export default function LoginPage() {
 
       if (!isMatch) {
         setModalError("O e-mail digitado não corresponde ao cadastrado com este CPF.");
-        setIsLoading(false);
+        setIsModalProcessing(false);
         return;
       }
 
@@ -156,7 +180,6 @@ export default function LoginPage() {
 
       if (error) throw error;
 
-      setSuccessMsg("E-mail de recuperação enviado com sucesso! Verifique a sua caixa de entrada e a pasta de Spam.");
       setShowCpfModal(false);
       setRecoveryEmailInput("");
       setCpf("");
@@ -164,10 +187,17 @@ export default function LoginPage() {
       setCpfMessage('');
       setIsLogin(true);
 
+      setDialog({
+        isOpen: true,
+        type: 'success',
+        title: 'Recuperação Enviada',
+        message: 'E-mail de recuperação enviado com sucesso! Verifique a sua caixa de entrada e a pasta de Spam.'
+      });
+
     } catch (err: any) {
       setModalError("Ocorreu uma falha ao tentar recuperar a senha. Tente novamente.");
     } finally {
-      setIsLoading(false);
+      setIsModalProcessing(false);
     }
   };
 
@@ -263,8 +293,51 @@ export default function LoginPage() {
     }
   };
 
+  let activeDialog: DialogConfig | null = dialog;
+
+  if (showCpfModal) {
+    activeDialog = {
+      isOpen: true,
+      type: 'cpf_conflict',
+      title: 'CPF já cadastrado',
+      conflictEmail: cpfConflictEmail,
+      inputValue: recoveryEmailInput,
+      onInputChange: (e) => {
+        setRecoveryEmailInput(e.target.value);
+        setModalError("");
+      },
+      modalError: modalError,
+      confirmText: 'Recuperar Senha',
+      onConfirm: handleSendRecoveryFromModal
+    };
+  } else if (showRecoveryModal) {
+    activeDialog = {
+      isOpen: true,
+      type: 'password_recovery',
+      title: 'Recuperar Senha',
+      userEmail: email,
+      confirmText: 'Confirmar Envio',
+      onConfirm: confirmPasswordRecovery
+    };
+  }
+
+  const handleCloseModal = () => {
+    setDialog(null);
+    setShowCpfModal(false);
+    setShowRecoveryModal(false);
+    setRecoveryEmailInput("");
+    setModalError("");
+  };
+
   return (
     <main className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 px-6 lg:px-8 relative overflow-hidden">
+      
+      <SmartModal 
+        dialog={activeDialog} 
+        onClose={handleCloseModal} 
+        isProcessing={isModalProcessing} 
+      />
+
       <div className="mx-auto w-full max-w-md">
         <h2 
           key={isLogin ? "title-login" : "title-signup"}
@@ -417,73 +490,6 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-
-      {showCpfModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-300">
-            
-            {modalError && (
-              <div className="bg-red-50 border border-red-100 text-red-600 text-sm p-3 rounded-xl mb-4 font-medium animate-in fade-in slide-in-from-top-2">
-                {modalError}
-              </div>
-            )}
-
-            <div className="flex flex-col items-center text-center mb-6">
-              <div className="w-14 h-14 rounded-full bg-yellow-100 flex items-center justify-center shrink-0 mb-4">
-                <svg className="w-7 h-7 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900">CPF já cadastrado</h3>
-            </div>
-            
-            <p className="text-sm text-gray-600 mb-2 text-center">
-              Identificamos que este CPF já está vinculado à conta <strong>{cpfConflictEmail}</strong>.
-            </p>
-            <p className="text-sm text-gray-500 mb-6 text-center">
-              Confirme o e-mail completo abaixo para receber um link de recuperação de senha.
-            </p>
-
-            <input
-              type="email"
-              placeholder="Digite o e-mail completo..."
-              value={recoveryEmailInput}
-              onChange={(e) => setRecoveryEmailInput(e.target.value)}
-              className="w-full text-sm py-3 px-4 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 mb-6 transition-colors"
-            />
-            
-            <div className="flex flex-col-reverse sm:flex-row justify-center gap-3">
-              <button 
-                type="button"
-                onClick={() => {
-                  setShowCpfModal(false);
-                  setCpf('');
-                  setCpfStatus('idle');
-                  setCpfMessage('');
-                  setRecoveryEmailInput("");
-                  setModalError("");
-                }} 
-                disabled={isLoading}
-                className="flex-1 px-4 py-3 text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors disabled:opacity-50"
-              >
-                Voltar
-              </button>
-              <button 
-                type="button"
-                onClick={handleSendRecoveryFromModal} 
-                disabled={isLoading || !recoveryEmailInput}
-                className="flex-1 px-4 py-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors disabled:opacity-50 flex justify-center items-center"
-              >
-                {isLoading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  'Recuperar Senha'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   );
 }
