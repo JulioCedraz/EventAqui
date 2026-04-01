@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useRouter, useParams } from 'next/navigation';
 import { Database } from '../../../types/database.types';
+import SmartModal, { DialogConfig } from '../../../components/SmartModal';
 
 type Event = Database['public']['Tables']['events']['Row'];
 
@@ -11,7 +12,6 @@ export default function EventDetails() {
   const router = useRouter();
   const urlParams = useParams();
   const id = urlParams?.id as string;
-
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(false);
@@ -21,8 +21,9 @@ export default function EventDetails() {
   const [pixData, setPixData] = useState<{ qr_code: string; qr_code_base64: string } | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [copiedPix, setCopiedPix] = useState(false);
-  
   const [soldTickets, setSoldTickets] = useState(0);
+  const [dialog, setDialog] = useState<DialogConfig | null>(null);
+  const [isModalProcessing, setIsModalProcessing] = useState(false);
   
   const fetchEventAndStatus = useCallback(async () => {
     if (!id) return;
@@ -74,28 +75,42 @@ export default function EventDetails() {
     fetchEventAndStatus();
   }, [fetchEventAndStatus]);
 
-  const handleCancelPending = async () => {
+  const promptCancelPending = () => {
     if (!pendingTicket) return;
     
-    const isConfirmed = window.confirm('Tem certeza que deseja cancelar o seu pedido pendente?');
-    if (!isConfirmed) return;
+    setDialog({
+      isOpen: true,
+      type: 'confirm',
+      title: 'Cancelar Pedido',
+      message: 'Tem certeza que deseja cancelar o seu pedido pendente? Você poderá refazer a compra depois se ainda houver vagas.',
+      confirmText: 'Sim, cancelar',
+      onConfirm: async () => {
+        setIsModalProcessing(true);
+        try {
+          const { error } = await supabase
+            .from('tickets')
+            .update({ payment_status: 'cancelled' })
+            .eq('id', pendingTicket.id);
 
-    try {
-      const { error } = await supabase
-        .from('tickets')
-        .update({ payment_status: 'cancelled' })
-        .eq('id', pendingTicket.id);
-
-      if (error) throw error;
-      
-      alert('Pedido cancelado com sucesso! Agora você pode fazer uma nova compra.');
-      setPendingTicket(null); 
-      setQuantity(1);
-      fetchEventAndStatus();
-    } catch (error) {
-      console.error('Erro ao cancelar:', error);
-      alert('Erro ao cancelar o pedido. Tente novamente.');
-    }
+          if (error) throw error;
+          
+          setPendingTicket(null); 
+          setQuantity(1);
+          fetchEventAndStatus();
+          setDialog(null);
+        } catch (error) {
+          console.error('Erro ao cancelar:', error);
+          setDialog({
+            isOpen: true,
+            type: 'alert',
+            title: 'Ops, algo deu errado',
+            message: 'Erro ao cancelar o pedido. Tente novamente.'
+          });
+        } finally {
+          setIsModalProcessing(false);
+        }
+      }
+    });
   };
 
   const handleBuy = async () => {
@@ -182,7 +197,12 @@ export default function EventDetails() {
       
     } catch (error) {
       console.error('Falha ao copiar PIX:', error);
-      alert('Erro ao copiar. Por favor, selecione e copie o código manualmente.');
+      setDialog({
+        isOpen: true,
+        type: 'alert',
+        title: 'Falha ao copiar',
+        message: 'Não foi possível copiar o código. Por favor, tente novamente ou selecione e copie manualmente.'
+      });
     }
   };
 
@@ -207,6 +227,12 @@ export default function EventDetails() {
 
   return (
     <main className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 relative">
+
+      <SmartModal 
+        dialog={dialog} 
+        onClose={() => setDialog(null)} 
+        isProcessing={isModalProcessing} 
+      />
 
       {showConfirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
@@ -374,7 +400,7 @@ export default function EventDetails() {
               
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button 
-                  onClick={handleCancelPending}
+                  onClick={promptCancelPending}
                   className="px-6 py-3 bg-white text-red-600 border border-red-200 rounded-xl font-bold hover:bg-red-50 transition-colors w-full sm:w-auto"
                 >
                   Cancelar Pedido
