@@ -4,21 +4,27 @@ interface EventCardProps {
   id: string;
   title: string;
   description: string | null;
-  event_date: string;
+  event_date: string | null;
   price: number;
   image_url: string | null;
 }
 
 export default function EventCard({ id, title, description, event_date, price, image_url }: EventCardProps) {
   
-  const dateObj = new Date(event_date);
-  const formattedDate = dateObj.toLocaleDateString('pt-BR', {
-    weekday: 'short', day: '2-digit', month: 'short'
-  }).replace('.', '').toUpperCase();
-  
-  const formattedTime = dateObj.toLocaleTimeString('pt-BR', {
-    hour: '2-digit', minute: '2-digit'
-  });
+  let dateDisplay = 'Sem data definida';
+
+  if (event_date) {
+    const dateObj = new Date(event_date);
+    const formattedDate = dateObj.toLocaleDateString('pt-BR', {
+      weekday: 'short', day: '2-digit', month: 'short'
+    }).replace('.', '').toUpperCase();
+    
+    const formattedTime = dateObj.toLocaleTimeString('pt-BR', {
+      hour: '2-digit', minute: '2-digit'
+    });
+
+    dateDisplay = `${formattedDate} • ${formattedTime}`;
+  }
 
   const formattedPrice = price === 0 
     ? 'Grátis' 
@@ -52,7 +58,7 @@ export default function EventCard({ id, title, description, event_date, price, i
         </h3>
 
         <p className="text-sm text-gray-600 font-medium mb-1">
-          {formattedDate} • {formattedTime}
+          {dateDisplay}
         </p>
 
         {description && (
