@@ -113,7 +113,9 @@ export default function MyTickets() {
                     </Link>
                   </h2>
                   <p className="text-gray-500 text-sm mb-3">
-                    {new Date(ticket.events?.event_date).toLocaleString('pt-BR')}
+                    {ticket.events?.event_date 
+                      ? new Date(ticket.events.event_date).toLocaleString('pt-BR') 
+                      : 'Data a definir'}
                   </p>
                   
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
