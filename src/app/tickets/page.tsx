@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import QRCode from 'react-qr-code';
 import Link from 'next/link';
+import SmartModal, { DialogConfig } from '../../components/SmartModal';
 
 export default function MyTickets() {
   const router = useRouter();
@@ -12,6 +13,8 @@ export default function MyTickets() {
   const [tickets, setTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedTicketId, setCopiedTicketId] = useState<string | null>(null);
+  const [dialog, setDialog] = useState<DialogConfig | null>(null);
+  const [isModalProcessing, setIsModalProcessing] = useState(false);
 
   const fetchTickets = useCallback(async () => {
     setLoading(true);
@@ -24,18 +27,13 @@ export default function MyTickets() {
 
     const { data, error } = await supabase
       .from('tickets')
-      .select(`
-        *,
-        events (*)
-      `)
+      .select(`*, events (*)`)
       .eq('buyer_email', session.user.email)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching tickets:', error);
-    } else {
-      setTickets(data || []);
-    }
+    if (error) console.error('Error fetching tickets:', error);
+    else setTickets(data || []);
+    
     setLoading(false);
   }, [router]);
 
@@ -43,42 +41,52 @@ export default function MyTickets() {
     fetchTickets();
   }, [fetchTickets]);
 
-  const handleCancelTicket = async (ticketId: string) => {
-    const isConfirmed = window.confirm('Tem certeza que deseja cancelar este pedido?');
-    if (!isConfirmed) return;
-
-    try {
-      const { error } = await supabase
-        .from('tickets')
-        .update({ payment_status: 'cancelled' })
-        .eq('id', ticketId);
-
-      if (error) throw error;
-      
-      fetchTickets();
-    } catch (error) {
-      console.error('Erro ao cancelar:', error);
-      alert('Erro ao cancelar o pedido. Tente novamente.');
-    }
+  const promptCancelTicket = (ticketId: string) => {
+    setDialog({
+      isOpen: true,
+      type: 'confirm',
+      title: 'Cancelar Pedido',
+      message: 'Tem certeza que deseja cancelar este pedido? O ingresso pendente será invalidado.',
+      confirmText: 'Sim, cancelar',
+      onConfirm: async () => {
+        setIsModalProcessing(true);
+        try {
+          const { error } = await supabase.from('tickets').update({ payment_status: 'cancelled' }).eq('id', ticketId);
+          if (error) throw error;
+          await fetchTickets();
+          setDialog(null);
+        } catch (error) {
+          console.error('Erro ao cancelar:', error);
+          setDialog({ isOpen: true, type: 'alert', title: 'Ops, algo deu errado', message: 'Não foi possível cancelar o pedido. Tente novamente.' });
+        } finally {
+          setIsModalProcessing(false);
+        }
+      }
+    });
   };
 
-  const handleDeleteTicket = async (ticketId: string) => {
-    const isConfirmed = window.confirm('Tem certeza que deseja excluir este pedido? Esta ação é irreversível.');
-    if (!isConfirmed) return;
-
-    try {
-      const { error } = await supabase
-        .from('tickets')
-        .delete()
-        .eq('id', ticketId);
-
-      if (error) throw error;
-      
-      fetchTickets();
-    } catch (error) {
-      console.error('Erro ao excluir:', error);
-      alert('Erro ao excluir o pedido. Tente novamente.');
-    }
+  const promptDeleteTicket = (ticketId: string) => {
+    setDialog({
+      isOpen: true,
+      type: 'confirm',
+      title: 'Excluir Pedido',
+      message: 'Tem certeza que deseja excluir este pedido? Esta ação é irreversível e removerá o ingresso do seu histórico.',
+      confirmText: 'Excluir',
+      onConfirm: async () => {
+        setIsModalProcessing(true);
+        try {
+          const { error } = await supabase.from('tickets').delete().eq('id', ticketId);
+          if (error) throw error;
+          await fetchTickets();
+          setDialog(null);
+        } catch (error) {
+          console.error('Erro ao excluir:', error);
+          setDialog({ isOpen: true, type: 'alert', title: 'Ops, algo deu errado', message: 'Não foi possível excluir o pedido. Tente novamente.' });
+        } finally {
+          setIsModalProcessing(false);
+        }
+      }
+    });
   };
 
   if (loading && tickets.length === 0) {
@@ -90,72 +98,51 @@ export default function MyTickets() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 relative">
+      <SmartModal dialog={dialog} onClose={() => setDialog(null)} isProcessing={isModalProcessing} />
+
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-extrabold text-gray-900 mb-8">Meus Ingressos</h1>
         
         {tickets.length === 0 ? (
           <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 text-center">
             <p className="text-gray-500 mb-4">Você ainda não possui ingressos.</p>
-            <button onClick={() => router.push('/')} className="text-blue-600 font-medium hover:underline">
-              Ver eventos disponíveis
-            </button>
+            <button onClick={() => router.push('/')} className="text-blue-600 font-medium hover:underline">Ver eventos disponíveis</button>
           </div>
         ) : (
           <div className="space-y-6">
             {tickets.map((ticket) => (
               <div key={ticket.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4 hover:border-blue-200 transition-colors">
-                
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors">
-                    <Link href={`/evento/${ticket.event_id}`}>
-                      {ticket.events?.title}
-                    </Link>
+                    <Link href={`/evento/${ticket.event_id}`}>{ticket.events?.title}</Link>
                   </h2>
                   <p className="text-gray-500 text-sm mb-3">
-                    {ticket.events?.event_date 
-                      ? new Date(ticket.events.event_date).toLocaleString('pt-BR') 
-                      : 'Data a definir'}
+                    {ticket.events?.event_date ? new Date(ticket.events.event_date).toLocaleString('pt-BR') : 'Data a definir'}
                   </p>
-                  
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
                     ticket.payment_status === 'approved' ? 'bg-green-100 text-green-800' : 
-                    ticket.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-                    'bg-red-100 text-red-800'
+                    ticket.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
                   }`}>
-                    {ticket.payment_status === 'approved' ? 'Pago' : 
-                     ticket.payment_status === 'pending' ? 'Aguardando Pagamento' : 
-                     'Cancelado'}
+                    {ticket.payment_status === 'approved' ? 'Pago' : ticket.payment_status === 'pending' ? 'Aguardando Pagamento' : 'Cancelado'}
                   </span>
                 </div>
                 
                 <div className="flex flex-col items-end gap-3 text-right w-full sm:w-auto">
-                  
                   {ticket.payment_status === 'approved' && !ticket.is_used && (
                     <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 w-full sm:w-auto flex flex-col items-center gap-3 shadow-sm">
                       <p className="text-xs text-blue-600 font-bold uppercase tracking-wider">Código de Entrada</p>
-                      
                       <div className="bg-white p-3 rounded-lg border border-blue-100 shadow-sm">
-                        <QRCode
-                          value={ticket.id}
-                          size={120}
-                          style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                          viewBox={`0 0 120 120`}
-                        />
+                        <QRCode value={ticket.id} size={120} style={{ height: "auto", maxWidth: "100%", width: "100%" }} viewBox={`0 0 120 120`} />
                       </div>
-                      
                       <div className="flex items-center justify-center sm:justify-end gap-2 w-full">
-                        <p className="text-sm font-mono text-gray-900 break-all bg-white px-2 py-1 rounded border border-blue-100">
-                          {ticket.id}
-                        </p>
+                        <p className="text-sm font-mono text-gray-900 break-all bg-white px-2 py-1 rounded border border-blue-100">{ticket.id}</p>
                         <button
                           onClick={async () => {
                             try {
                               await navigator.clipboard.writeText(ticket.id);
-                              
                               setCopiedTicketId(ticket.id);
                               setTimeout(() => setCopiedTicketId(null), 2000);
-                              
                             } catch (error) {
                               console.error('Erro ao copiar', error);
                             }
@@ -168,41 +155,26 @@ export default function MyTickets() {
                           </svg>
                         </button>
                       </div>
-
                       {copiedTicketId === ticket.id && (
-                        <p className="text-xs text-green-600 font-medium animate-in fade-in slide-in-from-top-1 duration-200">
-                          ✓ Código copiado
-                        </p>
+                        <p className="text-xs text-green-600 font-medium animate-in fade-in slide-in-from-top-1 duration-200">✓ Código copiado</p>
                       )}
                     </div>
                   )}
+                  {ticket.is_used && <span className="text-sm font-bold text-gray-400 bg-gray-100 px-4 py-2 rounded-lg">Ingresso Utilizado</span>}
                   
-                  {ticket.is_used && (
-                    <span className="text-sm font-bold text-gray-400 bg-gray-100 px-4 py-2 rounded-lg">Ingresso Utilizado</span>
-                  )}
-
                   {ticket.payment_status === 'pending' && (
                     <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                      <button 
-                        onClick={() => handleCancelTicket(ticket.id)} 
-                        className="bg-white text-red-600 border border-red-200 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-50 transition-colors w-full sm:w-auto"
-                      >
+                      <button onClick={() => promptCancelTicket(ticket.id)} className="bg-white text-red-600 border border-red-200 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-50 transition-colors w-full sm:w-auto">
                         Cancelar
                       </button>
-                      <button 
-                        onClick={() => router.push(`/evento/${ticket.event_id}/${ticket.id}`)} 
-                        className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm w-full sm:w-auto"
-                      >
+                      <button onClick={() => router.push(`/evento/${ticket.event_id}/${ticket.id}`)} className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm w-full sm:w-auto">
                         Continuar Pagamento
                       </button>
                     </div>
                   )}
 
                   {ticket.payment_status === 'cancelled' && (
-                    <button 
-                      onClick={() => handleDeleteTicket(ticket.id)} 
-                      className="bg-white text-gray-400 border border-gray-200 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors w-full sm:w-auto mt-2 sm:mt-0"
-                    >
+                    <button onClick={() => promptDeleteTicket(ticket.id)} className="bg-white text-gray-400 border border-gray-200 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors w-full sm:w-auto mt-2 sm:mt-0">
                       Excluir Pedido
                     </button>
                   )}
