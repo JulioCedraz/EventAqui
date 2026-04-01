@@ -23,6 +23,7 @@ export default function AdminDashboard() {
   const [hasNoDate, setHasNoDate] = useState(false);
   const [price, setPrice] = useState('');
   const [totalSpots, setTotalSpots] = useState('');
+  const [hasNoSpotLimit, setHasNoSpotLimit] = useState(false);
   const [image, setImage] = useState<File | null>(null);
   const [imageError, setImageError] = useState('');
 
@@ -64,6 +65,7 @@ export default function AdminDashboard() {
     setHasNoDate(false);
     setPrice('');
     setTotalSpots('');
+    setHasNoSpotLimit(false);
     setImage(null);
     setImageError('');
   };
@@ -136,7 +138,7 @@ export default function AdminDashboard() {
         description,
         event_date: hasNoDate ? null : new Date(eventDate).toISOString(),
         price: parseFloat(price),
-        total_spots: parseInt(totalSpots, 10),
+        total_spots: hasNoSpotLimit ? null : parseInt(totalSpots, 10),
       };
 
       if (image_url) payload.image_url = image_url;
@@ -183,7 +185,15 @@ export default function AdminDashboard() {
     }
 
     setPrice(event.price.toString());
-    setTotalSpots(event.total_spots.toString());
+    
+    if (event.total_spots !== null && event.total_spots !== undefined) {
+      setTotalSpots(event.total_spots.toString());
+      setHasNoSpotLimit(false);
+    } else {
+      setTotalSpots('');
+      setHasNoSpotLimit(true);
+    }
+    
     setImage(null);
     setImageError('');
     
@@ -310,8 +320,30 @@ export default function AdminDashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Vagas Totais</label>
-                  <input type="number" min="1" required value={totalSpots} onChange={(e) => setTotalSpots(e.target.value)} className="block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-sm font-semibold text-gray-700">Vagas Totais</label>
+                    <label className="flex items-center text-sm text-gray-600 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={hasNoSpotLimit} 
+                        onChange={(e) => {
+                          setHasNoSpotLimit(e.target.checked);
+                          if (e.target.checked) setTotalSpots('');
+                        }} 
+                        className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      Sem limite
+                    </label>
+                  </div>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    required={!hasNoSpotLimit} 
+                    disabled={hasNoSpotLimit}
+                    value={totalSpots} 
+                    onChange={(e) => setTotalSpots(e.target.value)} 
+                    className={`block w-full border rounded-lg shadow-sm py-3 px-4 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors ${hasNoSpotLimit ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' : 'border-gray-300'}`} 
+                  />
                 </div>
 
                 <div>
