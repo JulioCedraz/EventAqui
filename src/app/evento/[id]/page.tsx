@@ -22,6 +22,8 @@ export default function EventDetails() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [copiedPix, setCopiedPix] = useState(false);
   
+  const [soldTickets, setSoldTickets] = useState(0);
+  
   const fetchEventAndStatus = useCallback(async () => {
     if (!id) return;
     setLoading(true);
@@ -30,6 +32,17 @@ export default function EventDetails() {
       const { data: eventData, error: eventError } = await supabase.from('events').select('*').eq('id', id).single();
       if (eventError) throw eventError;
       setEvent(eventData);
+
+      const { data: ticketsData } = await supabase
+        .from('tickets')
+        .select('quantity')
+        .eq('event_id', id)
+        .in('payment_status', ['approved', 'pending']);
+      
+      if (ticketsData) {
+        const count = ticketsData.reduce((acc, curr) => acc + (curr.quantity || 1), 0);
+        setSoldTickets(count);
+      }
 
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -77,7 +90,8 @@ export default function EventDetails() {
       
       alert('Pedido cancelado com sucesso! Agora você pode fazer uma nova compra.');
       setPendingTicket(null); 
-      setQuantity(1); 
+      setQuantity(1);
+      fetchEventAndStatus();
     } catch (error) {
       console.error('Erro ao cancelar:', error);
       alert('Erro ao cancelar o pedido. Tente novamente.');
@@ -186,6 +200,10 @@ export default function EventDetails() {
   if (!event) {
     return <div className="min-h-screen flex items-center justify-center">Evento não encontrado.</div>;
   }
+
+  const isSoldOut = event.total_spots !== null && soldTickets >= event.total_spots;
+  const availableSpots = event.total_spots !== null ? Math.max(0, event.total_spots - soldTickets) : null;
+  const maxSelectable = availableSpots !== null ? Math.min(10, availableSpots) : 10;
 
   return (
     <main className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 relative">
@@ -369,8 +387,20 @@ export default function EventDetails() {
                 </button>
               </div>
             </div>
+          ) : isSoldOut ? (
+            <div className="bg-gray-100 p-8 rounded-xl border border-gray-200 text-center">
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">Ingressos Esgotados</h3>
+              <p className="text-gray-500">Infelizmente, todas as vagas para este evento já foram preenchidas.</p>
+            </div>
           ) : (
             <div className="space-y-6">
+              
+              {availableSpots !== null && availableSpots <= 5 && (
+                <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm font-bold text-center border border-red-100 animate-pulse">
+                  Corra! Restam apenas {availableSpots} vaga(s) disponível(is).
+                </div>
+              )}
+
               <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl bg-white shadow-sm">
                 <span className="font-semibold text-gray-700">Quantidade:</span>
 
@@ -392,20 +422,23 @@ export default function EventDetails() {
                       } else {
                         const num = parseInt(val, 10);
                         if (!isNaN(num)) {
-                          setQuantity(Math.min(10, num));
+                          setQuantity(Math.min(maxSelectable, num));
                         }
                       }
                     }}
                     onBlur={() => {
-                      if (quantity === '' || Number(quantity) < 1) {
+                      let num = Number(quantity);
+                      if (quantity === '' || num < 1) {
                         setQuantity(1);
+                      } else if (num > maxSelectable) {
+                        setQuantity(maxSelectable);
                       }
                     }}
                     className="w-12 text-xl font-bold text-gray-900 text-center bg-transparent border-none focus:ring-0 p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
 
                   <button 
-                    onClick={() => setQuantity(q => Math.min(10, Number(q) + 1))} 
+                    onClick={() => setQuantity(q => Math.min(maxSelectable, Number(q) + 1))} 
                     className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors font-bold text-xl shrink-0"
                   >
                     +
