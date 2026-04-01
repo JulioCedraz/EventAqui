@@ -20,6 +20,7 @@ export default function AdminDashboard() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [eventDate, setEventDate] = useState('');
+  const [hasNoDate, setHasNoDate] = useState(false);
   const [price, setPrice] = useState('');
   const [totalSpots, setTotalSpots] = useState('');
   const [image, setImage] = useState<File | null>(null);
@@ -60,6 +61,7 @@ export default function AdminDashboard() {
     setTitle('');
     setDescription('');
     setEventDate('');
+    setHasNoDate(false);
     setPrice('');
     setTotalSpots('');
     setImage(null);
@@ -132,7 +134,7 @@ export default function AdminDashboard() {
       const payload: any = {
         title,
         description,
-        event_date: new Date(eventDate).toISOString(),
+        event_date: hasNoDate ? null : new Date(eventDate).toISOString(),
         price: parseFloat(price),
         total_spots: parseInt(totalSpots, 10),
       };
@@ -171,8 +173,15 @@ export default function AdminDashboard() {
     setTitle(event.title);
     setDescription(event.description || '');
 
-    const formattedDate = new Date(event.event_date).toISOString().slice(0, 16);
-    setEventDate(formattedDate);
+    if (event.event_date) {
+      const formattedDate = new Date(event.event_date).toISOString().slice(0, 16);
+      setEventDate(formattedDate);
+      setHasNoDate(false);
+    } else {
+      setEventDate('');
+      setHasNoDate(true);
+    }
+
     setPrice(event.price.toString());
     setTotalSpots(event.total_spots.toString());
     setImage(null);
@@ -244,7 +253,7 @@ export default function AdminDashboard() {
                 {editingId ? 'Editando Evento' : 'Criar Novo Evento'}
               </h2>
               {editingId && (
-                <button onClick={resetForm} className="text-sm font-medium text-gray-500 hover:text-red-600 transition-colors">
+                <button type="button" onClick={resetForm} className="text-sm font-medium text-gray-500 hover:text-red-600 transition-colors">
                   Descartar Alterações
                 </button>
               )}
@@ -268,9 +277,31 @@ export default function AdminDashboard() {
               </div>
 
               <div className="grid grid-cols-1 gap-y-6 gap-x-6 sm:grid-cols-2">
+                
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Data e Hora</label>
-                  <input type="datetime-local" required value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-sm font-semibold text-gray-700">Data e Hora</label>
+                    <label className="flex items-center text-sm text-gray-600 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={hasNoDate} 
+                        onChange={(e) => {
+                          setHasNoDate(e.target.checked);
+                          if (e.target.checked) setEventDate('');
+                        }} 
+                        className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      Sem data definida
+                    </label>
+                  </div>
+                  <input 
+                    type="datetime-local" 
+                    required={!hasNoDate} 
+                    disabled={hasNoDate}
+                    value={eventDate} 
+                    onChange={(e) => setEventDate(e.target.value)} 
+                    className={`block w-full border rounded-lg shadow-sm py-3 px-4 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors ${hasNoDate ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' : 'border-gray-300'}`} 
+                  />
                 </div>
 
                 <div>
@@ -342,7 +373,7 @@ export default function AdminDashboard() {
                     <div>
                       <h3 className="font-bold text-gray-900 line-clamp-1">{evt.title}</h3>
                       <p className="text-sm text-gray-500">
-                        {new Date(evt.event_date).toLocaleDateString('pt-BR')} • R$ {evt.price.toFixed(2).replace('.', ',')}
+                        {evt.event_date ? new Date(evt.event_date).toLocaleDateString('pt-BR') : 'Sem data definida'} • R$ {evt.price.toFixed(2).replace('.', ',')}
                       </p>
                     </div>
                   </div>
