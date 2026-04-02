@@ -141,7 +141,7 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
                   <h3 className="text-xl font-bold text-gray-900 leading-tight">Deseja mesmo continuar?</h3>
                 </div>
                 
-                <p className="text-sm text-gray-600 mb-5 leading-relaxed">
+                <p className="text-sm text-gray-600 mb-5 leading-relaxed text-justify">
                   Todos os seus dados pessoais, históricos de acessos e ingressos ativos serão apagados definitivamente. Se você mudar de ideia futuramente, precisará realizar um novo cadastro. <br /> <br /> 
                   O seu e-mail poderá ser reutilizado nesta plataforma após 24 horas da confirmação de exclusão.
                 </p>
@@ -152,22 +152,22 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
                   </p>
                 </div>
                 
-                <div className="flex flex-col-reverse sm:flex-row gap-3">
+                <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
                   <Button 
                     variant="secondary"
                     onClick={closeModal} 
                     disabled={isSendingToken} 
-                    className="flex-1 font-bold"
+                    className="flex-1 h-12 text-base font-bold rounded-xl"
                   >
                     Cancelar
                   </Button>
                   <Button 
                     onClick={handleSendDeleteToken} 
                     disabled={isSendingToken} 
-                    className="flex-1 font-bold bg-blue-600 hover:bg-blue-700"
+                    className="flex-1 h-12 text-base font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm"
                   >
                     {isSendingToken ? (
-                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enviando</>
+                      <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Enviando</>
                     ) : (
                       'Enviar Código'
                     )}
