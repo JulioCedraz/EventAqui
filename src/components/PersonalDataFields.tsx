@@ -1,6 +1,9 @@
 'use client';
 
 import { supabase } from '../lib/supabase';
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 
 export const UNIVERSITIES_LIST = [
   "UFBA", "UFRB", "UFOB", "UNEB", "UEFS", "UESC", "UESB", 
@@ -166,39 +169,44 @@ export default function PersonalDataFields({
     }
   };
 
+  const selectClassName = "flex h-12 w-full items-center justify-between rounded-xl border border-input bg-background px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+
   return (
-    <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
+    <div className="space-y-5 animate-in fade-in slide-in-from-top-4 duration-300">
       
       {/* NOME E SOBRENOME */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-          <input
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="firstName">Nome</Label>
+          <Input
+            id="firstName"
             type="text"
             required
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
-            className="block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
+            className="h-12 rounded-xl"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Sobrenome</label>
-          <input
+        <div className="space-y-2">
+          <Label htmlFor="lastName">Sobrenome</Label>
+          <Input
+            id="lastName"
             type="text"
             required
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
-            className="block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
+            className="h-12 rounded-xl"
           />
         </div>
       </div>
 
       {/* CPF E DATA DE NASCIMENTO */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">CPF</label>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="cpf">CPF</Label>
           <div className="relative">
-            <input
+            <Input
+              id="cpf"
               type="text"
               required={!hasCpfInitially}
               value={cpf}
@@ -212,33 +220,40 @@ export default function PersonalDataFields({
               onBlur={handleCpfBlur}
               disabled={hasCpfInitially}
               placeholder="000.000.000-00"
-              className={`block w-full px-4 py-2.5 border rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors ${
+              className={`h-12 rounded-xl transition-colors ${
                 hasCpfInitially
-                  ? 'bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed'
+                  ? 'bg-gray-100 text-gray-500 opacity-100'
                   : cpfStatus === 'valid'
-                    ? 'border-green-400 bg-green-50'
+                    ? 'border-green-400 focus-visible:ring-green-400 bg-green-50/50'
                     : cpfStatus === 'invalid'
-                      ? 'border-red-400 bg-red-50'
-                      : 'border-gray-300'
+                      ? 'border-red-400 focus-visible:ring-red-400 bg-red-50/50'
+                      : ''
               }`}
             />
+            {cpfMessage === 'Verificando...' && (
+              <div className="absolute right-3 top-3.5 flex items-center">
+                <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+              </div>
+            )}
             {!hasCpfInitially && cpfStatus === 'valid' && (
-              <svg className="absolute right-3 top-3 w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+              <CheckCircle2 className="absolute right-3 top-3.5 w-5 h-5 text-green-500 animate-in zoom-in" />
+            )}
+            {!hasCpfInitially && cpfStatus === 'invalid' && (
+              <AlertCircle className="absolute right-3 top-3.5 w-5 h-5 text-red-500 animate-in zoom-in" />
             )}
           </div>
           {cpfMessage && !hasCpfInitially && (
-            <p className={`mt-1.5 text-sm font-medium animate-in fade-in ${cpfStatus === 'valid' ? 'text-green-600' : 'text-red-600'}`}>
-              {cpfMessage}
+            <p className={`text-xs font-medium animate-in fade-in slide-in-from-top-1 ${cpfStatus === 'valid' ? 'text-green-600' : 'text-red-600'}`}>
+              {cpfMessage === 'Verificando...' ? '' : cpfMessage}
             </p>
           )}
         </div>
         
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Data de Nascimento</label>
+        <div className="space-y-2">
+          <Label htmlFor="birthDate">Data de Nascimento</Label>
           <div className="relative">
-            <input
+            <Input
+              id="birthDate"
               type="text"
               required
               value={birthDate}
@@ -252,22 +267,23 @@ export default function PersonalDataFields({
               onBlur={handleBirthDateBlur}
               placeholder="DD/MM/AAAA"
               maxLength={10}
-              className={`block w-full px-4 py-2.5 border rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors ${
+              className={`h-12 rounded-xl transition-colors ${
                 birthDateStatus === 'valid'
-                  ? 'border-green-400 bg-green-50'
+                  ? 'border-green-400 focus-visible:ring-green-400 bg-green-50/50'
                   : birthDateStatus === 'invalid'
-                    ? 'border-red-400 bg-red-50'
-                    : 'border-gray-300'
+                    ? 'border-red-400 focus-visible:ring-red-400 bg-red-50/50'
+                    : ''
               }`}
             />
             {birthDateStatus === 'valid' && (
-              <svg className="absolute right-3 top-3 w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+              <CheckCircle2 className="absolute right-3 top-3.5 w-5 h-5 text-green-500 animate-in zoom-in" />
+            )}
+            {birthDateStatus === 'invalid' && (
+              <AlertCircle className="absolute right-3 top-3.5 w-5 h-5 text-red-500 animate-in zoom-in" />
             )}
           </div>
           {birthDateMessage && (
-            <p className={`mt-1.5 text-sm font-medium animate-in fade-in ${birthDateStatus === 'valid' ? 'text-green-600' : 'text-red-600'}`}>
+            <p className={`text-xs font-medium animate-in fade-in slide-in-from-top-1 ${birthDateStatus === 'valid' ? 'text-green-600' : 'text-red-600'}`}>
               {birthDateMessage}
             </p>
           )}
@@ -275,10 +291,10 @@ export default function PersonalDataFields({
       </div>
 
       {/* OCUPAÇÃO */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Ocupação</label>
-        <div className="flex gap-4">
-          <label className="flex items-center cursor-pointer">
+      <div className="space-y-3 pt-2">
+        <Label className="text-gray-700">Ocupação</Label>
+        <div className="flex gap-6">
+          <label className="flex items-center space-x-2 cursor-pointer group">
             <input
               type="radio"
               name="occupation"
@@ -287,10 +303,10 @@ export default function PersonalDataFields({
               onChange={() => setOccupation('estudante')}
               className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
             />
-            <span className="ml-2 text-sm text-gray-700">Estudante</span>
+            <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">Estudante</span>
           </label>
 
-          <label className="flex items-center cursor-pointer">
+          <label className="flex items-center space-x-2 cursor-pointer group">
             <input
               type="radio"
               name="occupation"
@@ -299,21 +315,21 @@ export default function PersonalDataFields({
               onChange={() => setOccupation('profissional')}
               className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
             />
-            <span className="ml-2 text-sm text-gray-700">Profissional</span>
+            <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">Profissional</span>
           </label>
         </div>
       </div>
 
       {/* ESTUDANTE */}
       {occupation === "estudante" && (
-        <div className="space-y-4 pt-2 border-t border-gray-100 animate-in fade-in slide-in-from-top-2 duration-300">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Curso</label>
+        <div className="space-y-4 pt-4 border-t border-gray-100 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="space-y-2">
+            <Label>Curso</Label>
             <select
               required={occupation === "estudante"}
               value={course}
               onChange={(e) => setCourse(e.target.value)}
-              className="block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors bg-white"
+              className={selectClassName}
             >
               <option value="" disabled>Selecione seu curso</option>
               {COURSES_LIST.map(c => <option key={c} value={c}>{c}</option>)}
@@ -322,26 +338,26 @@ export default function PersonalDataFields({
           </div>
 
           {course === "Outro" && (
-            <div className="animate-in fade-in slide-in-from-top-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Qual curso?</label>
-              <input
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+              <Label>Qual curso?</Label>
+              <Input
                 type="text"
                 required={occupation === "estudante" && course === "Outro"}
                 value={customCourse}
                 onChange={(e) => setCustomCourse(e.target.value)}
                 placeholder="Digite o nome do seu curso"
-                className="block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
+                className="h-12 rounded-xl"
               />
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Instituição de Ensino</label>
+          <div className="space-y-2">
+            <Label>Instituição de Ensino</Label>
             <select
               required={occupation === "estudante"}
               value={university}
               onChange={(e) => setUniversity(e.target.value)}
-              className="block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors bg-white"
+              className={selectClassName}
             >
               <option value="" disabled>Selecione sua universidade</option>
               {UNIVERSITIES_LIST.map(u => <option key={u} value={u}>{u}</option>)}
@@ -350,15 +366,15 @@ export default function PersonalDataFields({
           </div>
 
           {university === "Outra" && (
-            <div className="animate-in fade-in slide-in-from-top-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Qual faculdade?</label>
-              <input
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+              <Label>Qual faculdade?</Label>
+              <Input
                 type="text"
                 required={occupation === "estudante" && university === "Outra"}
                 value={customUniversity}
                 onChange={(e) => setCustomUniversity(e.target.value)}
                 placeholder="Digite o nome da instituição"
-                className="block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
+                className="h-12 rounded-xl"
               />
             </div>
           )}
@@ -367,9 +383,9 @@ export default function PersonalDataFields({
 
       {/* PROFISSIONAL */}
       {occupation === "profissional" && (
-        <div className="space-y-4 pt-2 border-t border-gray-100 animate-in fade-in slide-in-from-top-2 duration-300">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Área de Atuação</label>
+        <div className="space-y-4 pt-4 border-t border-gray-100 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="space-y-2">
+            <Label>Área de Atuação</Label>
             <select
               required={occupation === "profissional"}
               value={area}
@@ -377,7 +393,7 @@ export default function PersonalDataFields({
                 setArea(e.target.value);
                 if (e.target.value !== "Medicina") setSpecialty(""); 
               }}
-              className="block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors bg-white"
+              className={selectClassName}
             >
               <option value="" disabled>Selecione sua área</option>
               {COURSES_LIST.map(a => <option key={a} value={a}>{a}</option>)}
@@ -386,27 +402,27 @@ export default function PersonalDataFields({
           </div>
 
           {area === "Outra" && (
-            <div className="animate-in fade-in slide-in-from-top-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Qual Área?</label>
-              <input
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+              <Label>Qual Área?</Label>
+              <Input
                 type="text"
                 required={occupation === "profissional" && area === "Outra"}
                 value={customArea}
                 onChange={(e) => setCustomArea(e.target.value)}
                 placeholder="Digite a sua área de atuação"
-                className="block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
+                className="h-12 rounded-xl"
               />
             </div>
           )}
 
           {area === "Medicina" && (
-            <div className="animate-in fade-in slide-in-from-top-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Especialidade Médica</label>
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+              <Label>Especialidade Médica</Label>
               <select
                 required={occupation === "profissional" && area === "Medicina"}
                 value={specialty}
                 onChange={(e) => setSpecialty(e.target.value)}
-                className="block w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors bg-white"
+                className={selectClassName}
               >
                 <option value="" disabled>Selecione sua especialidade</option>
                 {SPECIALTIES_LIST.map(s => <option key={s} value={s}>{s}</option>)}
