@@ -4,10 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import Link from "next/link";
-
-// Importações do shadcn/ui e ícones
 import { Button } from "@/components/ui/button";
-import { Menu, X, UserCircle, Ticket, LogOut, ShieldAlert, Info } from "lucide-react";
+import { Menu, X, UserCircle, Ticket, LogOut, ShieldAlert, Info, ScanBarcode } from "lucide-react";
 
 export default function Header() {
   const router = useRouter();
@@ -77,13 +75,22 @@ export default function Header() {
                 </Button>
               </Link>
 
+              {/* LINKS RESTRITOS PARA ADMINS (DESKTOP) */}
               {!loading && isAdmin && (
-                <Link href="/admin" passHref>
-                  <Button variant="ghost" className="text-gray-500 hover:text-gray-900 gap-2">
-                    <ShieldAlert className="w-4 h-4" />
-                    Painel Administrativo
-                  </Button>
-                </Link>
+                <>
+                  <Link href="/admin" passHref>
+                    <Button variant="ghost" className="text-gray-500 hover:text-gray-900 gap-2">
+                      <ShieldAlert className="w-4 h-4" />
+                      Painel
+                    </Button>
+                  </Link>
+                  <Link href="/admin/checkin" passHref>
+                    <Button variant="ghost" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-bold gap-2">
+                      <ScanBarcode className="w-4 h-4" />
+                      Scanner
+                    </Button>
+                  </Link>
+                </>
               )}
             </nav>
           </div>
@@ -155,17 +162,30 @@ export default function Header() {
               </Button>
             </Link>
             
+            {/* LINKS RESTRITOS PARA ADMINS (MOBILE) */}
             {!loading && isAdmin && (
-              <Link href="/admin" passHref>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start text-gray-700 font-medium"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <ShieldAlert className="w-4 h-4 mr-3 text-gray-400" />
-                  Painel Administrativo
-                </Button>
-              </Link>
+              <>
+                <Link href="/admin" passHref>
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-start text-gray-700 font-medium"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <ShieldAlert className="w-4 h-4 mr-3 text-gray-400" />
+                    Painel Administrativo
+                  </Button>
+                </Link>
+                <Link href="/admin/checkin" passHref>
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-start text-blue-600 font-bold bg-blue-50/50 hover:bg-blue-50 mt-1"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <ScanBarcode className="w-4 h-4 mr-3" />
+                    Modo Portaria (Scanner)
+                  </Button>
+                </Link>
+              </>
             )}
 
             {user && (
