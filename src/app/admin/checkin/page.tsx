@@ -4,13 +4,20 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { 
+  ArrowLeft, Camera, CameraOff, Loader2, CheckCircle2, 
+  XCircle, AlertTriangle, ScanBarcode, ShieldAlert 
+} from "lucide-react";
 
 export default function CheckinPage() {
   const router = useRouter();
   
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [authorized, setAuthorized] = useState(false);
-  
   const [ticketId, setTicketId] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ 
@@ -63,8 +70,7 @@ export default function CheckinPage() {
           html5QrcodeScanner.clear();
           handleCheckin(null, decodedText); 
         },
-        (error: any) => {
-        }
+        (error: any) => { }
       );
     };
 
@@ -132,7 +138,7 @@ export default function CheckinPage() {
   if (isCheckingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -140,123 +146,135 @@ export default function CheckinPage() {
   if (!authorized) return null;
 
   return (
-    <main className="bg-gray-50 py-10 px-4 sm:px-6 lg:px-8 grow flex flex-col items-center">
-      <div className="w-full max-w-2xl">
-        <div className="mb-6 flex items-center justify-between">
-          <Link href="/admin" className="text-sm font-medium text-gray-500 hover:text-blue-600 flex items-center transition-colors">
-            &larr; Voltar ao Painel
+    <main className="bg-gray-50 py-10 px-4 sm:px-6 lg:px-8 min-h-screen flex flex-col items-center">
+      <div className="w-full max-w-2xl space-y-6">
+        
+        {/* Navegação e Título */}
+        <div className="flex flex-col gap-2">
+          <Link href="/admin" className="text-sm font-medium text-muted-foreground hover:text-blue-600 flex items-center transition-colors w-fit">
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Voltar ao Painel
           </Link>
-          <h1 className="text-xl font-extrabold text-gray-900">Portaria / Check-in</h1>
+          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Portaria / Check-in</h1>
         </div>
 
-        <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-200">
+        <Card className="shadow-lg border-gray-100">
+          <CardHeader className="pb-4">
+            <CardTitle>Validação de Ingressos</CardTitle>
+            <CardDescription>Escaneie o QR Code ou digite o ID manualmente.</CardDescription>
+          </CardHeader>
           
-          <div className="flex flex-col sm:flex-row gap-4 mb-8">
-            <button
-              type="button"
+          <CardContent className="space-y-6">
+            {/* Controle da Câmera */}
+            <Button
+              variant={isScanning ? "destructive" : "default"}
               onClick={() => setIsScanning(!isScanning)}
-              className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold shadow-sm transition-colors border ${
-                isScanning 
-                  ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100' 
-                  : 'bg-gray-900 text-white border-transparent hover:bg-gray-800'
-              }`}
+              className="w-full h-14 text-base font-bold rounded-xl"
             >
-              {isScanning ? 'Fechar Câmera' : '📷 Ler com a Câmera do Celular'}
-            </button>
-          </div>
+              {isScanning ? (
+                <><CameraOff className="w-5 h-5 mr-2" /> Fechar Câmera</>
+              ) : (
+                <><Camera className="w-5 h-5 mr-2" /> Ler com a Câmera do Celular</>
+              )}
+            </Button>
 
-          {isScanning && (
-            <div className="mb-8 p-2 border-2 border-blue-100 rounded-2xl bg-gray-50 animate-in fade-in">
-              <div id="qr-reader" className="w-full mx-auto overflow-hidden rounded-xl"></div>
-              <p className="text-xs text-center text-gray-500 mt-3 font-medium">
-                Aponte a câmera para o QR Code do ingresso.
-              </p>
-            </div>
-          )}
+            {isScanning && (
+              <div className="p-2 border-2 border-blue-100 rounded-2xl bg-gray-50 animate-in zoom-in-95">
+                <div id="qr-reader" className="w-full mx-auto overflow-hidden rounded-xl bg-black"></div>
+                <p className="text-sm text-center text-muted-foreground mt-3 font-medium flex items-center justify-center gap-2">
+                  <ScanBarcode className="w-4 h-4" />
+                  Aponte a câmera para o QR Code
+                </p>
+              </div>
+            )}
 
-          {!isScanning && (
-            <div className="text-center mb-6">
-              <p className="text-gray-500 font-medium">Ou use o leitor físico / digite o ID manualmente:</p>
-            </div>
-          )}
+            {!isScanning && (
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-gray-200" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-2 text-muted-foreground font-bold">Ou digite o ID</span>
+                </div>
+              </div>
+            )}
 
-          <form onSubmit={handleCheckin} className="space-y-4">
-            <div>
-              <input
+            {/* Formulário de ID Manual */}
+            <form onSubmit={handleCheckin} className="space-y-4">
+              <Input
                 ref={inputRef}
                 type="text"
-                placeholder="Ex: 123e4567-e89b-12d3..."
+                placeholder="Ex: 123e4567-e89b..."
                 value={ticketId}
                 onChange={(e) => setTicketId(e.target.value)}
                 disabled={loading || isScanning}
-                className="block w-full text-center text-lg font-mono border-2 border-gray-300 rounded-xl py-4 px-4 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50 disabled:opacity-50"
+                className="text-center h-14 text-lg font-mono rounded-xl bg-gray-50 focus-visible:ring-blue-500"
               />
-            </div>
-            <button
-              type="submit"
-              disabled={loading || !ticketId.trim() || isScanning}
-              className="w-full bg-blue-600 border border-transparent rounded-xl shadow-sm py-4 px-8 text-lg font-bold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300 transition-all disabled:opacity-50"
-            >
-              {loading ? 'Validando...' : 'Validar Ingresso'}
-            </button>
-          </form>
+              <Button
+                type="submit"
+                disabled={loading || !ticketId.trim() || isScanning}
+                className="w-full h-14 text-lg font-bold rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-70"
+              >
+                {loading ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Validando...</> : 'Validar Ingresso'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
-          {result.status && (
-            <div className={`mt-8 p-6 rounded-2xl border-2 text-center animate-in fade-in slide-in-from-bottom-4 ${
-              result.status === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 
-              result.status === 'warning' ? 'bg-yellow-50 border-yellow-200 text-yellow-800' : 
-              'bg-red-50 border-red-200 text-red-800'
-            }`}>
-              <div className="flex justify-center mb-2">
-                {result.status === 'success' && (
-                  <svg className="w-10 h-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                  </svg>
-                )}
-                {result.status === 'error' && (
-                  <svg className="w-10 h-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                )}
-                {result.status === 'warning' && (
-                  <svg className="w-10 h-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                )}
-              </div>
-              <p className="text-xl font-bold">{result.message}</p>
+        {/* Resultado da Validação */}
+        {result.status && (
+          <Card className={`overflow-hidden border-2 animate-in slide-in-from-bottom-4 shadow-xl ${
+            result.status === 'success' ? 'bg-green-50 border-green-400' : 
+            result.status === 'warning' ? 'bg-yellow-50 border-yellow-400' : 
+            'bg-red-50 border-red-400'
+          }`}>
+            <CardContent className="p-8 flex flex-col items-center text-center">
+              {result.status === 'success' && <CheckCircle2 className="w-16 h-16 text-green-600 mb-4" />}
+              {result.status === 'error' && <XCircle className="w-16 h-16 text-red-600 mb-4" />}
+              {result.status === 'warning' && <AlertTriangle className="w-16 h-16 text-yellow-600 mb-4" />}
+              
+              <h2 className={`text-2xl font-black mb-6 ${
+                result.status === 'success' ? 'text-green-800' : 
+                result.status === 'warning' ? 'text-yellow-800' : 
+                'text-red-800'
+              }`}>
+                {result.message}
+              </h2>
 
+              {/* Box com Dados do Usuário */}
               {result.status === 'success' && result.userData && (
-                <div className="mt-6 bg-white border border-green-200 rounded-xl p-5 text-left shadow-sm inline-block w-full max-w-sm">
-                  <p className="text-xs uppercase tracking-wider text-green-600 font-bold mb-3 border-b border-green-100 pb-2">
-                    Conferência Obrigatória
-                  </p>
+                <div className="w-full bg-white rounded-2xl p-6 shadow-sm border border-green-100 text-left">
+                  <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+                    <ShieldAlert className="w-4 h-4 text-green-600" />
+                    <span className="text-xs uppercase tracking-widest text-green-700 font-extrabold">
+                      Conferência de Identidade
+                    </span>
+                  </div>
                   
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <div>
-                      <p className="text-xs text-gray-500 font-medium">Nome do Titular</p>
-                      <p className="text-lg font-bold text-gray-900">{result.userData.fullName}</p>
+                      <p className="text-sm text-muted-foreground font-medium mb-1">Nome do Titular</p>
+                      <p className="text-xl font-bold text-gray-900 leading-none">{result.userData.fullName}</p>
                     </div>
                     
-                    <div className="flex justify-between items-end gap-4">
+                    <div className="flex items-end justify-between">
                       <div>
-                        <p className="text-xs text-gray-500 font-medium">CPF</p>
-                        <p className="text-md font-mono font-semibold text-gray-800">{result.userData.cpf}</p>
+                        <p className="text-sm text-muted-foreground font-medium mb-1">Documento (CPF)</p>
+                        <p className="text-lg font-mono font-semibold text-gray-800">{result.userData.cpf}</p>
                       </div>
                       
                       <div className="text-right">
-                        <p className="text-xs text-gray-500 font-medium">Ocupação</p>
-                        <p className="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-sm">
                           {result.userData.occupation || 'Não informada'}
-                        </p>
+                        </Badge>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
-            </div>
-          )}
-        </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </main>
   );
