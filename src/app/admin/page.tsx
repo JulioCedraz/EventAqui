@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
   Loader2, QrCode, Calendar, Image as ImageIcon, 
-  Pencil, Trash2, CheckCircle2, Clock 
+  Pencil, Trash2, CheckCircle2, Clock, X 
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -285,8 +285,14 @@ export default function AdminDashboard() {
                 </CardDescription>
               </div>
               {editingId && (
-                <Button variant="ghost" onClick={resetForm} className="text-red-500 hover:text-red-600 hover:bg-red-50">
-                  Cancelar Edição
+                <Button 
+                  variant="ghost" 
+                  onClick={resetForm} 
+                  className="text-red-500 hover:text-red-600 hover:bg-red-50 px-2 md:px-4 self-start"
+                  title="Descartar Alterações"
+                >
+                  <X className="w-6 h-6 md:hidden stroke-3" />
+                  <span className="hidden md:inline font-semibold">Descartar Alterações</span>
                 </Button>
               )}
             </div>
