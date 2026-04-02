@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Scanner } from '@yudiel/react-qr-scanner';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,41 +49,6 @@ export default function CheckinPage() {
 
     checkAdmin();
   }, [router]);
-
-  useEffect(() => {
-    if (!isScanning) return;
-
-    let html5QrcodeScanner: any = null;
-
-    const startScanner = async () => {
-      if (!document.getElementById('qr-reader')) return;
-      const { Html5QrcodeScanner } = await import('html5-qrcode');
-      
-      html5QrcodeScanner = new Html5QrcodeScanner(
-        "qr-reader",
-        { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
-        false
-      );
-
-      html5QrcodeScanner.render(
-        (decodedText: string) => {
-          setTicketId(decodedText);
-          setIsScanning(false);
-          html5QrcodeScanner.clear();
-          handleCheckin(null, decodedText); 
-        },
-        (error: any) => { }
-      );
-    };
-
-    startScanner();
-
-    return () => {
-      if (html5QrcodeScanner) {
-        html5QrcodeScanner.clear().catch(console.error);
-      }
-    };
-  }, [isScanning]);
 
   const handleCheckin = async (e?: React.SyntheticEvent | null, scannedId?: string) => {
     if (e) e.preventDefault();
@@ -156,7 +122,7 @@ export default function CheckinPage() {
             <ArrowLeft className="w-4 h-4 mr-1" />
             Voltar ao Painel
           </Link>
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Portaria / Check-in</h1>
+          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Scanner para Check-in</h1>
         </div>
 
         <Card className="shadow-lg border-gray-100">
@@ -175,16 +141,34 @@ export default function CheckinPage() {
               {isScanning ? (
                 <><CameraOff className="w-5 h-5 mr-2" /> Fechar Câmera</>
               ) : (
-                <><Camera className="w-5 h-5 mr-2" /> Ler com a Câmera do Celular</>
+                <><Camera className="w-5 h-5 mr-2" /> Abrir Câmera</>
               )}
             </Button>
 
+            {/* Componente do Scanner */}
             {isScanning && (
-              <div className="p-2 border-2 border-blue-100 rounded-2xl bg-gray-50 animate-in zoom-in-95">
-                <div id="qr-reader" className="w-full mx-auto overflow-hidden rounded-xl"></div>
-                <p className="text-sm text-center text-muted-foreground mt-3 font-medium flex items-center justify-center gap-2">
+              <div className="p-4 border-2 border-blue-100 rounded-2xl bg-white animate-in zoom-in-95">
+                <div className="w-full max-w-sm mx-auto overflow-hidden rounded-xl border border-gray-100 shadow-inner">
+                  <Scanner
+                    onScan={(result) => {
+                      if (result && result.length > 0) {
+                        const code = result[0].rawValue;
+                        setTicketId(code);
+                        setIsScanning(false);
+                        handleCheckin(null, code);
+                      }
+                    }}
+                    onError={(error) => {
+                      console.log("Aguardando leitura...", error);
+                    }}
+                    components={{
+                      finder: true, 
+                    }}
+                  />
+                </div>
+                <p className="text-sm text-center text-muted-foreground mt-4 font-medium flex items-center justify-center gap-2">
                   <ScanBarcode className="w-4 h-4" />
-                  Aponte a câmera para o QR Code
+                  Centralize o QR Code na câmera
                 </p>
               </div>
             )}
@@ -242,7 +226,7 @@ export default function CheckinPage() {
                 {result.message}
               </h2>
 
-              {/* Box com Dados do Usuário */}
+              {/* Box com os dados do cliente */}
               {result.status === 'success' && result.userData && (
                 <div className="w-full bg-white rounded-2xl p-6 shadow-sm border border-green-100 text-left">
                   <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
