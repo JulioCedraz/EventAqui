@@ -6,6 +6,13 @@ import { useRouter } from "next/navigation";
 import PersonalDataFields, { validateCPF } from "../../components/PersonalDataFields";
 import SmartModal, { DialogConfig } from "../../components/SmartModal";
 
+// Importações do shadcn/ui e ícones
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Loader2, CheckCircle2 } from "lucide-react";
+
 export default function LoginPage() {
   const router = useRouter();
 
@@ -330,7 +337,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 px-6 lg:px-8 relative overflow-hidden">
+    <main className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       
       <SmartModal 
         dialog={activeDialog} 
@@ -338,32 +345,30 @@ export default function LoginPage() {
         isProcessing={isModalProcessing} 
       />
 
-      <div className="mx-auto w-full max-w-md">
-        <h2 
-          key={isLogin ? "title-login" : "title-signup"}
-          className="mt-6 text-center text-3xl font-extrabold text-gray-900 tracking-tight animate-in fade-in slide-in-from-top-4 duration-500"
-        >
-          {isLogin ? "Acesse sua conta" : "Crie a sua conta"}
-        </h2>
-      </div>
+      <Card key={isLogin ? "card-login" : "card-signup"} className="w-full max-w-md mx-auto shadow-xl shadow-blue-900/5 rounded-3xl border-gray-100 animate-in fade-in zoom-in-95 slide-in-from-bottom-8 duration-500 ease-out">
+        <CardHeader className="text-center pb-6">
+          <CardTitle className="text-3xl font-extrabold text-gray-900 tracking-tight">
+            {isLogin ? "Acesse sua conta" : "Crie a sua conta"}
+          </CardTitle>
+          <CardDescription className="text-base mt-2">
+            {isLogin ? "Insira as suas credenciais para continuar." : "Preencha os dados abaixo para se cadastrar."}
+          </CardDescription>
+        </CardHeader>
 
-      <div className="mt-8 mx-auto w-full max-w-md">
-        <div 
-          key={isLogin ? "form-login" : "form-signup"}
-          className="bg-white py-8 px-6 shadow-xl shadow-blue-900/5 rounded-3xl border border-gray-100 animate-in fade-in zoom-in-95 slide-in-from-bottom-8 duration-500 ease-out"
-        >
+        <CardContent>
           <form className="space-y-5" onSubmit={handleSubmit}>
             {errorMsg && (
               <div className="bg-red-50 border border-red-100 text-red-600 text-sm p-3 rounded-xl text-center font-medium animate-in fade-in slide-in-from-top-2">
                 {errorMsg}
                 {needsConfirmation && (
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={handleResendConfirmation}
-                    className="mt-3 w-full py-2 px-4 border border-red-200 rounded-lg text-sm font-bold text-red-700 bg-red-100 hover:bg-red-200 transition-colors"
+                    className="mt-3 w-full border-red-200 text-red-700 bg-red-100 hover:bg-red-200"
                   >
                     Reenviar link de confirmação
-                  </button>
+                  </Button>
                 )}
               </div>
             )}
@@ -373,10 +378,11 @@ export default function LoginPage() {
               </div>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">E-mail</label>
-              <div className="relative mt-1">
-                <input
+            <div className="space-y-2 relative">
+              <Label htmlFor="email">E-mail</Label>
+              <div className="relative">
+                <Input
+                  id="email"
                   type="email"
                   required
                   value={email}
@@ -388,19 +394,23 @@ export default function LoginPage() {
                     }
                   }}
                   onBlur={handleEmailBlur}
-                  className={`block w-full px-4 py-3 border rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors ${
-                    emailStatus === "valid" ? "border-green-400 bg-green-50" : emailStatus === "invalid" ? "border-red-400 bg-red-50" : "border-gray-300"
+                  className={`py-6 rounded-xl ${
+                    emailStatus === "valid" ? "border-green-400 focus-visible:ring-green-400 bg-green-50/50" : 
+                    emailStatus === "invalid" ? "border-red-400 focus-visible:ring-red-400 bg-red-50/50" : ""
                   }`}
                 />
-                {isCheckingEmail && <span className="absolute right-4 top-3.5 text-xs font-medium text-gray-400 animate-pulse">Verificando...</span>}
+                {isCheckingEmail && (
+                  <div className="absolute right-4 top-3.5 flex items-center gap-2 text-xs font-medium text-gray-400">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Verificando...
+                  </div>
+                )}
                 {!isCheckingEmail && emailStatus === "valid" && (
-                  <svg className="absolute right-4 top-3.5 w-5 h-5 text-green-500 animate-in zoom-in" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
+                  <CheckCircle2 className="absolute right-4 top-3.5 w-5 h-5 text-green-500 animate-in zoom-in" />
                 )}
               </div>
               {emailMessage && (
-                <p className={`mt-1.5 text-sm font-medium animate-in fade-in slide-in-from-top-1 ${emailStatus === "valid" ? "text-green-600" : "text-red-600"}`}>
+                <p className={`text-xs font-medium animate-in fade-in slide-in-from-top-1 ${emailStatus === "valid" ? "text-green-600" : "text-red-600"}`}>
                   {emailMessage}
                 </p>
               )}
@@ -435,61 +445,64 @@ export default function LoginPage() {
               </div>
             )}
 
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <label className="block text-sm font-medium text-gray-700">Senha</label>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="password">Senha</Label>
                 {isLogin && (
-                  <button
+                  <Button
+                    variant="link"
                     type="button"
                     onClick={handlePasswordRecovery}
-                    className="text-xs font-medium text-blue-600 hover:text-blue-500 transition-colors"
+                    className="h-auto p-0 text-xs font-medium text-blue-600 hover:text-blue-500"
                   >
                     Esqueci minha senha
-                  </button>
+                  </Button>
                 )}
               </div>
-              <input
+              <Input
+                id="password"
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 minLength={6}
-                className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors"
+                className="py-6 rounded-xl"
               />
             </div>
 
-            <button
+            <Button
               type="submit"
               disabled={isLoading || (!isLogin && cpfStatus === 'invalid')}
-              className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-md shadow-blue-600/20 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300 disabled:shadow-none transition-all active:scale-[0.98] mt-2"
+              className="w-full py-6 rounded-xl text-base font-bold bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 transition-all active:scale-[0.98] mt-4"
             >
               {isLoading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   Processando...
-                </div>
+                </>
               ) : isLogin ? "Entrar" : "Criar Conta"}
-            </button>
+            </Button>
           </form>
+        </CardContent>
 
-          <div className="mt-8 text-center border-t border-gray-100 pt-6">
-            <button
-              type="button"
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setErrorMsg("");
-                setSuccessMsg("");
-                setEmailStatus("idle");
-                setEmailMessage("");
-                setNeedsConfirmation(false);
-              }}
-              className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
-            >
-              {isLogin ? "Ainda não tem conta? Cadastre-se" : "Já tem uma conta? Fazer login"}
-            </button>
-          </div>
-        </div>
-      </div>
+        <CardFooter className="flex justify-center border-t border-gray-100 pt-6">
+          <Button
+            variant="ghost"
+            type="button"
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setErrorMsg("");
+              setSuccessMsg("");
+              setEmailStatus("idle");
+              setEmailMessage("");
+              setNeedsConfirmation(false);
+            }}
+            className="text-sm font-medium text-gray-600 hover:text-blue-600"
+          >
+            {isLogin ? "Ainda não tem conta? Cadastre-se" : "Já tem uma conta? Fazer login"}
+          </Button>
+        </CardFooter>
+      </Card>
     </main>
   );
 }
