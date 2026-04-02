@@ -205,7 +205,7 @@ export default function AdminDashboard() {
     setImage(null);
     setImageError('');
     
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 110, behavior: 'smooth' });
   };
 
   const handleDeleteClick = (id: string) => {
@@ -266,18 +266,10 @@ export default function AdminDashboard() {
 
       <div className="w-full max-w-4xl space-y-8">
 
-        {/* CABEÇALHO DO PAINEL */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-200">
-          <div>
-            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Painel de Controle</h1>
-            <p className="text-sm text-muted-foreground mt-1">Gerencie a criação de eventos e o controle de portaria.</p>
-          </div>
-          <Link href="/admin/checkin" passHref>
-            <Button className="w-full sm:w-auto h-12 px-6 rounded-xl font-bold bg-gray-900 hover:bg-gray-800 shadow-sm">
-              <QrCode className="w-5 h-5 mr-2" />
-              Modo Portaria (Check-in)
-            </Button>
-          </Link>
+        {/* TÍTULO LIMPO NO TOPO */}
+        <div className="pt-1 pb-1">
+          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Painel de Controle</h1>
+          <p>Criação de eventos e controle de portaria.</p>
         </div>
 
         {/* FORMULÁRIO DE CRIAÇÃO/EDIÇÃO */}
@@ -447,27 +439,40 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* LISTA DE EVENTOS PUBLICADOS */}
-        <Card className="shadow-md border-0 rounded-3xl overflow-hidden">
-          <CardHeader className="border-b border-gray-100 pb-5">
-            <CardTitle className="text-lg font-bold flex items-center justify-between">
-              Eventos Publicados
-              <Badge variant="secondary" className="bg-gray-200 text-gray-700 font-bold px-3 py-1">
-                {events.length}
-              </Badge>
-            </CardTitle>
+        {/* LISTA DE EVENTOS PUBLICADOS E BOTÃO DA PORTARIA */}
+        <Card className="shadow-md border-0 rounded-3xl overflow-hidden mt-8">
+          <CardHeader className="bg-white border-b border-gray-100 pb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="text-xl font-bold flex items-center gap-2">
+                  Eventos Publicados
+                  <Badge variant="secondary" className="bg-gray-100 text-gray-700 font-bold px-2.5 py-0.5 rounded-md ml-2">
+                    {events.length}
+                  </Badge>
+                </CardTitle>
+                <CardDescription className="mt-1.5">
+                  Edite as características dos eventos ou apague-os.
+                </CardDescription>
+              </div>
+              <Link href="/admin/checkin" passHref>
+                <Button className="w-full sm:w-auto h-11 px-6 rounded-xl font-bold bg-gray-900 hover:bg-gray-800 shadow-sm transition-all hover:scale-105">
+                  <QrCode className="w-4 h-4 mr-2" />
+                  Acessar Scanner
+                </Button>
+              </Link>
+            </div>
           </CardHeader>
           
           <CardContent className="p-0">
             {events.length === 0 ? (
-              <div className="p-12 text-center text-muted-foreground flex flex-col items-center gap-3">
+              <div className="p-12 text-center text-muted-foreground flex flex-col items-center gap-3 bg-gray-50">
                 <Calendar className="w-12 h-12 text-gray-300" />
                 <p>Nenhum evento cadastrado ainda.</p>
               </div>
             ) : (
               <ul className="divide-y divide-gray-100">
                 {events.map((evt) => (
-                  <li key={evt.id} className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-5 hover:bg-gray-50/80 transition-colors group">
+                  <li key={evt.id} className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-5 hover:bg-gray-50/80 transition-colors group bg-white">
                     
                     <div className="flex items-center gap-4">
                       {/* Miniatura da Capa */}
