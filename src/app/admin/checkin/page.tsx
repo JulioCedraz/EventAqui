@@ -55,6 +55,7 @@ export default function CheckinPage() {
     let html5QrcodeScanner: any = null;
 
     const startScanner = async () => {
+      if (!document.getElementById('qr-reader')) return;
       const { Html5QrcodeScanner } = await import('html5-qrcode');
       
       html5QrcodeScanner = new Html5QrcodeScanner(
@@ -180,7 +181,7 @@ export default function CheckinPage() {
 
             {isScanning && (
               <div className="p-2 border-2 border-blue-100 rounded-2xl bg-gray-50 animate-in zoom-in-95">
-                <div id="qr-reader" className="w-full mx-auto overflow-hidden rounded-xl bg-black"></div>
+                <div id="qr-reader" className="w-full mx-auto overflow-hidden rounded-xl"></div>
                 <p className="text-sm text-center text-muted-foreground mt-3 font-medium flex items-center justify-center gap-2">
                   <ScanBarcode className="w-4 h-4" />
                   Aponte a câmera para o QR Code
