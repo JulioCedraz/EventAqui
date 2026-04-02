@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2, CheckCircle2, XCircle, AlertTriangle, Ban, ScanLine } from "lucide-react";
 
 type QrcodeStatus = 'sucesso' | 'usado' | 'pendente' | 'invalido' | null;
 
@@ -66,38 +68,48 @@ export default function QRCodeReader() {
     };
   }, []);
 
-  const bgColors = {
-    sucesso: 'bg-green-500 text-white',
-    usado: 'bg-red-600 text-white',
-    pendente: 'bg-yellow-500 text-black',
-    invalido: 'bg-gray-800 text-white',
-    null: 'bg-white text-gray-800'
+  const getStatusUI = () => {
+    if (lendo) return { color: 'bg-blue-600 text-white', icon: <Loader2 className="w-16 h-16 animate-spin mb-3 mx-auto" />, title: 'PROCESSANDO...' };
+    
+    switch (statusValidacao) {
+      case 'sucesso':
+        return { color: 'bg-green-500 text-white', icon: <CheckCircle2 className="w-16 h-16 mb-3 mx-auto" />, title: 'LIBERADO' };
+      case 'usado':
+        return { color: 'bg-red-600 text-white', icon: <XCircle className="w-16 h-16 mb-3 mx-auto" />, title: 'BARRADO' };
+      case 'pendente':
+        return { color: 'bg-yellow-500 text-black', icon: <AlertTriangle className="w-16 h-16 mb-3 mx-auto" />, title: 'PAGAMENTO PENDENTE' };
+      case 'invalido':
+        return { color: 'bg-gray-800 text-white', icon: <Ban className="w-16 h-16 mb-3 mx-auto" />, title: 'INVÁLIDO' };
+      default:
+        return { color: 'bg-white text-gray-800', icon: <ScanLine className="w-16 h-16 mb-3 mx-auto text-blue-500" />, title: 'PRONTO' };
+    }
   };
 
+  const ui = getStatusUI();
+
   return (
-    <div className="min-h-screen bg-gray-100 p-4 md:p-8 flex flex-col items-center">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8 flex flex-col items-center justify-center">
+      <Card className="w-full max-w-md shadow-2xl overflow-hidden border-0">
         
-        <div className="p-4 text-center bg-gray-900 text-white">
-          <h1 className="text-xl font-bold">Controle de Portaria</h1>
-        </div>
+        <CardHeader className="p-4 text-center bg-gray-900 text-white rounded-t-xl">
+          <CardTitle className="text-xl font-extrabold tracking-tight">Controle de Portaria</CardTitle>
+        </CardHeader>
 
-        <div id="leitor-qr" className="w-full bg-black min-h-75" />
+        <CardContent className="p-0">
+          <div id="leitor-qr" className="w-full bg-black min-h-75" />
+          
+          <div className={`p-8 text-center transition-colors duration-500 flex flex-col items-center justify-center min-h-55 ${ui.color}`}>
+            {ui.icon}
+            <h2 className="text-2xl font-black mb-2 tracking-wide">
+              {ui.title}
+            </h2>
+            <p className={`font-medium text-lg leading-snug ${statusValidacao ? 'opacity-90' : 'text-gray-500'}`}>
+              {mensagem}
+            </p>
+          </div>
+        </CardContent>
 
-        <div className={`p-6 text-center transition-colors duration-300 ${bgColors[statusValidacao ?? 'null']}`}>
-          {lendo && (
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-current mx-auto mb-4" />
-          )}
-          <h2 className="text-xl font-bold mb-2">
-            {statusValidacao === 'sucesso' && '✅ LIBERADO'}
-            {statusValidacao === 'usado' && '❌ BARRADO'}
-            {statusValidacao === 'pendente' && '⚠️ PAGAMENTO PENDENTE'}
-            {statusValidacao === 'invalido' && '🚫 INVÁLIDO'}
-            {!statusValidacao && !lendo && '📷 PRONTO'}
-          </h2>
-          <p className="font-medium text-lg">{mensagem}</p>
-        </div>
-      </div>
+      </Card>
     </div>
   );
 }
