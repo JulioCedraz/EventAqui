@@ -5,6 +5,15 @@ import { supabase } from '../../../../lib/supabase';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Database } from '../../../../types/database.types';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { 
+  Loader2, AlertCircle, Clock, Copy, 
+  CheckCircle2, QrCode, ArrowLeft, Ticket 
+} from "lucide-react";
 
 type Event = Database['public']['Tables']['events']['Row'];
 
@@ -22,7 +31,7 @@ export default function ResumePaymentPage() {
   const [ticketQuantity, setTicketQuantity] = useState(1);
   const [timeLeft, setTimeLeft] = useState<string>('Calculando...');
   const [isExpired, setIsExpired] = useState(false);
-   const [copiedPix, setCopiedPix] = useState(false);
+  const [copiedPix, setCopiedPix] = useState(false);
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
@@ -52,7 +61,7 @@ export default function ResumePaymentPage() {
       }
 
       if (!ticketData.expires_at) {
-        setErrorMsg('Erro interno: A validade deste ingresso não foi registrada corretamente no sistema. Por favor, cancele e tente novamente.');
+        setErrorMsg('Erro interno: A validade deste ingresso não foi registrada corretamente. Por favor, cancele e tente novamente.');
         setLoading(false);
         return;
       }
@@ -105,119 +114,151 @@ export default function ResumePaymentPage() {
 
     try {
       await navigator.clipboard.writeText(pixData.qr_code);
-      
       setCopiedPix(true);
-      setTimeout(() => setCopiedPix(false), 2000);
+      toast.success('Código PIX copiado com sucesso!');
       
+      setTimeout(() => setCopiedPix(false), 2000);
     } catch (error) {
-      console.error('Falha ao copiar PIX:', error);
-      alert('Erro ao copiar. Por favor, selecione e copie o código manualmente.');
+      toast.error('Erro ao copiar. Por favor, selecione e copie o código manualmente.');
     }
   };
 
+  // VISTA 1: CARREGANDO
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
       </div>
     );
   }
 
+  // VISTA 2: ERRO
   if (errorMsg) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="bg-white p-8 rounded-2xl shadow-sm border border-red-100 text-center max-w-md w-full">
-          <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-          </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Ops! Ocorreu um erro.</h2>
-          <p className="text-gray-600 mb-6">{errorMsg}</p>
-          <button onClick={() => router.push('/tickets')} className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700">
-            Ir para Meus Ingressos
-          </button>
-        </div>
+        <Card className="max-w-md w-full border-red-100 shadow-lg animate-in zoom-in-95">
+          <CardContent className="pt-10 pb-8 px-8 text-center flex flex-col items-center">
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-6">
+              <AlertCircle className="w-8 h-8 text-red-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Ops! Ocorreu um erro.</h2>
+            <p className="text-gray-600 mb-8">{errorMsg}</p>
+            <Button 
+              onClick={() => router.push('/tickets')} 
+              className="w-full h-12 text-base font-bold rounded-xl"
+            >
+              Ir para Meus Ingressos
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
+  // VISTA 3: EXPIRADO
   if (isExpired) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="bg-white p-8 rounded-2xl shadow-sm border border-red-100 text-center max-w-md w-full">
-          <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Código PIX Expirado</h2>
-          <p className="text-gray-600 mb-6">O prazo de 30 minutos para pagamento encerrou e o seu pedido foi cancelado para libertar os ingressos.</p>
-          <button onClick={() => router.push(`/evento/${eventId}`)} className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700">
-            Fazer Nova Compra
-          </button>
-        </div>
+        <Card className="max-w-md w-full border-red-100 shadow-lg animate-in zoom-in-95">
+          <CardContent className="pt-10 pb-8 px-8 text-center flex flex-col items-center">
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-6">
+              <Clock className="w-8 h-8 text-red-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Código PIX Expirado</h2>
+            <p className="text-gray-600 mb-8">O prazo de 30 minutos para pagamento encerrou e o seu pedido foi cancelado para libertar as vagas.</p>
+            <Button 
+              onClick={() => router.push(`/evento/${eventId}`)} 
+              className="w-full h-12 text-base font-bold rounded-xl bg-blue-600 hover:bg-blue-700"
+            >
+              Fazer Nova Compra
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
+  // VISTA 4: PAGAMENTO ATIVO
   return (
     <main className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 flex justify-center items-start">
-      <div className="max-w-xl w-full bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="bg-blue-600 p-6 text-center">
-          <h1 className="text-2xl font-extrabold text-white">Finalizar Pagamento</h1>
-          <p className="mt-1">
-            <Link href={`/evento/${eventId}`} className="text-blue-100 hover:text-white hover:underline transition-colors">
+      <Card className="max-w-xl w-full border-gray-200 shadow-xl overflow-hidden rounded-3xl animate-in fade-in slide-in-from-bottom-4">
+        
+        <div className="bg-blue-600 p-8 text-center">
+          <div className="mx-auto w-12 h-12 bg-blue-500/50 rounded-full flex items-center justify-center mb-4">
+            <QrCode className="w-6 h-6 text-white" />
+          </div>
+          <h1 className="text-2xl font-extrabold text-white tracking-tight">Finalizar Pagamento</h1>
+          <p className="mt-2 font-medium">
+            <Link href={`/evento/${eventId}`} className="text-blue-100 hover:text-white hover:underline transition-colors flex items-center justify-center gap-1.5">
+              <Ticket className="w-4 h-4" />
               {eventDetails?.title}
             </Link>
           </p>
         </div>
 
-        <div className="p-8">
-          <div className="flex justify-between items-center mb-6 pb-6 border-b border-gray-100">
+        <CardContent className="p-8">
+          <div className="flex justify-between items-center mb-8 pb-6 border-b border-gray-100">
             <span className="text-gray-500 font-medium">Quantidade: {ticketQuantity}x</span>
-            <span className="text-2xl font-black text-gray-900">
+            <span className="text-3xl font-black text-gray-900">
               R$ {((eventDetails?.price || 0) * ticketQuantity).toFixed(2).replace('.', ',')}
             </span>
           </div>
 
           {pixData && (
-            <div className="text-center animate-in fade-in">
-              <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-2 rounded-lg font-bold text-sm inline-block mb-6 shadow-sm">
-                Vence em: <span className="text-xl ml-1">{timeLeft}</span>
-              </div>
+            <div className="text-center flex flex-col items-center">
+              
+              <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200 px-4 py-2 text-sm font-bold flex items-center gap-2 mb-8 shadow-sm">
+                <Clock className="w-4 h-4 animate-pulse" /> 
+                Vence em: <span className="text-lg ml-1 font-black">{timeLeft}</span>
+              </Badge>
 
-              <p className="text-gray-600 text-sm mb-6">Escaneie o QR Code abaixo com o aplicativo do seu banco:</p>
+              <p className="text-gray-600 font-medium mb-6">Escaneie o QR Code abaixo com a app do seu banco:</p>
               
-              <img src={`data:image/jpeg;base64,${pixData.qr_code_base64}`} alt="QR Code PIX" className="mx-auto w-56 h-56 mb-6 border-4 border-gray-50 rounded-2xl shadow-sm" />
+              <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 mb-8 inline-block">
+                <img 
+                  src={`data:image/jpeg;base64,${pixData.qr_code_base64}`} 
+                  alt="QR Code PIX" 
+                  className="w-56 h-56 object-contain" 
+                />
+              </div>
               
-              <div className="mb-8">
-                <p className="text-sm font-medium text-gray-700 mb-2">Ou copie o código (PIX Copia e Cola):</p>
+              <div className="w-full mb-8 space-y-3 text-left">
+                <label className="text-sm font-bold text-gray-700 ml-1">Ou use o PIX Copia e Cola:</label>
                 <div className="flex gap-2">
-                  <input type="text" readOnly value={pixData.qr_code} className="w-full text-sm p-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-600 focus:outline-none" />
-                  <button 
-                      onClick={copyPix}
-                      className={`px-6 py-3 rounded-lg font-medium transition-colors whitespace-nowrap min-w-30 flex justify-center items-center text-white ${
-                        copiedPix ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-900 hover:bg-gray-800'
-                      }`}
-                    >
-                      {copiedPix ? 'Copiado ✓' : 'Copiar'}
-                    </button>
+                  <Input 
+                    type="text" 
+                    readOnly 
+                    value={pixData.qr_code} 
+                    className="font-mono text-xs bg-gray-50 h-12 rounded-xl focus-visible:ring-blue-500"
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                  />
+                  <Button 
+                    type="button"
+                    onClick={copyPix}
+                    className={`h-12 px-6 rounded-xl font-bold transition-all shrink-0 shadow-sm ${
+                      copiedPix ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'
+                    }`}
+                  >
+                    {copiedPix ? <CheckCircle2 className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                  </Button>
                 </div>
-                {copiedPix && (
-                    <p className="text-xs mt-1 text-green-600 font-medium text-left animate-in fade-in slide-in-from-top-1 duration-200">
-                      ✓ Código PIX copiado com sucesso!
-                    </p>
-                  )}
               </div>
 
-              <div className="flex gap-3">
-                <button onClick={() => router.push('/tickets')} className="flex-1 bg-white border border-gray-300 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-50 transition-colors">
-                  Voltar
-                </button>
+              <div className="w-full pt-6 border-t border-gray-100">
+                <Button 
+                  variant="outline"
+                  onClick={() => router.push('/tickets')} 
+                  className="w-full h-12 rounded-xl font-bold text-gray-700"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Voltar para Meus Ingressos
+                </Button>
               </div>
+
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </main>
   );
 }
