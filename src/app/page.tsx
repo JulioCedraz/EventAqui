@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import EventCard from '../components/EventCard';
 import { Database } from '../types/database.types';
+import { Loader2, CalendarSearch } from 'lucide-react';
+import { toast } from 'sonner';
 
 type Event = Database['public']['Tables']['events']['Row'];
 
@@ -13,53 +15,61 @@ export default function Home() {
 
   useEffect(() => {
     const fetchEvents = async () => {
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .order('event_date', { ascending: true });
+      try {
+        const { data, error } = await supabase
+          .from('events')
+          .select('*')
+          .order('event_date', { ascending: true });
 
-      if (error) {
-        console.error('Erro ao buscar eventos:', error);
-      } else {
+        if (error) throw error;
         setEvents(data || []);
+      } catch (error) {
+        console.error('Erro ao buscar eventos:', error);
+        toast.error('Não foi possível carregar os eventos no momento. Tente novamente mais tarde.');
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     };
 
     fetchEvents();
   }, []);
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col items-center">
+    <main className="min-h-screen bg-gray-50 flex flex-col items-center animate-in fade-in duration-500">
       
       <section className="w-full bg-blue-600 text-white py-16 px-4 text-center">
         <div className="max-w-3xl mx-auto space-y-4">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight animate-in slide-in-from-bottom-4 duration-700">
             Encontre os melhores eventos
           </h1>
-          <p className="text-lg md:text-xl text-blue-100">
+          <p className="text-lg md:text-xl text-blue-100 animate-in slide-in-from-bottom-5 duration-700 delay-150 fill-mode-both">
             Compre seus ingressos de forma rápida, segura e com aprovação via PIX na mesma hora.
           </p>
         </div>
       </section>
 
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grow">
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grow flex flex-col">
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-2xl font-bold text-gray-900">Próximos Eventos</h2>
+          <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Próximos Eventos</h2>
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="flex flex-col grow justify-center items-center py-20 text-gray-400">
+            <Loader2 className="h-12 w-12 animate-spin text-blue-600 mb-4" />
+            <p className="font-medium animate-pulse">Buscando eventos disponíveis...</p>
           </div>
         ) : events.length === 0 ? (
-          <div className="bg-white p-10 rounded-2xl shadow-sm border border-gray-200 text-center">
-            <p className="text-gray-500 text-lg">Nenhum evento disponível no momento.</p>
-            <p className="text-gray-400 text-sm mt-2">Volte novamente mais tarde!</p>
+          <div className="bg-white p-12 rounded-3xl shadow-sm border border-gray-100 text-center flex flex-col items-center justify-center animate-in zoom-in-95 duration-500">
+            <div className="h-20 w-20 bg-blue-50 rounded-full flex items-center justify-center mb-6">
+              <CalendarSearch className="h-10 w-10 text-blue-500" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Nenhum evento por aqui</h3>
+            <p className="text-gray-500 max-w-md mx-auto">
+              No momento não temos ingressos disponíveis, mas estamos preparando novidades incríveis. Volte novamente mais tarde!
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 animate-in slide-in-from-bottom-8 duration-700">
             {events.map((event) => (
               <EventCard 
                 key={event.id}
