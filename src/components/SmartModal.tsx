@@ -1,4 +1,14 @@
 import React from 'react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { 
+  AlertTriangle, 
+  CheckCircle2, 
+  AlertCircle, 
+  KeyRound, 
+  Info, 
+  Loader2 
+} from "lucide-react";
 
 export type DialogConfig = {
   isOpen: boolean;
@@ -29,28 +39,29 @@ export default function SmartModal({ dialog, onClose, isProcessing = false }: Sm
 
   if (dialog.type === 'confirm') {
     iconBg = 'bg-red-100';
-    icon = <svg className="h-7 w-7 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>;
+    icon = <AlertTriangle className="h-7 w-7 sm:h-8 sm:w-8 text-red-600" />;
   } else if (dialog.type === 'success') {
     iconBg = 'bg-green-100';
-    icon = <svg className="h-7 w-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>;
+    icon = <CheckCircle2 className="h-7 w-7 sm:h-8 sm:w-8 text-green-600" />;
   } else if (dialog.type === 'cpf_conflict') {
     iconBg = 'bg-yellow-100';
-    icon = <svg className="h-7 w-7 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>;
+    icon = <AlertCircle className="h-7 w-7 sm:h-8 sm:w-8 text-yellow-600" />;
   } else if (dialog.type === 'password_recovery') {
     iconBg = 'bg-blue-100';
-    icon = <svg className="h-7 w-7 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>;
+    icon = <KeyRound className="h-7 w-7 sm:h-8 sm:w-8 text-blue-600" />;
   } else {
     iconBg = 'bg-blue-100';
-    icon = <svg className="h-7 w-7 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+    icon = <Info className="h-7 w-7 sm:h-8 sm:w-8 text-blue-600" />;
   }
 
   const showCancelButton = ['confirm', 'cpf_conflict', 'password_recovery'].includes(dialog.type);
-  const confirmBtnClass = dialog.type === 'confirm' ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700';
+  const isDestructive = dialog.type === 'confirm';
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in">
       <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-10 text-center transform transition-all scale-in-95">
         
+        {/* Renderização de Erro Interno do Modal */}
         {dialog.modalError && (
           <div className="bg-red-50 border border-red-100 text-red-600 text-sm sm:text-base p-3 rounded-xl mb-5 font-medium animate-in fade-in slide-in-from-top-2">
             {dialog.modalError}
@@ -58,13 +69,12 @@ export default function SmartModal({ dialog, onClose, isProcessing = false }: Sm
         )}
 
         <div className={`mx-auto flex items-center justify-center h-16 w-16 sm:h-20 sm:w-20 rounded-full mb-6 ${iconBg}`}>
-          <div className="transform scale-110 sm:scale-125">
-            {icon}
-          </div>
+          {icon}
         </div>
         
         <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900 mb-4">{dialog.title}</h3>
 
+        {/* Renderização condicional do conteúdo baseada no tipo */}
         {dialog.type === 'cpf_conflict' ? (
           <>
             <p className="text-sm sm:text-base leading-relaxed text-gray-600 mb-3 text-center">
@@ -73,12 +83,12 @@ export default function SmartModal({ dialog, onClose, isProcessing = false }: Sm
             <p className="text-sm sm:text-base leading-relaxed text-gray-500 mb-8 text-center">
               Confirme o e-mail completo abaixo para receber um link de recuperação de senha.
             </p>
-            <input
+            <Input
               type="email"
               placeholder="Digite o e-mail completo..."
               value={dialog.inputValue || ''}
               onChange={dialog.onInputChange}
-              className="w-full text-sm sm:text-base py-3.5 px-4 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 mb-8 transition-colors"
+              className="h-12 sm:h-14 text-sm sm:text-base rounded-xl mb-8"
             />
           </>
         ) : dialog.type === 'password_recovery' ? (
@@ -97,27 +107,33 @@ export default function SmartModal({ dialog, onClose, isProcessing = false }: Sm
           <p className="text-sm sm:text-base leading-relaxed text-gray-500 mb-8">{dialog.message}</p>
         )}
 
+        {/* Botões */}
         <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 justify-center">
           {showCancelButton && (
-            <button
+            <Button
+              variant="secondary"
               onClick={onClose}
               disabled={isProcessing}
-              className="flex-1 px-4 py-3.5 bg-gray-100 text-gray-700 font-bold sm:text-base rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50"
+              className="flex-1 py-6 sm:py-7 font-bold sm:text-base rounded-xl"
             >
               Voltar
-            </button>
+            </Button>
           )}
-          <button
+          <Button
+            variant={isDestructive ? "destructive" : "default"}
             onClick={showCancelButton ? dialog.onConfirm : onClose}
             disabled={isProcessing || (dialog.type === 'cpf_conflict' && !dialog.inputValue)}
-            className={`flex-1 px-4 py-3.5 font-bold sm:text-base rounded-xl transition-colors text-white shadow-sm disabled:opacity-70 flex justify-center items-center ${confirmBtnClass}`}
+            className={`flex-1 py-6 sm:py-7 font-bold sm:text-base rounded-xl shadow-sm ${!isDestructive ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}`}
           >
             {isProcessing ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                Processando
+              </>
             ) : (
               showCancelButton ? dialog.confirmText : 'Entendi'
             )}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
