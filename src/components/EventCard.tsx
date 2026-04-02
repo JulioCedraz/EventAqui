@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { ImageIcon, CalendarDays, Ticket } from "lucide-react";
 
 interface EventCardProps {
   id: string;
@@ -26,53 +28,65 @@ export default function EventCard({ id, title, description, event_date, price, i
     dateDisplay = `${formattedDate} • ${formattedTime}`;
   }
 
-  const formattedPrice = price === 0 
+  const isFree = price === 0;
+  const formattedPrice = isFree 
     ? 'Grátis' 
     : `R$ ${price.toFixed(2).replace('.', ',')}`;
 
   return (
     <Link 
       href={`/evento/${id}`} 
-      className="group h-full flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300"
+      className="group block h-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
     >
-      <div className="relative w-full aspect-video bg-gray-100 overflow-hidden">
-        {image_url ? (
-          <img 
-            src={image_url} 
-            alt={title} 
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ease-in-out"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-blue-50 text-blue-300">
-            <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </div>
-        )}
-      </div>
-
-      <div className="p-4 sm:p-5 flex flex-col grow">
+      <Card className="h-full flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-blue-200">
         
-        <h3 className="text-lg font-bold text-gray-900 leading-tight line-clamp-2 mb-2 group-hover:text-blue-600 transition-colors">
-          {title}
-        </h3>
-
-        <p className="text-sm text-gray-600 font-medium mb-1">
-          {dateDisplay}
-        </p>
-
-        {description && (
-          <p className="text-sm text-gray-500 line-clamp-1 mb-4">
-            {description}
-          </p>
-        )}
-
-        <div className="mt-auto pt-2">
-          <span className="text-base font-bold text-gray-900">
-            {formattedPrice}
-          </span>
+        {/* Imagem do Evento */}
+        <div className="relative w-full aspect-video bg-muted overflow-hidden">
+          {image_url ? (
+            <img 
+              src={image_url} 
+              alt={title} 
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-blue-50/50 text-blue-200">
+              <ImageIcon className="w-12 h-12" />
+            </div>
+          )}
         </div>
-      </div>
+
+        {/* Cabeçalho do Card (Título) */}
+        <CardHeader className="p-4 sm:p-5 pb-3">
+          <CardTitle className="text-lg font-bold leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors">
+            {title}
+          </CardTitle>
+        </CardHeader>
+
+        {/* Corpo do Card (Data e Descrição) */}
+        <CardContent className="p-4 sm:p-5 pt-0 flex flex-col grow gap-3">
+          <div className="flex items-center text-sm font-medium text-muted-foreground">
+            <CalendarDays className="w-4 h-4 mr-2 shrink-0 text-gray-400" />
+            <span>{dateDisplay}</span>
+          </div>
+
+          {description && (
+            <p className="text-sm text-muted-foreground line-clamp-2">
+              {description}
+            </p>
+          )}
+        </CardContent>
+
+        {/* Rodapé do Card (Preço) */}
+        <CardFooter className="p-4 sm:p-5 pt-0 mt-auto">
+          <div className="flex items-center font-extrabold text-lg">
+            <Ticket className={`w-5 h-5 mr-2 ${isFree ? 'text-green-500' : 'text-blue-600'}`} />
+            <span className={isFree ? "text-green-600" : "text-foreground"}>
+              {formattedPrice}
+            </span>
+          </div>
+        </CardFooter>
+
+      </Card>
     </Link>
   );
 }
