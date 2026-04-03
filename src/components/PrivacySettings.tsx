@@ -152,7 +152,7 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
                   </p>
                 </div>
                 
-                <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
+                <div className="flex sm:flex-row gap-3 pt-2">
                   <Button 
                     variant="secondary"
                     onClick={closeModal} 
