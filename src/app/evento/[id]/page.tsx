@@ -292,7 +292,7 @@ export default function EventDetails() {
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex sm:flex-row gap-3">
                 <Button 
                   variant="outline"
                   onClick={() => setShowConfirmModal(false)}
