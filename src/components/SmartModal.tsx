@@ -108,7 +108,7 @@ export default function SmartModal({ dialog, onClose, isProcessing = false }: Sm
         )}
 
         {/* Botões */}
-        <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 justify-center">
+        <div className="flex sm:flex-row gap-3 sm:gap-4 justify-center">
           {showCancelButton && (
             <Button
               variant="secondary"
