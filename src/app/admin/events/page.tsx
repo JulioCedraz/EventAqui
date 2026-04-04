@@ -204,7 +204,7 @@ export default function ManageEventsPage() {
     setImage(null);
     setImageError('');
     
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 170, behavior: 'smooth' });
   };
 
   const handleDeleteClick = (id: string) => {
