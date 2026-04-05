@@ -4,30 +4,32 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-
-// Componentes shadcn/ui e ícones
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
   Loader2, QrCode, Calendar, TrendingUp, 
-  Settings, ChevronRight, PlusCircle 
+  ChevronRight, PlusCircle 
 } from "lucide-react";
 
 export default function AdminHub() {
   const router = useRouter();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [authorized, setAuthorized] = useState(false);
+  const [userName, setUserName] = useState('');
 
   useEffect(() => {
     const checkAdmin = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       const userEmail = session?.user?.email;
+      const firstName = session?.user?.user_metadata?.first_name || '';
+
       const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
 
       if (!session || !userEmail || !admins.includes(userEmail)) {
         router.push('/');
       } else {
         setAuthorized(true);
+        setUserName(firstName);
       }
       setIsCheckingAuth(false);
     };
@@ -49,7 +51,7 @@ export default function AdminHub() {
       title: "Gerenciar Eventos",
       description: "Crie novos eventos ou edite os existentes.",
       icon: <Calendar className="w-6 h-6 text-blue-600" />,
-      link: "/admin/events", // Próxima página que vamos criar
+      link: "/admin/events",
       buttonText: "Gerenciar",
       color: "bg-blue-50"
     },
@@ -77,7 +79,10 @@ export default function AdminHub() {
         
         <div className="text-left space-y-1">
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Painel Administrativo</h1>
-          <p className="text-gray-500">Bem-vindo de volta! O que deseja gerenciar hoje?</p>
+          <p className="text-gray-500">
+            {userName ? `Bem-vindo, ${userName}! ` : 'Bem-vindo! '}
+            O que deseja gerenciar hoje?
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -94,9 +99,11 @@ export default function AdminHub() {
               </CardHeader>
               <CardContent className="pt-6 bg-white">
                 <Link href={action.link}>
-                  <Button className="w-full h-11 rounded-xl font-bold group-hover:bg-blue-600 transition-colors">
+                  <Button 
+                    className="w-full h-11 rounded-xl font-bold bg-white text-gray-900 border border-gray-200 hover:bg-white cursor-pointer shadow-sm"
+                  >
                     {action.buttonText}
-                    <ChevronRight className="w-4 h-4 ml-2" />
+                    <ChevronRight className="w-4 h-4 ml-2 text-gray-400" />
                   </Button>
                 </Link>
               </CardContent>
@@ -104,15 +111,14 @@ export default function AdminHub() {
           ))}
         </div>
 
-        {/* Atalho Rápido para Criar Evento */}
-        <Card className="bg-gray-900 border-0 rounded-3xl overflow-hidden shadow-xl shadow-gray-200">
+        <Card className="bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-sm">
           <CardContent className="p-8 flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="space-y-1 text-center sm:text-left">
-              <h3 className="text-xl font-bold text-white">Novo Evento</h3>
-              <p className="text-gray-400">Publique um novo evento na plataforma em poucos minutos.</p>
+              <h3 className="text-xl font-bold text-gray-900">Novo Evento</h3>
+              <p className="text-gray-500">Publique um novo evento na plataforma em poucos minutos.</p>
             </div>
             <Link href="/admin/events">
-              <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-14 px-8 rounded-2xl shadow-lg shadow-blue-500/20">
+              <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-14 px-8 rounded-2xl shadow-md shadow-blue-500/20">
                 <PlusCircle className="w-5 h-5 mr-2" />
                 Começar agora
               </Button>
