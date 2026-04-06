@@ -5,6 +5,7 @@ O **EventAqui** é um sistema web completo e responsivo desenhado para facilitar
 ![Next.js](https://img.shields.io/badge/Next.js-black?style=for-the-badge&logo=next.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-000000?style=for-the-badge&logo=shadcnui&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
 ![Mercado Pago](https://img.shields.io/badge/Mercado_Pago-00B1EA?style=for-the-badge&logo=mercado-pago&logoColor=white)
 
@@ -12,14 +13,15 @@ O **EventAqui** é um sistema web completo e responsivo desenhado para facilitar
 
 ### 👤 Para o Usuário (Cliente)
 * **Vitrine de Eventos:** Exploração de eventos em um grid responsivo e moderno.
-* **Autenticação Segura:** Criação de conta e login.
+* **Autenticação Segura:** Criação de conta e login protegido.
 * **Checkout Rápido:** Compra de ingressos com pagamento via **PIX** (QR Code e Copia e Cola).
-* **Meus Ingressos:** Painel exclusivo para visualizar ingressos comprados e o status do pagamento em tempo real.
+* **Meus Ingressos:** Painel exclusivo e redesenhado para visualizar ingressos comprados, com QR Code de entrada com visual de "bilhete" e status de pagamento em tempo real.
 
 ### ⚙️ Para o Produtor (Admin)
-* **Painel de Controle:** Dashboard administrativo protegido.
-* **Gestão de Eventos (CRUD):** Criação, edição e exclusão de eventos com upload de imagens de capa.
-* **Baixa Automática (Webhook):** O sistema se comunica com o Mercado Pago para aprovar ingressos automaticamente assim que o PIX é pago.
+* **Hub Administrativo:** Dashboard centralizado com atalhos rápidos e interface fluida para as principais ferramentas de gestão.
+* **Dashboard de Vendas:** Acompanhamento financeiro avançado com KPIs de receita bruta, quantidade de ingressos vendidos e valores aguardando PIX, além de filtros dinâmicos por evento e tabela responsiva de transações.
+* **Gestão de Eventos (CRUD):** Áreas isoladas e dedicadas para listagem, criação e edição de eventos, com suporte a upload de imagens de capa.
+* **Baixa Automática (Webhook):** Comunicação direta com o Mercado Pago para aprovar ingressos automaticamente assim que o PIX é pago.
 * **Modo Portaria:** Leitor de QR Code integrado para validar ingressos na porta do evento e evitar fraudes/duplicidades.
 
 ---
@@ -28,7 +30,8 @@ O **EventAqui** é um sistema web completo e responsivo desenhado para facilitar
 
 * **Frontend & Backend (Fullstack):** [Next.js](https://nextjs.org/) (App Router)
 * **Linguagem:** [TypeScript](https://www.typescriptlang.org/)
-* **Estilização:** [Tailwind CSS](https://tailwindcss.com/)
+* **Interface e Estilização:** [Tailwind CSS](https://tailwindcss.com/) + **[shadcn/ui](https://ui.shadcn.com/)** (Componentes de UI acessíveis e customizáveis)
+* **Ícones e Feedbacks:** [Lucide React](https://lucide.dev/) (Ícones) e [Sonner](https://sonner.emilkowal.ski/) (Toasts de notificação)
 * **BaaS (Banco de Dados, Auth e Storage):** [Supabase](https://supabase.com/)
 * **Gateway de Pagamento:** [API do Mercado Pago](https://www.mercadopago.com.br/developers)
 
