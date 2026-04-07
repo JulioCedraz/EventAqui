@@ -114,21 +114,6 @@ export default function AdminHub() {
           ))}
         </div>
 
-        <Card className="bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300">
-          <CardContent className="p-8 flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div className="space-y-1 text-center sm:text-left">
-              <h3 className="text-xl font-bold text-gray-900">Novo Evento</h3>
-              <p className="text-gray-500">Publique um novo evento na plataforma em poucos minutos.</p>
-            </div>
-            <Link href="/admin/events/new">
-              <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer font-bold h-14 px-8 rounded-2xl shadow-md shadow-blue-500/20">
-                <PlusCircle className="w-5 h-5 mr-2" />
-                Começar agora
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
       </div>
     </main>
   );
