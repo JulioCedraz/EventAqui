@@ -118,7 +118,7 @@ export default function ManageEventsPage() {
               <ArrowLeft className="w-4 h-4 mr-1" /> Voltar ao Painel
             </Link>
             <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Gerenciar Eventos</h1>
-            <p className="text-gray-500 mt-1">Visualize, edite ou exclua os eventos publicados na plataforma.</p>
+            <p className="text-gray-500 mt-1">Publique novos eventos, visualize, edite ou exclua os eventos publicados na plataforma.</p>
           </div>
           <Link href="/admin/events/new">
             <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-12 px-6 rounded-xl shadow-sm transition-all hover:scale-105 w-full sm:w-auto">
