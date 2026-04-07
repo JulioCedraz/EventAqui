@@ -197,14 +197,14 @@ function EventForm() {
       <div className="w-full max-w-4xl space-y-8">
         
         <div className="pt-1 pb-1">
-          <Link href={editId ? "/admin/events" : "/admin"} className="text-sm font-medium text-muted-foreground hover:text-blue-600 flex items-center transition-colors w-fit mb-4">
+          <Link href="/admin/events" className="text-sm font-medium text-muted-foreground hover:text-blue-600 flex items-center transition-colors w-fit mb-4">
             <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
           </Link>
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
             {editId ? 'Editar Evento' : 'Novo Evento'}
           </h1>
           <p className="text-gray-500">
-            {editId ? 'Ajuste as informações do evento já publicado.' : 'Preencha os detalhes abaixo para criar um novo evento na plataforma.'}
+            {editId ? 'Ajuste as informações deste evento.' : 'Preencha os detalhes abaixo para criar um novo evento na plataforma.'}
           </p>
         </div>
 
