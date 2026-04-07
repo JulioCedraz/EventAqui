@@ -84,7 +84,7 @@ export default function AdminHub() {
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Painel Administrativo</h1>
           <p className="text-gray-500">
             {userName ? `Bem-vindo, ${userName}! ` : 'Bem-vindo! '}
-            O que deseja gerenciar hoje?
+            O que deseja fazer agora?
           </p>
         </div>
 
