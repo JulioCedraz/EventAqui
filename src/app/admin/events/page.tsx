@@ -22,34 +22,66 @@ export default function ManageEventsPage() {
   const [events, setEvents] = useState<any[]>([]);
   const [dialog, setDialog] = useState<DialogConfig | null>(null);
   const [isModalProcessing, setIsModalProcessing] = useState(false);
+  const [userContext, setUserContext] = useState<{isAdmin: boolean, uid: string} | null>(null);
 
-  const fetchEvents = async () => {
-    const { data, error } = await supabase
+  const fetchEvents = async (context = userContext) => {
+    if (!context) return;
+
+    let query = supabase
       .from('events')
       .select('*')
       .order('created_at', { ascending: false });
-    
+
+    // Se não for Admin, filtra apenas os eventos que este produtor criou
+    if (!context.isAdmin) {
+      query = query.eq('producer_id', context.uid);
+    }
+
+    const { data, error } = await query;
     if (!error && data) {
       setEvents(data);
     }
   };
 
   useEffect(() => {
-    const checkAdmin = async () => {
+    const checkAuthAndLoadData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       const userEmail = session?.user?.email;
-      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
+      const currentUserId = session?.user?.id;
 
-      if (!session || !userEmail || !admins.includes(userEmail)) {
+      if (!session || !userEmail || !currentUserId) {
         router.push('/');
-      } else {
-        setAuthorized(true);
-        fetchEvents();
+        return;
       }
+
+      // 1. Verifica se é Admin
+      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
+      const isAdmin = admins.includes(userEmail);
+
+      // 2. Verifica se é Produtor Autorizado
+      const { data: producer } = await supabase
+        .from('authorized_producers')
+        .select('email')
+        .eq('email', userEmail)
+        .maybeSingle();
+
+      // Expulsa se não for nenhum dos dois
+      if (!isAdmin && !producer) {
+        toast.error('Você não tem permissão para acessar esta área.');
+        router.push('/');
+        return;
+      }
+
+      const context = { isAdmin, uid: currentUserId };
+      setUserContext(context);
+      setAuthorized(true);
       setIsCheckingAuth(false);
+      
+      // Carrega os eventos imediatamente com o contexto correto
+      fetchEvents(context);
     };
 
-    checkAdmin();
+    checkAuthAndLoadData();
   }, [router]);
 
   const handleEdit = (id: string) => {
@@ -92,7 +124,7 @@ export default function ManageEventsPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center space-y-4">
           <Loader2 className="w-10 h-10 animate-spin text-blue-600 mx-auto" />
-          <p className="text-gray-500 font-medium">Carregando eventos...</p>
+          <p className="text-gray-500 font-medium">Carregando painel de eventos...</p>
         </div>
       </div>
     );
