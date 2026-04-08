@@ -4,9 +4,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import { 
   Loader2, ArrowLeft, TrendingUp, Ticket, Clock, 
   Search, Filter, CheckCircle2, XCircle, AlertCircle
@@ -43,26 +43,52 @@ export default function OrdersPage() {
   const [selectedEventId, setSelectedEventId] = useState<string>('all');
 
   useEffect(() => {
-    const checkAdminAndFetchData = async () => {
+    const checkAuthAndFetchData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       const userEmail = session?.user?.email;
-      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
+      const currentUserId = session?.user?.id;
 
-      if (!session || !userEmail || !admins.includes(userEmail)) {
+      if (!session || !userEmail || !currentUserId) {
         router.push('/');
         return;
       } 
       
+      // 1. Verifica se é Admin
+      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
+      const isAdmin = admins.includes(userEmail);
+
+      // 2. Verifica se é Produtor Autorizado
+      const { data: producer } = await supabase
+        .from('authorized_producers')
+        .select('email')
+        .eq('email', userEmail)
+        .maybeSingle();
+
+      // Expulsa se não for nenhum dos dois
+      if (!isAdmin && !producer) {
+        toast.error('Você não tem permissão para acessar esta área.');
+        router.push('/');
+        return;
+      }
+      
       setAuthorized(true);
 
-      // Buscar todos os pedidos com os dados do evento atrelado
-      const { data: ticketsData, error: ticketsError } = await supabase
+      // 3. Buscar os pedidos aplicando o filtro de propriedade (Multi-Tenant)
+      // O uso do !inner é obrigatório para podermos filtrar por uma coluna da tabela relacionada (events)
+      let query = supabase
         .from('tickets')
         .select(`
           id, created_at, buyer_name, buyer_email, payment_status, quantity, event_id,
-          events ( title, price )
+          events!inner ( title, price, producer_id )
         `)
         .order('created_at', { ascending: false });
+
+      // Se não for Admin, traz APENAS os tickets dos eventos criados por este produtor
+      if (!isAdmin) {
+        query = query.eq('events.producer_id', currentUserId);
+      }
+
+      const { data: ticketsData, error: ticketsError } = await query;
 
       if (!ticketsError && ticketsData) {
         setOrders(ticketsData as unknown as Order[]);
@@ -83,10 +109,10 @@ export default function OrdersPage() {
       setIsCheckingAuth(false);
     };
 
-    checkAdminAndFetchData();
+    checkAuthAndFetchData();
   }, [router]);
 
-  // Filtra os pedidos com base no evento selecionado
+  // Filtra os pedidos com base no evento selecionado no dropdown
   const filteredOrders = useMemo(() => {
     if (selectedEventId === 'all') return orders;
     return orders.filter(order => order.event_id === selectedEventId);
