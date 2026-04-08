@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { 
   Loader2, QrCode, Calendar, TrendingUp, 
-  ChevronRight, PlusCircle 
+  ChevronRight, ShieldCheck 
 } from "lucide-react";
 
 export default function AdminHub() {
@@ -73,6 +73,15 @@ export default function AdminHub() {
       buttonText: "Acessar",
       color: "bg-purple-50",
       btnClass: "bg-purple-50 text-purple-700 hover:bg-purple-100"
+    },
+    {
+      title: "Equipe de Portaria",
+      description: "Gerencie quem tem acesso ao scanner de ingressos.",
+      icon: <ShieldCheck className="w-6 h-6 text-amber-600" />,
+      link: "/admin/agents",
+      buttonText: "Configurar",
+      color: "bg-amber-50",
+      btnClass: "bg-amber-50 text-amber-700 hover:bg-amber-100"
     }
   ];
 
@@ -88,7 +97,7 @@ export default function AdminHub() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {menuActions.map((action, index) => (
             <Card key={index} className="border-0 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group overflow-hidden rounded-3xl">
               <CardHeader className={`${action.color} pb-8`}>
