@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import { 
   ArrowLeft, Camera, CameraOff, Loader2, CheckCircle2, 
   XCircle, AlertTriangle, ScanBarcode, ShieldAlert 
@@ -32,13 +33,36 @@ export default function CheckinPage() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const checkAdmin = async () => {
+    const checkAccess = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       const userEmail = session?.user?.email;
 
-      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
+      if (!session || !userEmail) {
+        router.push('/');
+        return;
+      }
 
-      if (!session || !userEmail || !admins.includes(userEmail)) {
+      // 1. Verifica se é Admin Master
+      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
+      const isAdmin = admins.includes(userEmail);
+
+      // 2. Verifica se é Produtor Autorizado
+      const { data: producer } = await supabase
+        .from('authorized_producers')
+        .select('email')
+        .eq('email', userEmail)
+        .maybeSingle();
+
+      // 3. Verifica se é Agente de Portaria
+      const { data: agent } = await supabase
+        .from('checkin_agents')
+        .select('email')
+        .eq('email', userEmail)
+        .maybeSingle();
+
+      // Se não tiver nenhum dos 3 papéis, expulsa da página
+      if (!isAdmin && !producer && !agent) {
+        toast.error('Não tem permissão para aceder ao scanner de portaria.');
         router.push('/');
       } else {
         setAuthorized(true);
@@ -47,7 +71,7 @@ export default function CheckinPage() {
       setIsCheckingAuth(false);
     };
 
-    checkAdmin();
+    checkAccess();
   }, [router]);
 
   const handleCheckin = async (e?: React.SyntheticEvent | null, scannedId?: string) => {
