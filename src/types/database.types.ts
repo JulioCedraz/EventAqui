@@ -11,7 +11,7 @@ export type Database = {
     Tables: {
       events: {
         Row: {
-          producer_id: string | null
+          producer_id: string | null;
           id: string;
           title: string;
           description: string | null;
@@ -22,7 +22,7 @@ export type Database = {
           created_at: string | null;
         };
         Insert: {
-          producer_id?: string | null
+          producer_id?: string | null;
           id?: string;
           title: string;
           description?: string | null;
@@ -33,7 +33,7 @@ export type Database = {
           created_at?: string | null;
         };
         Update: {
-          producer_id?: string | null
+          producer_id?: string | null;
           id?: string;
           title?: string;
           description?: string | null;
@@ -85,12 +85,12 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: "profiles_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
+            foreignKeyName: "profiles_id_fkey";
+            columns: ["id"];
+            isOneToOne: true;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
         ];
       };
 
@@ -139,59 +139,62 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: "tickets_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
+            foreignKeyName: "tickets_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "tickets_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
+            foreignKeyName: "tickets_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
         ];
       };
 
       checkin_agents: {
         Row: {
-            id: string
-            email: string
-            created_at: string
-        }
+          id: string;
+          email: string;
+          created_at: string;
+          producer_id: string | null;
+        };
         Insert: {
-            id?: string
-            email: string
-            created_at?: string
-        }
+          id?: string;
+          email: string;
+          created_at?: string;
+          producer_id?: string | null;
+        };
         Update: {
-            id?: string
-            email?: string
-            created_at?: string
-        }
-        Relationships: []
-      }
+          id?: string;
+          email?: string;
+          created_at?: string;
+          producer_id?: string | null;
+        };
+        Relationships: [];
+      };
 
       authorized_producers: {
-          Row: {
-            id: string
-            email: string
-            created_at: string
-          }
-          Insert: {
-            id?: string
-            email: string
-            created_at?: string
-          }
-          Update: {
-            id?: string
-            email?: string
-            created_at?: string
-          }
-          Relationships: []
-        }
+        Row: {
+          id: string;
+          email: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
