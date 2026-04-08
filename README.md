@@ -37,15 +37,9 @@ O **EventAqui** é um sistema web completo e responsivo desenhado para facilitar
 
 ---
 
-## 🚀 Como rodar o projeto localmente
+## ⚖️ Licença e Direitos Autorais
 
-### 1. Pré-requisitos
-Certifique-se de ter instalado em sua máquina:
-* [Node.js](https://nodejs.org/) (Versão 18+ recomendada)
-* Conta no [Supabase](https://supabase.com/)
-* Conta de desenvolvedor no [Mercado Pago](https://www.mercadopago.com.br/developers)
+Este é um software proprietário de código fechado. 
+**Todos os direitos reservados © 2026 EventAqui.**
 
-### 2. Clonar o repositório
-```bash
-git clone [https://github.com/juliocedraz/eventaqui.git](https://github.com/juliocedraz/eventaqui.git)
-cd eventaqui
+É estritamente proibida a cópia, distribuição, modificação, uso comercial ou uso não autorizado de qualquer parte deste código-fonte sem a permissão explícita e por escrito dos criadores.
