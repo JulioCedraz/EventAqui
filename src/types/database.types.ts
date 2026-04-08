@@ -11,6 +11,7 @@ export type Database = {
     Tables: {
       events: {
         Row: {
+          producer_id: string | null
           id: string;
           title: string;
           description: string | null;
@@ -21,6 +22,7 @@ export type Database = {
           created_at: string | null;
         };
         Insert: {
+          producer_id?: string | null
           id?: string;
           title: string;
           description?: string | null;
@@ -31,6 +33,7 @@ export type Database = {
           created_at?: string | null;
         };
         Update: {
+          producer_id?: string | null
           id?: string;
           title?: string;
           description?: string | null;
@@ -170,6 +173,25 @@ export type Database = {
         }
         Relationships: []
       }
+
+      authorized_producers: {
+          Row: {
+            id: string
+            email: string
+            created_at: string
+          }
+          Insert: {
+            id?: string
+            email: string
+            created_at?: string
+          }
+          Update: {
+            id?: string
+            email?: string
+            created_at?: string
+          }
+          Relationships: []
+        }
     };
     Views: {
       [_ in never]: never;
