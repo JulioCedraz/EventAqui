@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { 
   Loader2, QrCode, Calendar, TrendingUp, 
-  ChevronRight, ShieldCheck 
+  ChevronRight, ShieldCheck, Briefcase 
 } from "lucide-react";
 
 export default function AdminHub() {
@@ -75,8 +75,17 @@ export default function AdminHub() {
       btnClass: "bg-purple-50 text-purple-700 hover:bg-purple-100"
     },
     {
+      title: "Produtores",
+      description: "Autorize produtores a criar eventos na plataforma.",
+      icon: <Briefcase className="w-6 h-6 text-indigo-600" />,
+      link: "/admin/producers",
+      buttonText: "Gerenciar",
+      color: "bg-indigo-50",
+      btnClass: "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+    },
+    {
       title: "Equipe de Portaria",
-      description: "Gerencie quem tem acesso ao scanner de ingressos.",
+      description: "Controle quem tem acesso ao scanner de ingressos.",
       icon: <ShieldCheck className="w-6 h-6 text-amber-600" />,
       link: "/admin/agents",
       buttonText: "Configurar",
@@ -87,7 +96,7 @@ export default function AdminHub() {
 
   return (
     <main className="bg-gray-50 py-10 px-4 sm:px-6 lg:px-8 min-h-screen flex flex-col items-center">
-      <div className="w-full max-w-4xl space-y-8">
+      <div className="w-full max-w-5xl space-y-8">
         
         <div className="text-left space-y-1">
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Painel Administrativo</h1>
@@ -97,10 +106,10 @@ export default function AdminHub() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {menuActions.map((action, index) => (
-            <Card key={index} className="border-0 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group overflow-hidden rounded-3xl">
-              <CardHeader className={`${action.color} pb-8`}>
+            <Card key={index} className="border-0 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group overflow-hidden rounded-3xl flex flex-col">
+              <CardHeader className={`${action.color} pb-8 grow`}>
                 <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-4 group-hover:scale-110 transition-transform">
                   {action.icon}
                 </div>
@@ -109,8 +118,8 @@ export default function AdminHub() {
                   {action.description}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="pt-6 bg-white">
-                <Link href={action.link}>
+              <CardContent className="pt-6 bg-white mt-auto">
+                <Link href={action.link} className="block w-full">
                   <Button 
                     className={`w-full h-11 rounded-xl font-bold border-transparent cursor-pointer shadow-none transition-colors ${action.btnClass}`}
                   >
