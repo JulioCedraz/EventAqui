@@ -12,8 +12,9 @@ export default function HelpCenterPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
-  // Referência para detectar cliques fora da área interativa
+  // Referências para capturar a área de clique e a área de rolagem
   const interactiveAreaRef = useRef<HTMLDivElement>(null);
+  const faqSectionRef = useRef<HTMLElement>(null);
 
   // Efeito para limpar o filtro quando clicar fora dos cards ou do FAQ
   useEffect(() => {
@@ -34,7 +35,7 @@ export default function HelpCenterPage() {
     { id: 'portaria', title: 'Portaria', desc: 'Leitura de QR Code e check-in.', icon: Smartphone, color: 'text-amber-600', bg: 'bg-amber-50' },
   ];
 
-  // Nossa base de dados de perguntas, com categorias atreladas
+  // Base de dados de perguntas com categorias atreladas
   const faqs = [
     {
       category: 'comprador',
@@ -63,7 +64,6 @@ export default function HelpCenterPage() {
     }
   ];
 
-  // Lógica de filtro duplo (por texto ou por clique no card)
   const filteredFaqs = faqs.filter(faq => {
     if (searchQuery) {
       return faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -72,22 +72,30 @@ export default function HelpCenterPage() {
     if (selectedCategory) {
       return faq.category === selectedCategory;
     }
-    return true;
+    return true; 
   });
 
-  // Busca por digitação
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
     if (selectedCategory) setSelectedCategory(null);
   };
 
-  // Interação com clique no card
   const handleCategoryClick = (categoryId: string) => {
     if (selectedCategory === categoryId) {
-      setSelectedCategory(null);
+      setSelectedCategory(null); 
     } else {
       setSelectedCategory(categoryId);
-      setSearchQuery('');
+      setSearchQuery(''); 
+
+      // Lógica de UX: Rola suavemente para o FAQ em telas de celular
+      if (window.innerWidth < 768) {
+        setTimeout(() => {
+          faqSectionRef.current?.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+          });
+        }, 150);
+      }
     }
   };
 
@@ -121,12 +129,12 @@ export default function HelpCenterPage() {
         </div>
       </section>
 
-      {/* ÁREA INTERATIVA (Envolvida no useRef para detectar o click outside) */}
+      {/* ÁREA INTERATIVA */}
       <div ref={interactiveAreaRef} className="flex-1">
         
         {/* CATEGORIAS RÁPIDAS (Cards) */}
         {!searchQuery && (
-          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-20 mb-16 w-full animate-in fade-in duration-500">
+          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-20 mb-8 sm:mb-16 w-full animate-in fade-in duration-500">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {categories.map((cat) => (
                 <Card 
@@ -134,9 +142,9 @@ export default function HelpCenterPage() {
                   onClick={() => handleCategoryClick(cat.id)}
                   className={`border-0 transition-all duration-300 rounded-2xl cursor-pointer select-none
                     ${selectedCategory === cat.id 
-                      ? 'ring-2 ring-blue-500 scale-105 shadow-xl bg-white' 
+                      ? 'ring-2 ring-blue-500 scale-[1.02] sm:scale-105 shadow-xl bg-white' 
                       : selectedCategory 
-                        ? 'opacity-50 grayscale-40 scale-95 hover:opacity-100 hover:scale-100 shadow-sm' 
+                        ? 'opacity-50 grayscale-40 scale-[0.98] sm:scale-95 hover:opacity-100 hover:scale-100 shadow-sm' 
                         : 'shadow-lg hover:-translate-y-1'
                     }
                   `}
@@ -157,8 +165,8 @@ export default function HelpCenterPage() {
         )}
 
         {/* PERGUNTAS FREQUENTES (FAQ) */}
-        <section className={`max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 mb-20 w-full ${searchQuery ? 'mt-12' : ''}`}>
-          <div className="text-center mb-10">
+        <section ref={faqSectionRef} className={`max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 mb-20 w-full ${searchQuery ? 'mt-12' : 'scroll-mt-18'}`}>
+          <div className="text-center mb-8 sm:mb-10">
             <h2 className="text-2xl font-extrabold text-gray-900">
               {searchQuery ? 'Resultados da Busca' : selectedCategory ? 'Dúvidas Frequentes' : 'Perguntas Frequentes'}
             </h2>
@@ -205,7 +213,7 @@ export default function HelpCenterPage() {
 
       </div>
 
-      {/* CONTATO */}
+      {/* CALL TO ACTION - CONTATO */}
       <section className="bg-white border-t border-gray-200 py-16 mt-auto">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 text-blue-600 mb-6">
@@ -217,7 +225,7 @@ export default function HelpCenterPage() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a 
-              href="mailto:jcedraza@gmail.com" 
+              href="mailto:suporte.eventaqui@gmail.com" 
               className="inline-flex items-center justify-center px-6 py-3.5 border border-transparent text-base font-bold rounded-xl shadow-sm text-white bg-blue-600 hover:bg-blue-700 transition-colors w-full sm:w-auto"
             >
               <Mail className="w-5 h-5 mr-2" />
