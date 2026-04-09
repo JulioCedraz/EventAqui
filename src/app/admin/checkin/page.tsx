@@ -62,7 +62,7 @@ export default function CheckinPage() {
 
       // Se não tiver nenhum dos 3 papéis, expulsa da página
       if (!isAdmin && !producer && !agent) {
-        toast.error('Não tem permissão para aceder ao scanner de portaria.');
+        toast.error('Você não tem permissão para acessar esta área.');
         router.push('/');
       } else {
         setAuthorized(true);

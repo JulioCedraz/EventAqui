@@ -49,7 +49,7 @@ export default function ResetPasswordPage() {
 
     } catch (err: any) {
       console.error("Erro ao redefinir a senha:", err);
-      toast.error("Ocorreu um erro ao redefinir sua senha. O link pode ter expirado. Tente solicitar novamente.");
+      toast.error("Ocorreu um erro ao redefinir sua senha. O link pode ter expirado. Solicite novamente.");
     } finally {
       setIsLoading(false);
     }
