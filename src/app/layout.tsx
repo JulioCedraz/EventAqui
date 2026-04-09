@@ -4,6 +4,7 @@ import './globals.css';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { Toaster } from "@/components/ui/sonner";
+import EmailConfirmationHandler from '@/components/EmailConfirmationHandler';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -32,6 +33,8 @@ export default function RootLayout({
         <Footer />
         
         <Toaster richColors position="top-right" />
+
+        <EmailConfirmationHandler />
       </body>
     </html>
   );
