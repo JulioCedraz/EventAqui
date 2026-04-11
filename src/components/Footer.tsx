@@ -48,14 +48,6 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/admin/checkin"
-                  className="text-sm text-gray-500 hover:text-blue-600 transition-colors"
-                >
-                  Validar Ingressos
-                </Link>
-              </li>
-              <li>
-                <Link
                   href="/help"
                   className="text-sm text-gray-500 hover:text-blue-600 transition-colors"
                 >
