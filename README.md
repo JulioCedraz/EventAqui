@@ -11,26 +11,31 @@ O **EventAqui** é um sistema web completo e responsivo desenhado para facilitar
 
 ## ✨ Principais Funcionalidades
 
-### 👤 Para o Usuário (Cliente)
+### Para o Usuário (Cliente)
 * **Vitrine de Eventos:** Exploração de eventos em um grid responsivo e moderno.
 * **Autenticação Segura:** Criação de conta e login protegido.
 * **Checkout Rápido:** Compra de ingressos com pagamento via **PIX** (QR Code e Copia e Cola).
 * **Meus Ingressos:** Painel exclusivo e redesenhado para visualizar ingressos comprados, com QR Code de entrada com visual de "bilhete" e status de pagamento em tempo real.
 
-### ⚙️ Para o Produtor (Admin)
-* **Hub Administrativo:** Dashboard centralizado com atalhos rápidos e interface fluida para as principais ferramentas de gestão.
+### Para o Produtor de Eventos
+* **Hub Administrativo:** Dashboard centralizado com atalhos rápidos e interface fluida.
 * **Dashboard de Vendas:** Acompanhamento financeiro avançado com KPIs de receita bruta, quantidade de ingressos vendidos e valores aguardando PIX, além de filtros dinâmicos por evento e tabela responsiva de transações.
 * **Gestão de Eventos (CRUD):** Áreas isoladas e dedicadas para listagem, criação e edição de eventos, com suporte a upload de imagens de capa.
-* **Baixa Automática (Webhook):** Comunicação direta com o Mercado Pago para aprovar ingressos automaticamente assim que o PIX é pago.
-* **Modo Portaria:** Leitor de QR Code integrado para validar ingressos na porta do evento e evitar fraudes/duplicidades.
+* **Gestão de Equipe (Agentes):** Recrutamento de agentes de portaria com disparo de e-mail integrado e gestão de acessos independente. O agente tem acesso  ao leitor de QR Code integrado para validar os ingressos na entrada do evento e evitar fraudes/duplicidades.
+
+### Engine e Integrações
+* **Onboarding Inteligente:** Usuários convidados recebem e-mails mágicos e são redirecionados automaticamente para a conclusão de perfil e definição de senha.
+* **Sistema "Uber" de Portaria (Conta Unificada):** O porteiro cria sua conta apenas uma vez no EventAqui. Qualquer produtor pode contratá-lo simplesmente digitando seu e-mail no painel. O sistema reconhece o agente instantaneamente e faz a ponte entre eles nos bastidores, liberando o acesso aos novos eventos sem exigir que o porteiro crie outro cadastro.
+* **Baixa Automática (Webhook):** Comunicação direta e validada com o Mercado Pago para aprovar ingressos automaticamente assim que o PIX é pago.
+* **Segurança Avançada (RLS):** Row Level Security implementado no Supabase para garantir que produtores e agentes acessem única e exclusivamente os dados que lhes pertencem.
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
-* **Frontend & Backend (Fullstack):** [Next.js](https://nextjs.org/) (App Router)
+* **Frontend & Backend (Fullstack):** [Next.js](https://nextjs.org/) (App Router & API Routes)
 * **Linguagem:** [TypeScript](https://www.typescriptlang.org/)
-* **Interface e Estilização:** [Tailwind CSS](https://tailwindcss.com/) + **[shadcn/ui](https://ui.shadcn.com/)** (Componentes de UI acessíveis e customizáveis)
+* **Interface e Estilização:** [Tailwind CSS](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/) (Componentes de UI acessíveis e customizáveis)
 * **Ícones e Feedbacks:** [Lucide React](https://lucide.dev/) (Ícones) e [Sonner](https://sonner.emilkowal.ski/) (Toasts de notificação)
 * **BaaS (Banco de Dados, Auth e Storage):** [Supabase](https://supabase.com/)
 * **Gateway de Pagamento:** [API do Mercado Pago](https://www.mercadopago.com.br/developers)
@@ -42,4 +47,4 @@ O **EventAqui** é um sistema web completo e responsivo desenhado para facilitar
 Este é um software proprietário de código fechado. 
 **Todos os direitos reservados © 2026 EventAqui.**
 
-É estritamente proibida a cópia, distribuição, modificação, uso comercial ou uso não autorizado de qualquer parte deste código-fonte sem a permissão explícita e por escrito dos criadores.
+É estritamente proibida a cópia, distribuição, modificação, uso comercial ou uso não autorizado de qualquer parte deste código-fonte sem a permissão explícita e por escrito do criador.
