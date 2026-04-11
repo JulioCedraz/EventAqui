@@ -68,18 +68,34 @@ export default function ManageProducersPage() {
 
     setIsAdding(true);
     try {
-      const { error } = await supabase
+      // 1. Salva no banco de dados para controle visual e RLS
+      const { error: dbError } = await supabase
         .from('authorized_producers')
         .insert({ email: newEmail.toLowerCase().trim() });
 
-      if (error) {
-        if (error.code === '23505') {
+      if (dbError) {
+        if (dbError.code === '23505') {
           throw new Error('Este produtor já está autorizado.');
         }
-        throw error;
+        throw dbError;
       }
 
-      toast.success('Produtor convidado com sucesso!');
+      // 2. Chama a API para disparar o e-mail de convite nativo do Supabase
+      const response = await fetch('/api/invite/producers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: newEmail.toLowerCase().trim() 
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Erro ao enviar o e-mail de convite.');
+      }
+
+      toast.success('Produtor autorizado e convite enviado com sucesso!');
       setNewEmail('');
       fetchProducers();
     } catch (error: any) {
@@ -164,7 +180,7 @@ export default function ManageProducersPage() {
                   Novo Convite
                 </CardTitle>
                 <CardDescription>
-                  Insira o e-mail do produtor. Quando ele criar a conta, o acesso será liberado automaticamente.
+                  Insira o e-mail do produtor. Um convite de acesso será enviado automaticamente.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -187,7 +203,7 @@ export default function ManageProducersPage() {
                     {isAdding ? (
                       <><Loader2 className="w-5 h-5 animate-spin" /></>
                     ) : (
-                      <>Autorizar Produtor</>
+                      <>Autorizar e Convidar</>
                     )}
                   </Button>
                 </form>
