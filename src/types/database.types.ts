@@ -155,7 +155,7 @@ export type Database = {
         ];
       };
 
-      checkin_agents: {
+      agents: {
         Row: {
           id: string;
           email: string;
