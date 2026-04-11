@@ -14,14 +14,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'E-mail e ID do produtor são obrigatórios' }, { status: 400 });
     }
 
+    const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    
+    // Monta a URL de redirecionamento para a página de perfil com o parâmetro de convite
+    const redirectToUrl = `${origin}/profile?invite=true`;
+
     const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
       data: { 
         role: 'agent',
         invited_by: producerId 
-      }
+      },
+      redirectTo: redirectToUrl
     });
 
     if (error) {
+      if (error.message.includes('already registered') || error.message.includes('already exists')) {
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Usuário já possuía conta e foi vinculado à equipe.',
+          alreadyExists: true 
+        });
+      }
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
