@@ -32,11 +32,10 @@ export default function ManageAgentsPage() {
     if (!context) return;
 
     let query = supabase
-      .from('checkin_agents')
+      .from('agents') // Atualizado para a nova tabela
       .select('*')
       .order('created_at', { ascending: false });
     
-    // Se não for Admin, mostra apenas os agentes contratados por este produtor
     if (!context.isAdmin) {
       query = query.eq('producer_id', context.uid);
     }
@@ -58,11 +57,9 @@ export default function ManageAgentsPage() {
         return;
       }
 
-      // 1. Verifica se é Admin
       const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
       const isAdmin = admins.includes(userEmail);
 
-      // 2. Verifica se é Produtor
       const { data: producer } = await supabase
         .from('authorized_producers')
         .select('email')
@@ -99,21 +96,38 @@ export default function ManageAgentsPage() {
 
     setIsAdding(true);
     try {
-      const { error } = await supabase
-        .from('checkin_agents')
+      // 1. Salva no banco de dados para controle visual e RLS
+      const { error: dbError } = await supabase
+        .from('agents') // Atualizado para a nova tabela
         .insert({ 
           email: newEmail.toLowerCase().trim(),
-          producer_id: userContext.uid // Vincula o agente ao produtor que o está adicionando
+          producer_id: userContext.uid
         });
 
-      if (error) {
-        if (error.code === '23505') {
+      if (dbError) {
+        if (dbError.code === '23505') {
           throw new Error('Este agente já faz parte da sua equipe.');
         }
-        throw error;
+        throw dbError;
       }
 
-      toast.success('Agente autorizado com sucesso!');
+      // 2. Chama a API para disparar o e-mail de convite nativo do Supabase
+      const response = await fetch('/api/invite/agents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: newEmail.toLowerCase().trim(),
+          producerId: userContext.uid 
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Erro ao enviar o e-mail de convite.');
+      }
+
+      toast.success('Agente autorizado e convite enviado com sucesso!');
       setNewEmail('');
       fetchAgents();
     } catch (error: any) {
@@ -138,7 +152,7 @@ export default function ManageAgentsPage() {
     setIsModalProcessing(true);
     try {
       const { error } = await supabase
-        .from('checkin_agents')
+        .from('agents') // Atualizado para a nova tabela
         .delete()
         .eq('id', id);
 

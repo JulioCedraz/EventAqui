@@ -55,7 +55,7 @@ export default function CheckinPage() {
 
       // 3. Verifica se é Agente de Portaria
       const { data: agent } = await supabase
-        .from('checkin_agents')
+        .from('agents')
         .select('email')
         .eq('email', userEmail)
         .maybeSingle();
