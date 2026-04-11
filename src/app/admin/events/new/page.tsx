@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { supabase } from '../../../../lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -59,7 +59,8 @@ function EventForm() {
           setDescription(data.description || '');
           
           if (data.event_date) {
-            setEventDate(new Date(data.event_date).toISOString().slice(0, 16));
+            const dbDate = new Date(data.event_date);
+            setEventDate(new Date(dbDate.getTime() - dbDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16));
             setHasNoDate(false);
           } else {
             setEventDate('');
