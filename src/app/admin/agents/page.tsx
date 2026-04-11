@@ -32,7 +32,7 @@ export default function ManageAgentsPage() {
     if (!context) return;
 
     let query = supabase
-      .from('agents') // Atualizado para a nova tabela
+      .from('agents')
       .select('*')
       .order('created_at', { ascending: false });
     
@@ -98,7 +98,7 @@ export default function ManageAgentsPage() {
     try {
       // 1. Salva no banco de dados para controle visual e RLS
       const { error: dbError } = await supabase
-        .from('agents') // Atualizado para a nova tabela
+        .from('agents')
         .insert({ 
           email: newEmail.toLowerCase().trim(),
           producer_id: userContext.uid
@@ -126,8 +126,11 @@ export default function ManageAgentsPage() {
       if (!response.ok) {
         throw new Error(result.error || 'Erro ao enviar o e-mail de convite.');
       }
-
+      if (result.alreadyExists) {
+      toast.success('Este agente já possui conta e foi adicionado à sua equipe!');
+    } else {
       toast.success('Agente autorizado e convite enviado com sucesso!');
+    }
       setNewEmail('');
       fetchAgents();
     } catch (error: any) {
@@ -152,7 +155,7 @@ export default function ManageAgentsPage() {
     setIsModalProcessing(true);
     try {
       const { error } = await supabase
-        .from('agents') // Atualizado para a nova tabela
+        .from('agents')
         .delete()
         .eq('id', id);
 
