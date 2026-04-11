@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { 
   Loader2, QrCode, Calendar, TrendingUp, 
   ChevronRight, ShieldCheck, Briefcase 
@@ -18,22 +19,36 @@ export default function AdminHub() {
   const [userName, setUserName] = useState('');
 
   useEffect(() => {
-    const checkAdmin = async () => {
+    const checkAccess = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       const userEmail = session?.user?.email;
       const firstName = session?.user?.user_metadata?.first_name || '';
-
       const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
+      const isAdmin = admins.includes(userEmail);
 
-      if (!session || !userEmail || !admins.includes(userEmail)) {
+      let isProducer = false;
+      if (!isAdmin) {
+        const { data: producer } = await supabase
+          .from('authorized_producers')
+          .select('email')
+          .eq('email', userEmail)
+          .maybeSingle();
+        
+        if (producer) isProducer = true;
+      }
+
+      if (!session || !userEmail || !isAdmin && !isProducer) {
+        toast.error('Você não tem permissão para acessar esta área.', { id: 'unauthorized-access' });
         router.push('/');
       } else {
         setAuthorized(true);
         setUserName(firstName);
       }
+      
       setIsCheckingAuth(false);
     };
-    checkAdmin();
+
+    checkAccess();
   }, [router]);
 
   if (isCheckingAuth) {
