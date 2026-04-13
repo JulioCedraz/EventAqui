@@ -60,18 +60,25 @@ export default function ManageAgentsPage() {
       const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
       const isAdmin = admins.includes(userEmail);
 
-      const { data: producer } = await supabase
-        .from('authorized_producers')
-        .select('email')
-        .eq('email', userEmail)
-        .maybeSingle();
+      let isProducer = false;
+      if (!isAdmin) {
+        const { data: producer } = await supabase
+          .from('authorized_producers')
+          .select('email')
+          .eq('email', userEmail)
+          .maybeSingle();
+          
+        if (producer) isProducer = true;
+      }
 
-      if (!isAdmin && !producer) {
-        toast.error('Você não tem permissão para acessar esta área.');
+      // 3. Bloqueia se não tiver permissão
+      if (!isAdmin && !isProducer) {
+        toast.error('Você não tem permissão para acessar esta área.', { id: 'unauthorized-agents' });
         router.push('/');
         return;
       }
 
+      // Libera acesso e busca os dados
       const context = { isAdmin, uid: currentUserId };
       setUserContext(context);
       setAuthorized(true);
