@@ -37,7 +37,7 @@ export default function AdminHub() {
         if (producer) isProducer = true;
       }
 
-      if (!session || !userEmail || !isAdmin && !isProducer) {
+      if (!isAdmin && !isProducer) {
         toast.error('Você não tem permissão para acessar esta área.', { id: 'unauthorized-access' });
         router.push('/');
       } else {
