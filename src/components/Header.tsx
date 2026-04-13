@@ -103,16 +103,18 @@ export default function Header() {
                       </Button>
                     </Link>
 
-                    {isAgent ? (
+                    {/* Para agentes, 'Meus Ingressos' não aparece em destaque */}
+                    <Link href="/tickets" passHref className={isAgent ? "hidden sm:block" : "block"}>
+                      <Button className="bg-blue-50 text-blue-600 hover:bg-blue-100 shadow-none font-bold gap-2 rounded-full">
+                        <Ticket className="w-4 h-4" /> Meus Ingressos
+                      </Button>
+                    </Link>
+
+                    {/* Para agentes: 'Scanner' em destaque. */}
+                    {isAgent && (
                       <Link href="/admin/checkin" passHref>
                         <Button className="bg-purple-50 text-purple-600 hover:bg-purple-100 shadow-none font-bold gap-2 rounded-full">
                           <ScanBarcode className="w-4 h-4" /> Scanner
-                        </Button>
-                      </Link>
-                    ) : (
-                      <Link href="/tickets" passHref>
-                        <Button className="bg-blue-50 text-blue-600 hover:bg-blue-100 shadow-none font-bold gap-2 rounded-full">
-                          <Ticket className="w-4 h-4" /> Meus Ingressos
                         </Button>
                       </Link>
                     )}
