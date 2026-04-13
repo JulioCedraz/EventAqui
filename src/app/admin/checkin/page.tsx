@@ -32,7 +32,7 @@ export default function CheckinPage() {
   
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+useEffect(() => {
     const checkAccess = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       const userEmail = session?.user?.email;
@@ -42,32 +42,40 @@ export default function CheckinPage() {
         return;
       }
 
-      // 1. Verifica se é Admin Master
+      // 1. Verifica se é Admin
       const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
-      const isAdmin = admins.includes(userEmail);
+      let hasAccess = admins.includes(userEmail);
 
-      // 2. Verifica se é Produtor Autorizado
-      const { data: producer } = await supabase
-        .from('authorized_producers')
-        .select('email')
-        .eq('email', userEmail)
-        .maybeSingle();
+      // 2. Se NÃO for Admin, verifica se é Produtor
+      if (!hasAccess) {
+        const { data: producer } = await supabase
+          .from('authorized_producers')
+          .select('email')
+          .eq('email', userEmail)
+          .maybeSingle();
+        
+        if (producer) hasAccess = true;
+      }
 
-      // 3. Verifica se é Agente de Portaria
-      const { data: agent } = await supabase
-        .from('agents')
-        .select('email')
-        .eq('email', userEmail)
-        .maybeSingle();
+      // 3. Se NÃO for Admin nem Produtor, verifica se é Agente de Portaria
+      if (!hasAccess) {
+        const { data: agent } = await supabase
+          .from('agents')
+          .select('email')
+          .eq('email', userEmail)
+          .maybeSingle();
+          
+        if (agent) hasAccess = true;
+      }
 
-      // Se não tiver nenhum dos 3 papéis, expulsa da página
-      if (!isAdmin && !producer && !agent) {
-        toast.error('Você não tem permissão para acessar esta área.');
+      if (!hasAccess) {
+        toast.error('Você não tem permissão para acessar esta área.', { id: 'unauthorized-checkin' });
         router.push('/');
       } else {
         setAuthorized(true);
         setTimeout(() => inputRef.current?.focus(), 100);
       }
+      
       setIsCheckingAuth(false);
     };
 
