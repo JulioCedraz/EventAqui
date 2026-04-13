@@ -52,7 +52,8 @@ export default function ManageAgentsPage() {
       const userEmail = session?.user?.email;
       const currentUserId = session?.user?.id;
       
-      if (!session || !userEmail || !currentUserId) {
+      if (!session || !userEmail) {
+        toast.error('Por favor, faça login para acessar esta página.', { id: 'login-required' });
         router.push('/');
         return;
       }
