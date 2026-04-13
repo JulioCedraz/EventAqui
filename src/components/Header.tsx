@@ -10,38 +10,49 @@ import { Menu, X, UserCircle, Ticket, LogOut, ShieldAlert, Info, ScanBarcode } f
 export default function Header() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [hasPanelAccess, setHasPanelAccess] = useState(false);
+  const [isAgent, setIsAgent] = useState(false);
   const [loading, setLoading] = useState(true);
-
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
-
   useEffect(() => {
-    const checkUser = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const currentUser = session?.user || null;
+    const checkRoles = async (currentUser: any) => {
+      if (!currentUser?.email) {
+        setHasPanelAccess(false);
+        setIsAgent(false);
+        setLoading(false);
+        return;
+      }
 
-      setUser(currentUser);
-      setIsAdmin(
-        currentUser?.email ? admins.includes(currentUser.email) : false,
-      );
+      const email = currentUser.email;
+
+      // Busca credenciais em paralelo para maior velocidade
+      const [producerRes, agentRes] = await Promise.all([
+        supabase.from('authorized_producers').select('email').eq('email', email).maybeSingle(),
+        supabase.from('agents').select('email').eq('email', email).maybeSingle()
+      ]);
+
+      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(e => e.trim()) || [];
+      const isAdmin = admins.includes(email);
+
+      setHasPanelAccess(isAdmin || !!producerRes.data);
+      setIsAgent(!!agentRes.data);
       setLoading(false);
     };
-
-    checkUser();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         const currentUser = session?.user || null;
         setUser(currentUser);
-        setIsAdmin(
-          currentUser?.email ? admins.includes(currentUser.email) : false,
-        );
+        checkRoles(currentUser);
       },
     );
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const currentUser = session?.user || null;
+      setUser(currentUser);
+      checkRoles(currentUser);
+    });
 
     return () => {
       authListener.subscription.unsubscribe();
@@ -61,41 +72,26 @@ export default function Header() {
           
           {/* LOGO E NAVEGAÇÃO DESKTOP */}
           <div className="flex items-center gap-8">
-            <Link
-              href="/"
-              className="text-2xl font-extrabold text-blue-600 tracking-tighter hover:opacity-80 transition-opacity"
-            >
+            <Link href="/" className="text-2xl font-extrabold text-blue-600 tracking-tighter hover:opacity-80 transition-opacity">
               EventAqui
             </Link>
 
             <nav className="hidden md:flex items-center gap-2">
               <Link href="/sobre" passHref>
-                <Button variant="ghost" className="text-gray-600 hover:text-blue-600 font-medium">
-                  Sobre Nós
-                </Button>
+                <Button variant="ghost" className="text-gray-600 hover:text-blue-600 font-medium">Sobre Nós</Button>
               </Link>
 
-              {/* LINKS RESTRITOS PARA ADMINS (DESKTOP) */}
-              {!loading && isAdmin && (
-                <>
-                  <Link href="/admin" passHref>
-                    <Button variant="ghost" className="text-gray-500 hover:text-gray-900 gap-2">
-                      <ShieldAlert className="w-4 h-4" />
-                      Painel
-                    </Button>
-                  </Link>
-                  <Link href="/admin/checkin" passHref>
-                    <Button variant="ghost" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-bold gap-2">
-                      <ScanBarcode className="w-4 h-4" />
-                      Scanner
-                    </Button>
-                  </Link>
-                </>
+              {!loading && hasPanelAccess && (
+                <Link href="/admin" passHref>
+                  <Button variant="ghost" className="text-gray-500 hover:text-gray-900 gap-2">
+                    <ShieldAlert className="w-4 h-4" /> Painel
+                  </Button>
+                </Link>
               )}
             </nav>
           </div>
 
-          {/* AÇÕES DO USUÁRIO E MENU MOBILE */}
+          {/* AÇÕES DO USUÁRIO */}
           <div className="flex items-center gap-3">
             {!loading && (
               <>
@@ -103,124 +99,89 @@ export default function Header() {
                   <div className="flex items-center gap-2">
                     <Link href="/profile" passHref className="hidden sm:block">
                       <Button variant="ghost" className="text-gray-600 hover:text-blue-600 gap-2">
-                        <UserCircle className="w-5 h-5" />
-                        Meu Perfil
+                        <UserCircle className="w-5 h-5" /> Meu Perfil
                       </Button>
                     </Link>
 
-                    <Link href="/tickets" passHref>
-                      <Button className="bg-blue-50 text-blue-600 hover:bg-blue-100 shadow-none font-bold gap-2 rounded-full">
-                        <Ticket className="w-4 h-4" />
-                        Meus Ingressos
-                      </Button>
-                    </Link>
+                    {isAgent ? (
+                      <Link href="/admin/checkin" passHref>
+                        <Button className="bg-purple-50 text-purple-600 hover:bg-purple-100 shadow-none font-bold gap-2 rounded-full">
+                          <ScanBarcode className="w-4 h-4" /> Scanner
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Link href="/tickets" passHref>
+                        <Button className="bg-blue-50 text-blue-600 hover:bg-blue-100 shadow-none font-bold gap-2 rounded-full">
+                          <Ticket className="w-4 h-4" /> Meus Ingressos
+                        </Button>
+                      </Link>
+                    )}
 
-                    <Button
-                      variant="ghost"
-                      onClick={handleSignOut}
-                      className="hidden sm:flex text-red-500 hover:text-red-700 hover:bg-red-50 px-3"
-                    >
+                    <Button variant="ghost" onClick={handleSignOut} className="hidden sm:flex text-red-500 px-3">
                       <LogOut className="w-4 h-4" />
                     </Button>
                   </div>
                 ) : (
                   <Link href="/login" passHref>
-                    <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full px-6 shadow-sm">
-                      Entrar
-                    </Button>
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full px-6">Entrar</Button>
                   </Link>
                 )}
               </>
             )}
 
-            {/* BOTÃO HAMBÚRGUER (MOBILE) */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden text-gray-600"
-              aria-label="Toggle Menu"
-            >
+            <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden text-gray-600">
               {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
           </div>
         </div>
       </div>
 
-      {/* MENU MOBILE EXPANSÍVEL */}
+      {/* MENU MOBILE */}
       {isMenuOpen && (
-        <div className="md:hidden border-t border-gray-100 bg-white absolute w-full shadow-lg animate-in slide-in-from-top-2 duration-200">
+        <div className="md:hidden border-t border-gray-100 bg-white absolute w-full shadow-lg">
           <nav className="px-4 pt-2 pb-6 space-y-1">
             <Link href="/sobre" passHref>
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start text-gray-700 font-medium"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <Info className="w-4 h-4 mr-3 text-gray-400" />
-                Sobre Nós
+              <Button variant="ghost" className="w-full justify-start text-gray-700 font-medium" onClick={() => setIsMenuOpen(false)}>
+                <Info className="w-4 h-4 mr-3 text-gray-400" /> Sobre Nós
               </Button>
             </Link>
             
-            {/* LINKS RESTRITOS PARA ADMINS (MOBILE) */}
-            {!loading && isAdmin && (
+            {!loading && (
               <>
-                <Link href="/admin" passHref>
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start text-gray-700 font-medium"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <ShieldAlert className="w-4 h-4 mr-3 text-gray-400" />
-                    Painel Administrativo
-                  </Button>
-                </Link>
-                <Link href="/admin/checkin" passHref>
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start text-blue-600 font-bold bg-blue-50/50 hover:bg-blue-50 mt-1"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <ScanBarcode className="w-4 h-4 mr-3" />
-                    Modo Portaria (Scanner)
-                  </Button>
-                </Link>
+                {hasPanelAccess && (
+                  <Link href="/admin" passHref>
+                    <Button variant="ghost" className="w-full justify-start text-gray-700 font-medium" onClick={() => setIsMenuOpen(false)}>
+                      <ShieldAlert className="w-4 h-4 mr-3 text-gray-400" /> Painel Administrativo
+                    </Button>
+                  </Link>
+                )}
+                {(hasPanelAccess || isAgent) && (
+                  <Link href="/admin/checkin" passHref>
+                    <Button variant="ghost" className="w-full justify-start text-purple-600 font-bold bg-purple-50/50 hover:bg-purple-100 mt-1" onClick={() => setIsMenuOpen(false)}>
+                      <ScanBarcode className="w-4 h-4 mr-3" /> Modo Portaria (Scanner)
+                    </Button>
+                  </Link>
+                )}
               </>
             )}
 
             {user && (
               <>
                 <div className="border-t border-gray-100 my-2"></div>
-
                 <Link href="/profile" passHref>
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start text-gray-700 font-medium"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <UserCircle className="w-4 h-4 mr-3 text-gray-400" />
-                    Meu Perfil
+                  <Button variant="ghost" className="w-full justify-start text-gray-700" onClick={() => setIsMenuOpen(false)}>
+                    <UserCircle className="w-4 h-4 mr-3 text-gray-400" /> Meu Perfil
                   </Button>
                 </Link>
                 
                 <Link href="/tickets" passHref>
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start text-gray-700 font-medium"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Ticket className="w-4 h-4 mr-3 text-gray-400" />
-                    Meus Ingressos
+                  <Button variant="ghost" className="w-full justify-start text-gray-700" onClick={() => setIsMenuOpen(false)}>
+                    <Ticket className="w-4 h-4 mr-3 text-gray-400" /> Meus Ingressos
                   </Button>
                 </Link>
                 
-                <Button 
-                  variant="ghost" 
-                  onClick={handleSignOut}
-                  className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50 font-medium"
-                >
-                  <LogOut className="w-4 h-4 mr-3" />
-                  Sair da Conta
+                <Button variant="ghost" onClick={handleSignOut} className="w-full justify-start text-red-500">
+                  <LogOut className="w-4 h-4 mr-3" /> Sair da Conta
                 </Button>
               </>
             )}
