@@ -275,7 +275,7 @@ export default function EventDetails() {
                   </span>
                   <span className="flex gap-2 items-center justify-center font-semibold text-gray-900">
                     Pix
-                    <QrCode className="w-4 h-4 text-emerald-600" />
+                    <img src="/pix.svg" className="w-5 h-5" alt="Pix" />
                   </span>
                 </div>
                 
