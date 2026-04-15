@@ -21,21 +21,27 @@ export default function AdminHub() {
   useEffect(() => {
     const checkAccess = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      const userEmail = session?.user?.email;
-      const firstName = session?.user?.user_metadata?.first_name || '';
-      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
-      const isAdmin = admins.includes(userEmail);
-
-      let isProducer = false;
-      if (!isAdmin) {
-        const { data: producer } = await supabase
-          .from('producers')
-          .select('email')
-          .eq('email', userEmail)
-          .maybeSingle();
-        
-        if (producer) isProducer = true;
+      
+      if (!session) {
+        router.push('/');
+        return;
       }
+
+      const userId = session.user.id;
+      const userEmail = session.user.email;
+      const firstName = session.user.user_metadata?.first_name || '';
+      
+      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+        
+      const role = profile?.role || 'customer';
+      const isAdmin = admins.includes(userEmail || '') || role === 'admin';
+      const isProducer = role === 'producer';
 
       if (!isAdmin && !isProducer) {
         toast.error('Você não tem permissão para acessar esta área.', { id: 'unauthorized-access' });
