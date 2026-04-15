@@ -14,7 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
   Loader2, Calendar, Ticket, Copy, CheckCircle2, 
-  Trash2, XCircle, ArrowRight, QrCode 
+  Trash2, XCircle, ArrowRight, QrCode, 
+  ArrowLeft
 } from "lucide-react";
 
 export default function MyTickets() {
@@ -131,9 +132,17 @@ export default function MyTickets() {
       <SmartModal dialog={dialog} onClose={() => setDialog(null)} isProcessing={isModalProcessing} />
 
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center gap-3 mb-8">
+        <div className="flex flex-wrap items-center gap-3 mb-8">
           <Ticket className="w-8 h-8 text-blue-600" />
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Meus Ingressos</h1>
+           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+            Meus Ingressos
+            </h1>
+          <Button
+           variant="ghost"
+           onClick={() => router.back()}
+           className="sm:ml-auto text-gray-600 hover:text-blue-600 font-bold">
+            <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
+          </Button>
         </div>
         
         {tickets.length === 0 ? (
