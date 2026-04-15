@@ -17,26 +17,27 @@ export default function Header() {
 
   useEffect(() => {
     const checkRoles = async (currentUser: any) => {
-      if (!currentUser?.email) {
+      if (!currentUser?.id) {
         setHasPanelAccess(false);
         setIsAgent(false);
         setLoading(false);
         return;
       }
 
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', currentUser.id)
+        .single();
+
+      const role = profile?.role || 'customer';
       const email = currentUser.email;
 
-      // Busca credenciais em paralelo para maior velocidade
-      const [producerRes, agentRes] = await Promise.all([
-        supabase.from('producers').select('email').eq('email', email).maybeSingle(),
-        supabase.from('agents').select('email').eq('email', email).maybeSingle()
-      ]);
-
       const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(e => e.trim()) || [];
-      const isAdmin = admins.includes(email);
+      const isAdmin = admins.includes(email) || role === 'admin';
 
-      setHasPanelAccess(isAdmin || !!producerRes.data);
-      setIsAgent(!!agentRes.data);
+      setHasPanelAccess(isAdmin || role === 'producer');
+      setIsAgent(role === 'agent');
       setLoading(false);
     };
 
@@ -103,14 +104,12 @@ export default function Header() {
                       </Button>
                     </Link>
 
-                    {/* Para agentes, 'Meus Ingressos' não aparece em destaque */}
                     <Link href="/tickets" passHref className={isAgent ? "hidden sm:block" : "block"}>
                       <Button className="bg-blue-50 text-blue-600 hover:bg-blue-100 shadow-none font-bold gap-2 rounded-full">
                         <Ticket className="w-4 h-4" /> Meus Ingressos
                       </Button>
                     </Link>
 
-                    {/* Para agentes: 'Scanner' em destaque. */}
                     {isAgent && (
                       <Link href="/admin/checkin" passHref>
                         <Button className="bg-purple-50 text-purple-600 hover:bg-purple-100 shadow-none font-bold gap-2 rounded-full">
