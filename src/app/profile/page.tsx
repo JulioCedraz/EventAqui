@@ -9,10 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, ArrowLeft, UserCircle, LogOut, Save, Mail, Lock, Sparkles } from "lucide-react";
 
-// Separamos o conteúdo em um componente interno para podermos usar o useSearchParams com segurança (Suspense)
 function ProfileContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -42,6 +42,7 @@ function ProfileContent() {
   const [area, setArea] = useState("");
   const [customArea, setCustomArea] = useState("");
   const [specialty, setSpecialty] = useState("");
+  const [role, setRole] = useState<'admin' | 'producer' | 'agent' | 'customer' | null>(null);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -58,7 +59,7 @@ function ProfileContent() {
 
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('first_name, last_name, cpf, occupation, birth_date, university, course, area, specialty')
+        .select('first_name, last_name, cpf, occupation, birth_date, university, course, area, specialty, role')
         .eq('id', user.id)
         .single();
 
@@ -70,6 +71,7 @@ function ProfileContent() {
         setFirstName(profileData.first_name || '');
         setLastName(profileData.last_name || '');
         setBirthDate(profileData.birth_date || '');
+        setRole(profileData.role || 'customer');
         
         const userCpf = profileData.cpf || '';
         setCpf(userCpf);
@@ -120,7 +122,6 @@ function ProfileContent() {
   const handleUpdateProfile = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     
-    // Validação especial para convidados: A senha é obrigatória na primeira vez
     if (isInvite && !newPassword) {
       toast.error('Por favor, defina uma senha para concluir o seu cadastro.');
       return;
@@ -190,7 +191,6 @@ function ProfileContent() {
       setNewPassword('');
       if (email !== originalEmail) setOriginalEmail(email);
 
-      // Limpa o '?invite=true' da URL após o sucesso para não pedir senha novamente num F5
       if (isInvite) {
         window.history.replaceState(null, '', '/profile');
         toast.success('Cadastro concluído com sucesso! Bem-vindo(a) à plataforma.', { id: toastId });
@@ -206,6 +206,25 @@ function ProfileContent() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const renderRoleBadge = () => {
+    if (!role || role === 'customer') return null;
+
+    const badgesConfig = {
+      admin: { label: 'Administrador', classes: 'bg-blue-100 text-blue-700 hover:bg-blue-100 border-transparent' },
+      producer: { label: 'Produtor', classes: 'bg-purple-100 text-purple-700 hover:bg-purple-100 border-transparent' },
+      agent: { label: 'Agente de Portaria', classes: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-transparent' },
+    };
+
+    const config = badgesConfig[role];
+    if (!config) return null;
+
+    return (
+      <Badge className={`ml-3 align-middle text-sm px-3 py-0.5 ${config.classes}`}>
+        {config.label}
+      </Badge>
+    );
   };
 
   if (isLoading) {
@@ -230,8 +249,9 @@ function ProfileContent() {
               ) : (
                 <UserCircle className="w-10 h-10 text-blue-600" />
               )}
-              <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+              <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center flex-wrap gap-2">
                 {isInvite ? 'Concluir Cadastro' : 'Meu Perfil'}
+                {!isInvite && renderRoleBadge()}
               </h1>
             </div>
             {isInvite && (
@@ -287,7 +307,7 @@ function ProfileContent() {
                     id="email"
                     type="email"
                     required
-                    disabled={isInvite} // O e-mail do convite não deve ser alterado neste primeiro momento
+                    disabled={isInvite}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="h-12 rounded-xl"
