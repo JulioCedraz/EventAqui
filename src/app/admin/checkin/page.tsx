@@ -35,41 +35,30 @@ export default function CheckinPage() {
 useEffect(() => {
     const checkAccess = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      const userEmail = session?.user?.email;
-
-      if (!session || !userEmail) {
+      
+      if (!session) {
         router.push('/');
         return;
       }
 
-      // 1. Verifica se é Admin
-      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
-      let hasAccess = admins.includes(userEmail);
+      const userId = session.user.id;
+      const userEmail = session.user.email;
 
-      // 2. Se NÃO for Admin, verifica se é Produtor
-      if (!hasAccess) {
-        const { data: producer } = await supabase
-          .from('producers')
-          .select('email')
-          .eq('email', userEmail)
-          .maybeSingle();
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
         
-        if (producer) hasAccess = true;
-      }
+      const role = profile?.role || 'customer';
+      
+      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
+      const isAdmin = admins.includes(userEmail || '') || role === 'admin';
 
-      // 3. Se NÃO for Admin nem Produtor, verifica se é Agente de Portaria
-      if (!hasAccess) {
-        const { data: agent } = await supabase
-          .from('agents')
-          .select('email')
-          .eq('email', userEmail)
-          .maybeSingle();
-          
-        if (agent) hasAccess = true;
-      }
+      const hasAccess = isAdmin || role === 'producer' || role === 'agent';
 
       if (!hasAccess) {
-        toast.error('Você não tem permissão para acessar esta área.', { id: 'unauthorized-checkin' });
+        toast.error('Você não tem permissão para acessar o Scanner.', { id: 'unauthorized-checkin' });
         router.push('/');
       } else {
         setAuthorized(true);
