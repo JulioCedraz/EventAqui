@@ -53,28 +53,25 @@ export default function OrdersPage() {
         return;
       } 
       
-      // 1. Verifica se é Admin
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', currentUserId)
+        .single();
+
+      const role = profile?.role || 'customer';
       const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
-      const isAdmin = admins.includes(userEmail);
+      const isAdmin = admins.includes(userEmail) || role === 'admin';
+      const isProducer = role === 'producer';
 
-      // 2. Verifica se é Produtor Autorizado
-      const { data: producer } = await supabase
-        .from('producers')
-        .select('email')
-        .eq('email', userEmail)
-        .maybeSingle();
-
-      // Expulsa se não for nenhum dos dois
-      if (!isAdmin && !producer) {
-        toast.error('Você não tem permissão para acessar esta área.');
+      if (!isAdmin && !isProducer) {
+        toast.error('Você não tem permissão para acessar esta área.', { id: 'unauthorized-orders' });
         router.push('/');
         return;
       }
       
       setAuthorized(true);
 
-      // 3. Buscar os pedidos aplicando o filtro de propriedade (Multi-Tenant)
-      // O uso do !inner é obrigatório para podermos filtrar por uma coluna da tabela relacionada (events)
       let query = supabase
         .from('tickets')
         .select(`
