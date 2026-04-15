@@ -64,7 +64,7 @@ export default function ManageAgentsPage() {
       let isProducer = false;
       if (!isAdmin) {
         const { data: producer } = await supabase
-          .from('authorized_producers')
+          .from('producers')
           .select('email')
           .eq('email', userEmail)
           .maybeSingle();

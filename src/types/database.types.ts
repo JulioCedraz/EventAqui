@@ -177,7 +177,7 @@ export type Database = {
         Relationships: [];
       };
 
-      authorized_producers: {
+      producers: {
         Row: {
           id: string;
           email: string;

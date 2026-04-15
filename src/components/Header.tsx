@@ -28,7 +28,7 @@ export default function Header() {
 
       // Busca credenciais em paralelo para maior velocidade
       const [producerRes, agentRes] = await Promise.all([
-        supabase.from('authorized_producers').select('email').eq('email', email).maybeSingle(),
+        supabase.from('producers').select('email').eq('email', email).maybeSingle(),
         supabase.from('agents').select('email').eq('email', email).maybeSingle()
       ]);
 

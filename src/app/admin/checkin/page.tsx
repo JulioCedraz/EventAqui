@@ -49,7 +49,7 @@ useEffect(() => {
       // 2. Se NÃO for Admin, verifica se é Produtor
       if (!hasAccess) {
         const { data: producer } = await supabase
-          .from('authorized_producers')
+          .from('producers')
           .select('email')
           .eq('email', userEmail)
           .maybeSingle();

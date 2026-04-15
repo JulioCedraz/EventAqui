@@ -59,7 +59,7 @@ export default function OrdersPage() {
 
       // 2. Verifica se é Produtor Autorizado
       const { data: producer } = await supabase
-        .from('authorized_producers')
+        .from('producers')
         .select('email')
         .eq('email', userEmail)
         .maybeSingle();

@@ -28,7 +28,7 @@ export default function ManageProducersPage() {
 
   const fetchProducers = async () => {
     const { data, error } = await supabase
-      .from('authorized_producers')
+      .from('producers')
       .select('*')
       .order('created_at', { ascending: false });
     
@@ -70,7 +70,7 @@ export default function ManageProducersPage() {
     try {
       // 1. Salva no banco de dados para controle visual e RLS
       const { error: dbError } = await supabase
-        .from('authorized_producers')
+        .from('producers')
         .insert({ email: newEmail.toLowerCase().trim() });
 
       if (dbError) {
@@ -120,7 +120,7 @@ export default function ManageProducersPage() {
     setIsModalProcessing(true);
     try {
       const { error } = await supabase
-        .from('authorized_producers')
+        .from('producers')
         .delete()
         .eq('id', id);
 
