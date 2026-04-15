@@ -58,6 +58,7 @@ export type Database = {
           course: string | null;
           area: string | null;
           specialty: string | null;
+          role: 'admin' | 'producer' | 'agent' | 'customer' | null;
         };
         Insert: {
           id: string;
@@ -70,6 +71,7 @@ export type Database = {
           course?: string | null;
           area?: string | null;
           specialty?: string | null;
+          role?: 'admin' | 'producer' | 'agent' | 'customer' | null;
         };
         Update: {
           id?: string;
@@ -82,6 +84,7 @@ export type Database = {
           course?: string | null;
           area?: string | null;
           specialty?: string | null;
+          role?: 'admin' | 'producer' | 'agent' | 'customer' | null;
         };
         Relationships: [
           {
