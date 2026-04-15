@@ -16,7 +16,6 @@ export async function POST(request: Request) {
 
     const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
     
-    // Monta a URL de redirecionamento para a página de perfil com o parâmetro de convite
     const redirectToUrl = `${origin}/profile?invite=true`;
 
     const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
@@ -31,7 +30,7 @@ export async function POST(request: Request) {
       if (error.message.includes('already registered') || error.message.includes('already exists')) {
         return NextResponse.json({ 
           success: true, 
-          message: 'Usuário já possuía conta e foi vinculado à equipe.',
+          message: 'Usuário já possuía conta e foi vinculado à equipe de portaria.',
           alreadyExists: true 
         });
       }
