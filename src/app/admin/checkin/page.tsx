@@ -33,43 +33,34 @@ export default function CheckinPage() {
   const inputRef = useRef<HTMLInputElement>(null);
 
 useEffect(() => {
-    const checkAccess = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+  const checkAccess = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      router.push('/');
+      return;
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', session.user.id)
+      .single();
       
-      if (!session) {
-        router.push('/');
-        return;
-      }
+    const role = profile?.role || 'customer';
+    const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(e => e.trim()) || [];
+    const isAdmin = admins.includes(session.user.email || '') || role === 'admin';
+    const hasAccess = isAdmin || role === 'producer' || role === 'agent';
 
-      const userId = session.user.id;
-      const userEmail = session.user.email;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .single();
-        
-      const role = profile?.role || 'customer';
-      
-      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
-      const isAdmin = admins.includes(userEmail || '') || role === 'admin';
-
-      const hasAccess = isAdmin || role === 'producer' || role === 'agent';
-
-      if (!hasAccess) {
-        toast.error('Você não tem permissão para acessar o Scanner.', { id: 'unauthorized-checkin' });
-        router.push('/');
-      } else {
-        setAuthorized(true);
-        setTimeout(() => inputRef.current?.focus(), 100);
-      }
-      
-      setIsCheckingAuth(false);
-    };
-
-    checkAccess();
-  }, [router]);
+    if (!hasAccess) {
+      toast.error('Acesso negado.', { id: 'unauthorized-checkin' });
+      router.push('/');
+    } else {
+      setAuthorized(true);
+    }
+    setIsCheckingAuth(false);
+  };
+  checkAccess();
+}, [router]);
 
   const handleCheckin = async (e?: React.SyntheticEvent | null, scannedId?: string) => {
     if (e) e.preventDefault();
