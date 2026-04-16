@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     const authHeader = request.headers.get('Authorization');
 
     if (!authHeader) {
-      return NextResponse.json({ error: 'Não autorizado. Faça login como admin.' }, { status: 401 });
+      return NextResponse.json({ error: 'Acesso negado.' }, { status: 401 });
     }
 
     const { ticketId } = await request.json();
