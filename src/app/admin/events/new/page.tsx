@@ -21,6 +21,7 @@ function EventForm() {
   const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isLoadingEvent, setIsLoadingEvent] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [eventDate, setEventDate] = useState('');
@@ -34,10 +35,29 @@ function EventForm() {
   useEffect(() => {
     const checkAdminAndFetchEvent = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      const userEmail = session?.user?.email;
-      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
+      
+      if (!session) {
+        router.push('/');
+        return;
+      }
 
-      if (!session || !userEmail || !admins.includes(userEmail)) {
+      const userId = session.user.id;
+      setCurrentUserId(userId);
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+
+      const role = profile?.role || 'customer';
+      const userEmail = session.user.email;
+      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
+      const isAdmin = admins.includes(userEmail || '') || role === 'admin';
+      const isProducer = role === 'producer';
+
+      if (!isAdmin && !isProducer) {
+        toast.error('Você não tem permissão para criar eventos.', { id: 'unauthorized-event-creation' });
         router.push('/');
         return;
       }
@@ -124,6 +144,11 @@ function EventForm() {
       return;
     }
 
+    if (!currentUserId) {
+      toast.error('Erro de autenticação. Tente fazer login novamente.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -165,6 +190,8 @@ function EventForm() {
         if (updateError) throw updateError;
         toast.success('Evento atualizado com sucesso!');
       } else {
+        payload.producer_id = currentUserId;
+
         const { error: insertError } = await supabase
           .from('events')
           .insert(payload);
@@ -173,11 +200,11 @@ function EventForm() {
         toast.success('Evento publicado com sucesso!');
       }
       
-      // Volta para a lista de eventos após o sucesso
       router.push('/admin/events');
 
     } catch (error: any) {
       toast.error(error.message || 'Erro ao processar requisição');
+    } finally {
       setLoading(false);
     }
   };
