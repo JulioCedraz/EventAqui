@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import PersonalDataFields, { validateCPF, UNIVERSITIES_LIST, COURSES_LIST } from '../../components/PersonalDataFields';
 import PrivacySettings from '../../components/PrivacySettings';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -63,7 +63,7 @@ function ProfileContent() {
         .eq('id', user.id)
         .single();
 
-      if (profileError) {
+      if (profileError && profileError.code !== 'PGRST116') {
         console.error('Erro ao carregar o perfil do banco de dados:', profileError.message);
       }
 
@@ -151,6 +151,7 @@ function ProfileContent() {
         const finalUniversity = university === "Outra" ? customUniversity : university;
         const finalCourse = course === "Outro" ? customCourse : course;
         const finalArea = area === "Outra" ? customArea : area;
+        const { data: { user } } = await supabase.auth.getUser();
 
         const profileUpdates: any = {
           id: userId,
@@ -159,6 +160,13 @@ function ProfileContent() {
           occupation: occupation || null,
           birth_date: birthDate || null,
         };
+
+        if (user?.user_metadata?.role) {
+          profileUpdates.role = user.user_metadata.role;
+        }
+        if (user?.user_metadata?.producer_id) {
+          profileUpdates.producer_id = user.user_metadata.producer_id;
+        }
 
         if (!hasCpfInitially && cpf) {
           profileUpdates.cpf = cpf;
