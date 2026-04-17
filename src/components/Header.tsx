@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Menu, X, UserCircle, Ticket, LogOut, ShieldAlert, Info, ScanBarcode } from "lucide-react";
+import { Menu, X, UserCircle, Ticket, LogOut, ShieldAlert, ScanBarcode } from "lucide-react";
 
 export default function Header() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [hasPanelAccess, setHasPanelAccess] = useState(false);
-  const [isAgent, setIsAgent] = useState(false);
+  const [hasScannerAccess, setHasScannerAccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -19,7 +19,7 @@ export default function Header() {
     const checkRoles = async (currentUser: any) => {
       if (!currentUser?.id) {
         setHasPanelAccess(false);
-        setIsAgent(false);
+        setHasScannerAccess(false);
         setLoading(false);
         return;
       }
@@ -34,10 +34,12 @@ export default function Header() {
       const email = currentUser.email;
 
       const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(e => e.trim()) || [];
-      const isAdmin = admins.includes(email) || role === 'admin';
+      const isAdmin = admins.includes(email || '') || role === 'admin';
+      const isProducer = role === 'producer';
+      const isAgent = role === 'agent';
 
-      setHasPanelAccess(isAdmin || role === 'producer');
-      setIsAgent(role === 'agent');
+      setHasPanelAccess(isAdmin || isProducer);
+      setHasScannerAccess(isAdmin || isProducer || isAgent);
       setLoading(false);
     };
 
@@ -71,66 +73,72 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           
-          {/* LOGO E NAVEGAÇÃO DESKTOP */}
-          <div className="flex items-center gap-8">
+          {/* LOGO */}
+          <div className="shrink-0">
             <Link href="/" className="text-2xl font-extrabold text-blue-600 tracking-tighter hover:opacity-80 transition-opacity">
               EventAqui
             </Link>
-
-            <nav className="hidden md:flex items-center gap-2">
-              <Link href="/sobre" passHref>
-                <Button variant="ghost" className="text-gray-600 hover:text-blue-600 font-medium">Sobre Nós</Button>
-              </Link>
-
-              {!loading && hasPanelAccess && (
-                <Link href="/admin" passHref>
-                  <Button variant="ghost" className="text-gray-500 hover:text-gray-900 gap-2">
-                    <ShieldAlert className="w-4 h-4" /> Painel
-                  </Button>
-                </Link>
-              )}
-            </nav>
           </div>
 
-          {/* AÇÕES DO USUÁRIO */}
-          <div className="flex items-center gap-3">
+          {/* NAVEGAÇÃO CENTRAL (DESKTOP) */}
+          <nav className="hidden min-[570px]:flex flex-1 justify-center items-center gap-0.5 mx-2">
+            {!loading && user && (
+              <>
+                {hasPanelAccess && (
+                  <Link href="/admin" passHref className="hidden min-[740px]:flex">
+                    <Button variant="ghost" className="text-gray-600 hover:text-blue-600 gap-2 font-medium px-3">
+                      <ShieldAlert className="w-4 h-4" /> Painel
+                    </Button>
+                  </Link>
+                )}
+
+                {hasScannerAccess && (
+                  <Link href="/admin/checkin" passHref className="hidden min-[740px]:flex">
+                    <Button variant="ghost" className="text-gray-600 hover:text-blue-600 gap-2 font-medium px-3">
+                      <ScanBarcode className="w-4 h-4" /> Scanner
+                    </Button>
+                  </Link>
+                )}
+
+                <Link href="/tickets" passHref className="hidden min-[570px]:flex">
+                  <Button variant="ghost" className="text-gray-600 hover:text-blue-600 gap-2 font-medium px-3">
+                    <Ticket className="w-4 h-4" /> Meus Ingressos
+                  </Button>
+                </Link>
+
+                <Link href="/profile" passHref className="hidden min-[570px]:flex">
+                  <Button variant="ghost" className="text-gray-600 hover:text-blue-600 gap-2 font-medium px-3">
+                    <UserCircle className="w-4 h-4" /> Meu Perfil
+                  </Button>
+                </Link>
+              </>
+            )}
+          </nav>
+
+          {/* AÇÕES DIREITA */}
+          <div className="flex items-center gap-2 ml-auto">
             {!loading && (
               <>
                 {user ? (
-                  <div className="flex items-center gap-2">
-                    <Link href="/profile" passHref className="hidden sm:block">
-                      <Button variant="ghost" className="text-gray-600 hover:text-blue-600 gap-2">
-                        <UserCircle className="w-5 h-5" /> Meu Perfil
-                      </Button>
-                    </Link>
-
-                    <Link href="/tickets" passHref className={isAgent ? "hidden sm:block" : "block"}>
-                      <Button className="bg-blue-50 text-blue-600 hover:bg-blue-100 shadow-none font-bold gap-2 rounded-full">
-                        <Ticket className="w-4 h-4" /> Meus Ingressos
-                      </Button>
-                    </Link>
-
-                    {isAgent && (
-                      <Link href="/admin/checkin" passHref>
-                        <Button className="bg-purple-50 text-purple-600 hover:bg-purple-100 shadow-none font-bold gap-2 rounded-full">
-                          <ScanBarcode className="w-4 h-4" /> Scanner
-                        </Button>
-                      </Link>
-                    )}
-
-                    <Button variant="ghost" onClick={handleSignOut} className="hidden sm:flex text-red-500 px-3">
-                      <LogOut className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  <Button 
+                    variant="ghost" 
+                    onClick={handleSignOut} 
+                    className="text-red-500 hover:text-red-600 hover:bg-red-50 px-3 font-bold gap-2"
+                  >
+                    <LogOut className="w-4 h-4" /> Sair
+                  </Button>
                 ) : (
                   <Link href="/login" passHref>
-                    <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full px-6">Entrar</Button>
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full px-6">
+                      Entrar
+                    </Button>
                   </Link>
                 )}
               </>
             )}
 
-            <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden text-gray-600">
+            {/* BOTÃO MENU MOBILE */}
+            <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(!isMenuOpen)} className="min-[740px]:hidden text-gray-600">
               {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
           </div>
@@ -139,52 +147,50 @@ export default function Header() {
 
       {/* MENU MOBILE */}
       {isMenuOpen && (
-        <div className="md:hidden border-t border-gray-100 bg-white absolute w-full shadow-lg">
+        <div className="min-[740px]:hidden border-t border-gray-100 bg-white absolute w-full shadow-lg animate-in slide-in-from-top duration-200">
           <nav className="px-4 pt-2 pb-6 space-y-1">
-            <Link href="/sobre" passHref>
-              <Button variant="ghost" className="w-full justify-start text-gray-700 font-medium" onClick={() => setIsMenuOpen(false)}>
-                <Info className="w-4 h-4 mr-3 text-gray-400" /> Sobre Nós
-              </Button>
-            </Link>
-            
-            {!loading && (
+            {!loading && user && (
               <>
                 {hasPanelAccess && (
                   <Link href="/admin" passHref>
-                    <Button variant="ghost" className="w-full justify-start text-gray-700 font-medium" onClick={() => setIsMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start text-left text-gray-700 font-medium" onClick={() => setIsMenuOpen(false)}>
                       <ShieldAlert className="w-4 h-4 mr-3 text-gray-400" /> Painel Administrativo
                     </Button>
                   </Link>
                 )}
-                {(hasPanelAccess || isAgent) && (
+                
+                {hasScannerAccess && (
                   <Link href="/admin/checkin" passHref>
-                    <Button variant="ghost" className="w-full justify-start text-purple-600 font-bold bg-purple-50/50 hover:bg-purple-100 mt-1" onClick={() => setIsMenuOpen(false)}>
-                      <ScanBarcode className="w-4 h-4 mr-3" /> Modo Portaria (Scanner)
+                    <Button variant="ghost" className="w-full justify-start text-left text-gray-700 font-medium" onClick={() => setIsMenuOpen(false)}>
+                      <ScanBarcode className="w-4 h-4 mr-3 text-gray-400" /> Scanner (Validação de ingressos)
                     </Button>
                   </Link>
                 )}
-              </>
-            )}
 
-            {user && (
-              <>
-                <div className="border-t border-gray-100 my-2"></div>
+                <Link href="/tickets" passHref>
+                  <Button variant="ghost" className="w-full justify-start text-left text-gray-700 font-medium" onClick={() => setIsMenuOpen(false)}>
+                    <Ticket className="w-4 h-4 mr-3 text-gray-400" /> Meus Ingressos
+                  </Button>
+                </Link>
+
                 <Link href="/profile" passHref>
-                  <Button variant="ghost" className="w-full justify-start text-gray-700" onClick={() => setIsMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start text-left text-gray-700 font-medium" onClick={() => setIsMenuOpen(false)}>
                     <UserCircle className="w-4 h-4 mr-3 text-gray-400" /> Meu Perfil
                   </Button>
                 </Link>
                 
-                <Link href="/tickets" passHref>
-                  <Button variant="ghost" className="w-full justify-start text-gray-700" onClick={() => setIsMenuOpen(false)}>
-                    <Ticket className="w-4 h-4 mr-3 text-gray-400" /> Meus Ingressos
-                  </Button>
-                </Link>
-                
-                <Button variant="ghost" onClick={handleSignOut} className="w-full justify-start text-red-500">
-                  <LogOut className="w-4 h-4 mr-3" /> Sair da Conta
+                <Button variant="ghost" onClick={handleSignOut} className="w-full justify-start text-left text-red-500 font-bold">
+                  <LogOut className="w-4 h-4 mr-3" /> Sair
                 </Button>
               </>
+            )}
+
+            {!loading && !user && (
+              <Link href="/login" passHref>
+                <Button className="w-full bg-blue-600 text-white font-bold mt-2" onClick={() => setIsMenuOpen(false)}>
+                  Entrar
+                </Button>
+              </Link>
             )}
           </nav>
         </div>
