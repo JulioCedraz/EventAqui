@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import Link from "next/link";
@@ -9,11 +9,27 @@ import { Menu, X, UserCircle, Ticket, LogOut, ShieldAlert, ScanBarcode } from "l
 
 export default function Header() {
   const router = useRouter();
+  const menuRef = useRef<HTMLDivElement>(null);
   const [user, setUser] = useState<any>(null);
   const [hasPanelAccess, setHasPanelAccess] = useState(false);
   const [hasScannerAccess, setHasScannerAccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (isMenuOpen && menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        // Evita conflito se clicar no próprio botão de fechar/abrir
+        const toggleButton = document.getElementById("mobile-menu-toggle");
+        if (toggleButton && toggleButton.contains(event.target as Node)) return;
+        
+        setIsMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isMenuOpen]);
 
   useEffect(() => {
     const checkRoles = async (currentUser: any) => {
@@ -140,7 +156,13 @@ export default function Header() {
               )}
 
               {/* BOTÃO MENU MOBILE */}
-              <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(!isMenuOpen)} className="min-[740px]:hidden text-gray-600">
+              <Button 
+                id="mobile-menu-toggle"
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setIsMenuOpen(!isMenuOpen)} 
+                className="min-[740px]:hidden text-gray-600"
+              >
                 {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               </Button>
             </div>
@@ -149,55 +171,60 @@ export default function Header() {
       </div>
 
       {/* MENU MOBILE (CAMADA INFERIOR) */}
-      {isMenuOpen && (
-        <div className="absolute top-full left-0 w-full z-10 border-b border-gray-100 bg-white shadow-lg animate-in slide-in-from-top duration-300 min-[740px]:hidden">
-          <nav className="px-4 pt-2 pb-6 space-y-1">
-            {!loading && user && (
-              <>
-                {hasPanelAccess && (
-                  <Link href="/admin" passHref>
-                    <Button variant="ghost" className="w-full justify-start text-left text-gray-700 font-medium" onClick={() => setIsMenuOpen(false)}>
-                      <ShieldAlert className="w-4 h-4 mr-3 text-gray-400" /> Painel Administrativo
-                    </Button>
-                  </Link>
-                )}
-                
-                {hasScannerAccess && (
-                  <Link href="/admin/checkin" passHref>
-                    <Button variant="ghost" className="w-full justify-start text-left text-gray-700 font-medium" onClick={() => setIsMenuOpen(false)}>
-                      <ScanBarcode className="w-4 h-4 mr-3 text-gray-400" /> Scanner (Validação de ingressos)
-                    </Button>
-                  </Link>
-                )}
-
-                <Link href="/tickets" passHref>
+      <div 
+        ref={menuRef}
+        className={`absolute top-full left-0 w-full z-10 border-b border-gray-100 bg-white shadow-lg transition-all duration-300 ease-in-out min-[740px]:hidden ${
+          isMenuOpen 
+            ? "translate-y-0 opacity-100 visible" 
+            : "-translate-y-full opacity-0 invisible"
+        }`}
+      >
+        <nav className="px-4 pt-2 pb-6 space-y-1">
+          {!loading && user && (
+            <>
+              {hasPanelAccess && (
+                <Link href="/admin" passHref>
                   <Button variant="ghost" className="w-full justify-start text-left text-gray-700 font-medium" onClick={() => setIsMenuOpen(false)}>
-                    <Ticket className="w-4 h-4 mr-3 text-gray-400" /> Meus Ingressos
+                    <ShieldAlert className="w-4 h-4 mr-3 text-gray-400" /> Painel Administrativo
                   </Button>
                 </Link>
-
-                <Link href="/profile" passHref>
+              )}
+              
+              {hasScannerAccess && (
+                <Link href="/admin/checkin" passHref>
                   <Button variant="ghost" className="w-full justify-start text-left text-gray-700 font-medium" onClick={() => setIsMenuOpen(false)}>
-                    <UserCircle className="w-4 h-4 mr-3 text-gray-400" /> Meu Perfil
+                    <ScanBarcode className="w-4 h-4 mr-3 text-gray-400" /> Scanner (Validação de ingressos)
                   </Button>
                 </Link>
-                
-                <Button variant="ghost" onClick={handleSignOut} className="w-full justify-start text-left text-red-500 font-bold">
-                  <LogOut className="w-4 h-4 mr-3" /> Sair
-                </Button>
-              </>
-            )}
+              )}
 
-            {!loading && !user && (
-              <Link href="/login" passHref>
-                <Button className="w-full bg-blue-600 text-white font-bold mt-2" onClick={() => setIsMenuOpen(false)}>
-                  Entrar
+              <Link href="/tickets" passHref>
+                <Button variant="ghost" className="w-full justify-start text-left text-gray-700 font-medium" onClick={() => setIsMenuOpen(false)}>
+                  <Ticket className="w-4 h-4 mr-3 text-gray-400" /> Meus Ingressos
                 </Button>
               </Link>
-            )}
-          </nav>
-        </div>
-      )}
+
+              <Link href="/profile" passHref>
+                <Button variant="ghost" className="w-full justify-start text-left text-gray-700 font-medium" onClick={() => setIsMenuOpen(false)}>
+                  <UserCircle className="w-4 h-4 mr-3 text-gray-400" /> Meu Perfil
+                </Button>
+              </Link>
+              
+              <Button variant="ghost" onClick={handleSignOut} className="w-full justify-start text-left text-red-500 font-bold">
+                <LogOut className="w-4 h-4 mr-3" /> Sair
+              </Button>
+            </>
+          )}
+
+          {!loading && !user && (
+            <Link href="/login" passHref>
+              <Button className="w-full bg-blue-600 text-white font-bold mt-2" onClick={() => setIsMenuOpen(false)}>
+                Entrar
+              </Button>
+            </Link>
+          )}
+        </nav>
+      </div>
     </header>
   );
 }
