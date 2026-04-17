@@ -16,42 +16,50 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'QR Code inválido ou vazio.' }, { status: 400 });
     }
 
-    const userScopedSupabase = createClient(
+    const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: {
-          headers: {
-            Authorization: authHeader,
-          },
-        },
-      }
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    const { data: ticket, error: fetchError } = await userScopedSupabase
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Sessão inválida ou expirada.' }, { status: 401 });
+    }
+
+    const { data: operatorProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const role = operatorProfile?.role || 'customer';
+    const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(e => e.trim()) || [];
+    const isAdmin = admins.includes(user.email || '') || role === 'admin';
+    
+    if (!isAdmin && role !== 'producer' && role !== 'agent') {
+      return NextResponse.json({ error: 'Você não tem permissão para realizar check-in.' }, { status: 403 });
+    }
+
+    const { data: ticket, error: fetchError } = await supabaseAdmin
       .from('tickets')
       .select('id, payment_status, is_used, user_id, buyer_name')
       .eq('id', ticketId)
       .single();
 
     if (fetchError || !ticket) {
-      console.error('Erro na busca do ingresso:', fetchError);
-      return NextResponse.json({ status: 'invalid', message: 'Ingresso não encontrado ou sem permissão de leitura.' });
+      return NextResponse.json({ status: 'invalid', message: 'Ingresso não encontrado.' });
     }
 
     let userProfile = null;
     if (ticket.user_id) {
-      const { data: profileData, error: profileError } = await userScopedSupabase
+      const { data: profileData } = await supabaseAdmin
         .from('profiles')
         .select('first_name, last_name, cpf, occupation')
         .eq('id', ticket.user_id)
         .single();
-        
-      if (profileError) {
-        console.error('Aviso: Perfil não encontrado para este usuário.', profileError);
-      } else {
-        userProfile = profileData;
-      }
+      userProfile = profileData;
     }
 
     const buyerFullName = userProfile?.first_name 
@@ -66,12 +74,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ status: 'used', message: `Atenção: O ingresso de ${buyerFullName} JÁ FOI UTILIZADO.` });
     }
 
-    const { error: updateError } = await userScopedSupabase
+    const { error: updateError } = await supabaseAdmin
       .from('tickets')
       .update({ is_used: true })
       .eq('id', ticketId);
 
-    if (updateError) throw new Error('Falha ao atualizar o banco de dados.');
+    if (updateError) throw new Error('Falha ao atualizar o status do ingresso no servidor.');
 
     return NextResponse.json({ 
       status: 'success', 
@@ -84,7 +92,7 @@ export async function POST(request: Request) {
     });
 
   } catch (error) {
-    console.error('Validation error:', error);
+    console.error('Erro crítico na API de Check-in:', error);
     return NextResponse.json({ error: 'Erro interno no servidor.' }, { status: 500 });
   }
 }
