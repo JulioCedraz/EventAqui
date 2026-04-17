@@ -153,22 +153,24 @@ function ProfileContent() {
         const finalArea = area === "Outra" ? customArea : area;
 
         const profileUpdates: any = {
-          first_name: firstName,
-          last_name: lastName,
-          occupation: occupation,
-          birth_date: birthDate,
+          id: userId,
+          first_name: firstName || null,
+          last_name: lastName || null,
+          occupation: occupation || null,
+          birth_date: birthDate || null,
         };
 
         if (!hasCpfInitially && cpf) {
           profileUpdates.cpf = cpf;
         }
+        
         if (occupation === "estudante") {
-          profileUpdates.university = finalUniversity;
-          profileUpdates.course = finalCourse;
+          profileUpdates.university = finalUniversity || null;
+          profileUpdates.course = finalCourse || null;
           profileUpdates.area = null;
           profileUpdates.specialty = null;
         } else {
-          profileUpdates.area = finalArea;
+          profileUpdates.area = finalArea || null;
           profileUpdates.specialty = finalArea === "Medicina" ? specialty : null;
           profileUpdates.university = null;
           profileUpdates.course = null;
@@ -176,8 +178,7 @@ function ProfileContent() {
 
         const { error: profileUpdateError } = await supabase
           .from('profiles')
-          .update(profileUpdates)
-          .eq('id', userId);
+          .upsert(profileUpdates, { onConflict: 'id' });
 
         if (profileUpdateError) throw profileUpdateError;
       }
