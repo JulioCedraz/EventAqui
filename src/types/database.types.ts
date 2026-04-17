@@ -59,6 +59,7 @@ export type Database = {
           area: string | null;
           specialty: string | null;
           role: 'admin' | 'producer' | 'agent' | 'customer' | null;
+          producer_id: string | null;
         };
         Insert: {
           id: string;
@@ -72,6 +73,7 @@ export type Database = {
           area?: string | null;
           specialty?: string | null;
           role?: 'admin' | 'producer' | 'agent' | 'customer' | null;
+          producer_id?: string | null;
         };
         Update: {
           id?: string;
@@ -85,6 +87,7 @@ export type Database = {
           area?: string | null;
           specialty?: string | null;
           role?: 'admin' | 'producer' | 'agent' | 'customer' | null;
+          producer_id?: string | null;
         };
         Relationships: [
           {
