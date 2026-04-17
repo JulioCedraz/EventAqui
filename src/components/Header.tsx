@@ -69,85 +69,88 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          
-          {/* LOGO */}
-          <div className="shrink-0">
-            <Link href="/" className="text-2xl font-extrabold text-blue-600 tracking-tighter hover:opacity-80 transition-opacity">
-              EventAqui
-            </Link>
-          </div>
+    <header className="sticky top-0 z-50 w-full">
+      {/* BARRA PRINCIPAL (CAMADA SUPERIOR) */}
+      <div className="relative z-20 bg-white/80 backdrop-blur-md border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            
+            {/* LOGO */}
+            <div className="shrink-0">
+              <Link href="/" className="text-2xl font-extrabold text-blue-600 tracking-tighter hover:opacity-80 transition-opacity">
+                EventAqui
+              </Link>
+            </div>
 
-          {/* NAVEGAÇÃO CENTRAL (DESKTOP) */}
-          <nav className="hidden min-[570px]:flex flex-1 justify-center items-center gap-0.5 mx-2">
-            {!loading && user && (
-              <>
-                {hasPanelAccess && (
-                  <Link href="/admin" passHref className="hidden min-[740px]:flex">
+            {/* NAVEGAÇÃO CENTRAL (DESKTOP) */}
+            <nav className="hidden min-[570px]:flex flex-1 justify-center items-center gap-0.5 mx-2">
+              {!loading && user && (
+                <>
+                  {hasPanelAccess && (
+                    <Link href="/admin" passHref className="hidden min-[740px]:flex">
+                      <Button variant="ghost" className="text-gray-600 hover:text-blue-600 gap-2 font-medium px-3">
+                        <ShieldAlert className="w-4 h-4" /> Painel
+                      </Button>
+                    </Link>
+                  )}
+
+                  {hasScannerAccess && (
+                    <Link href="/admin/checkin" passHref className="hidden min-[740px]:flex">
+                      <Button variant="ghost" className="text-gray-600 hover:text-blue-600 gap-2 font-medium px-3">
+                        <ScanBarcode className="w-4 h-4" /> Scanner
+                      </Button>
+                    </Link>
+                  )}
+
+                  <Link href="/tickets" passHref className="hidden min-[570px]:flex">
                     <Button variant="ghost" className="text-gray-600 hover:text-blue-600 gap-2 font-medium px-3">
-                      <ShieldAlert className="w-4 h-4" /> Painel
+                      <Ticket className="w-4 h-4" /> Meus Ingressos
                     </Button>
                   </Link>
-                )}
 
-                {hasScannerAccess && (
-                  <Link href="/admin/checkin" passHref className="hidden min-[740px]:flex">
+                  <Link href="/profile" passHref className="hidden min-[570px]:flex">
                     <Button variant="ghost" className="text-gray-600 hover:text-blue-600 gap-2 font-medium px-3">
-                      <ScanBarcode className="w-4 h-4" /> Scanner
+                      <UserCircle className="w-4 h-4" /> Meu Perfil
                     </Button>
                   </Link>
-                )}
+                </>
+              )}
+            </nav>
 
-                <Link href="/tickets" passHref className="hidden min-[570px]:flex">
-                  <Button variant="ghost" className="text-gray-600 hover:text-blue-600 gap-2 font-medium px-3">
-                    <Ticket className="w-4 h-4" /> Meus Ingressos
-                  </Button>
-                </Link>
-
-                <Link href="/profile" passHref className="hidden min-[570px]:flex">
-                  <Button variant="ghost" className="text-gray-600 hover:text-blue-600 gap-2 font-medium px-3">
-                    <UserCircle className="w-4 h-4" /> Meu Perfil
-                  </Button>
-                </Link>
-              </>
-            )}
-          </nav>
-
-          {/* AÇÕES DIREITA */}
-          <div className="flex items-center gap-2 ml-auto">
-            {!loading && (
-              <>
-                {user ? (
-                  <Button 
-                    variant="ghost" 
-                    onClick={handleSignOut} 
-                    className="text-red-500 hover:text-red-600 hover:bg-red-50 px-3 font-bold gap-2"
-                  >
-                    <LogOut className="w-4 h-4" /> Sair
-                  </Button>
-                ) : (
-                  <Link href="/login" passHref>
-                    <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full px-6">
-                      Entrar
+            {/* AÇÕES DIREITA */}
+            <div className="flex items-center gap-2 ml-auto">
+              {!loading && (
+                <>
+                  {user ? (
+                    <Button 
+                      variant="ghost" 
+                      onClick={handleSignOut} 
+                      className="text-red-500 hover:text-red-600 hover:bg-red-50 px-3 font-bold gap-2"
+                    >
+                      <LogOut className="w-4 h-4" /> Sair
                     </Button>
-                  </Link>
-                )}
-              </>
-            )}
+                  ) : (
+                    <Link href="/login" passHref>
+                      <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full px-6">
+                        Entrar
+                      </Button>
+                    </Link>
+                  )}
+                </>
+              )}
 
-            {/* BOTÃO MENU MOBILE */}
-            <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(!isMenuOpen)} className="min-[740px]:hidden text-gray-600">
-              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </Button>
+              {/* BOTÃO MENU MOBILE */}
+              <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(!isMenuOpen)} className="min-[740px]:hidden text-gray-600">
+                {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* MENU MOBILE */}
+      {/* MENU MOBILE (CAMADA INFERIOR) */}
       {isMenuOpen && (
-        <div className="min-[740px]:hidden border-t border-gray-100 bg-white absolute w-full shadow-lg animate-in slide-in-from-top duration-200">
+        <div className="absolute top-full left-0 w-full z-10 border-b border-gray-100 bg-white shadow-lg animate-in slide-in-from-top duration-300 min-[740px]:hidden">
           <nav className="px-4 pt-2 pb-6 space-y-1">
             {!loading && user && (
               <>
