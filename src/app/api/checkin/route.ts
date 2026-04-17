@@ -1,98 +1,97 @@
-import 'server-only';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: Request) {
   try {
-    const authHeader = request.headers.get('Authorization');
+    const cookieStore = await cookies();
 
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Acesso negado.' }, { status: 401 });
-    }
-
-    const { ticketId } = await request.json();
-
-    if (!ticketId) {
-      return NextResponse.json({ error: 'QR Code inválido ou vazio.' }, { status: 400 });
-    }
-
-    const supabaseAdmin = createClient(
+    const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch (error) {}
+          },
+        },
+      }
     );
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    const { data: { session } } = await supabase.auth.getSession();
 
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Sessão inválida ou expirada.' }, { status: 401 });
+    if (!session) {
+      return NextResponse.json({ error: 'Não autorizado. Faça login novamente.' }, { status: 401 });
     }
 
-    const { data: operatorProfile } = await supabaseAdmin
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    const role = operatorProfile?.role || 'customer';
-    const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(e => e.trim()) || [];
-    const isAdmin = admins.includes(user.email || '') || role === 'admin';
-    
-    if (!isAdmin && role !== 'producer' && role !== 'agent') {
-      return NextResponse.json({ error: 'Você não tem permissão para realizar check-in.' }, { status: 403 });
+    const { ticketId, eventId } = await request.json();
+    if (!ticketId || !eventId) {
+      return NextResponse.json({ error: 'Dados do ingresso incompletos.' }, { status: 400 });
     }
 
-    const { data: ticket, error: fetchError } = await supabaseAdmin
+    const userId = session.user.id;
+
+    const [eventResponse, profileResponse] = await Promise.all([
+      supabase.from('events').select('producer_id').eq('id', eventId).single(),
+      supabase.from('profiles').select('role, producer_id').eq('id', userId).single()
+    ]);
+
+    if (eventResponse.error || !eventResponse.data) {
+      return NextResponse.json({ error: 'Evento não encontrado.' }, { status: 404 });
+    }
+
+    if (profileResponse.error || !profileResponse.data) {
+      return NextResponse.json({ error: 'Perfil do usuário não encontrado.' }, { status: 404 });
+    }
+
+    const eventOwnerId = eventResponse.data.producer_id;
+    const { role, producer_id } = profileResponse.data;
+
+    if (
+      role !== 'admin' &&
+      !(role === 'producer' && userId === eventOwnerId) &&
+      !(role === 'agent' && producer_id === eventOwnerId)
+    ) {
+      return NextResponse.json({ error: 'Você não tem permissão para este evento.' }, { status: 403 });
+    }
+
+    const { data: ticket, error: ticketError } = await supabase
       .from('tickets')
-      .select('id, payment_status, is_used, user_id, buyer_name')
+      .select('id, status')
       .eq('id', ticketId)
+      .eq('event_id', eventId)
       .single();
 
-    if (fetchError || !ticket) {
-      return NextResponse.json({ status: 'invalid', message: 'Ingresso não encontrado.' });
+    if (ticketError || !ticket) {
+      return NextResponse.json({ error: 'Ingresso não encontrado ou não pertence a este evento.' }, { status: 404 });
     }
 
-    let userProfile = null;
-    if (ticket.user_id) {
-      const { data: profileData } = await supabaseAdmin
-        .from('profiles')
-        .select('first_name, last_name, cpf, occupation')
-        .eq('id', ticket.user_id)
-        .single();
-      userProfile = profileData;
+    if (ticket.status === 'used') {
+      return NextResponse.json({ error: 'ALERTA: Este ingresso já foi utilizado.' }, { status: 400 });
     }
 
-    const buyerFullName = userProfile?.first_name 
-      ? `${userProfile.first_name} ${userProfile.last_name}` 
-      : (ticket.buyer_name || 'Usuário Desconhecido');
-
-    if (ticket.payment_status !== 'approved') {
-      return NextResponse.json({ status: 'pending', message: `O pagamento de ${buyerFullName} ainda não foi confirmado.` });
-    }
-
-    if (ticket.is_used) {
-      return NextResponse.json({ status: 'used', message: `Atenção: O ingresso de ${buyerFullName} JÁ FOI UTILIZADO.` });
-    }
-
-    const { error: updateError } = await supabaseAdmin
+    const { error: updateError } = await supabase
       .from('tickets')
-      .update({ is_used: true })
+      .update({ 
+        status: 'used', 
+        checked_in_at: new Date().toISOString(),
+        checked_by: userId 
+      })
       .eq('id', ticketId);
 
-    if (updateError) throw new Error('Falha ao atualizar o status do ingresso no servidor.');
+    if (updateError) throw updateError;
 
-    return NextResponse.json({ 
-      status: 'success', 
-      message: 'Entrada Liberada!',
-      userData: {
-        fullName: buyerFullName,
-        cpf: userProfile?.cpf || 'Não informado',
-        occupation: userProfile?.occupation || 'Não informada'
-      }
-    });
+    return NextResponse.json({ success: true, message: 'Check-in validado com sucesso!' });
 
-  } catch (error) {
-    console.error('Erro crítico na API de Check-in:', error);
-    return NextResponse.json({ error: 'Erro interno no servidor.' }, { status: 500 });
+  } catch (err: any) {
+    console.error('Erro na API de Check-in:', err);
+    return NextResponse.json({ error: 'Erro interno no servidor ao validar.' }, { status: 500 });
   }
 }
