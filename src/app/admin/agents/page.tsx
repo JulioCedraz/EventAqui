@@ -31,8 +31,9 @@ export default function ManageAgentsPage() {
     if (!context) return;
 
     let query = supabase
-      .from('agents')
+      .from('profiles')
       .select('*')
+      .eq('role', 'agent')
       .order('created_at', { ascending: false });
 
     if (!context.isAdmin) {
@@ -97,20 +98,6 @@ export default function ManageAgentsPage() {
 
     setIsAdding(true);
     try {
-      const { error: dbError } = await supabase
-        .from('agents')
-        .insert({ 
-          email: newEmail.toLowerCase().trim(),
-          producer_id: userContext?.uid
-        });
-
-      if (dbError) {
-        if (dbError.code === '23505') {
-          throw new Error('Este e-mail já está registrado na sua equipe.');
-        }
-        throw dbError;
-      }
-
       const response = await fetch('/api/invite/agents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -126,7 +113,7 @@ export default function ManageAgentsPage() {
         throw new Error(result.error || 'Erro ao enviar convite por e-mail.');
       }
 
-      toast.success('Agente adicionado e convite enviado!');
+      toast.success(result.message || 'Agente adicionado e convite enviado!');
       setNewEmail('');
       fetchAgents();
     } catch (error: any) {
@@ -136,21 +123,27 @@ export default function ManageAgentsPage() {
     }
   };
 
-  const handleDeleteClick = (id: string, email: string) => {
+  const handleDeleteClick = (agent: any) => {
+    const displayIdentifier = agent.email || agent.nome || 'este usuário';
+    
     setDialog({
       isOpen: true,
       type: 'confirm',
       title: 'Revogar Acesso',
-      message: `Deseja remover ${email} da sua equipe de portaria?`,
+      message: `Deseja remover ${displayIdentifier} da sua equipe de portaria?`,
       confirmText: 'Revogar Acesso',
-      onConfirm: () => executeRevoke(id)
+      onConfirm: () => executeRevoke(agent.id)
     });
   };
 
   const executeRevoke = async (id: string) => {
     setIsModalProcessing(true);
     try {
-      const { error } = await supabase.from('agents').delete().eq('id', id);
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: 'customer', producer_id: null })
+        .eq('id', id);
+
       if (error) throw error;
 
       toast.success('Acesso revogado com sucesso.');
@@ -233,14 +226,14 @@ export default function ManageAgentsPage() {
                             <Mail className="w-5 h-5" />
                           </div>
                           <div className="truncate">
-                            <p className="font-bold text-gray-900 truncate">{agent.email}</p>
+                            <p className="font-bold text-gray-900 truncate">{agent.email || agent.nome || 'Agente'}</p>
                             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                               <Clock className="w-3 h-3" /> Adicionado em {new Date(agent.created_at).toLocaleDateString('pt-BR')}
                             </p>
                           </div>
                         </div>
                         <Button 
-                          variant="ghost" size="sm" onClick={() => handleDeleteClick(agent.id, agent.email)}
+                          variant="ghost" size="sm" onClick={() => handleDeleteClick(agent)}
                           className="text-red-500 hover:text-red-600 hover:bg-red-50 font-medium shrink-0"
                         >
                           <Trash2 className="w-4 h-4 mr-2" /> Revogar
