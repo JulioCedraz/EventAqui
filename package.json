@@ -9,7 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.0",
+    "@supabase/ssr": "^0.10.2",
+    "@supabase/supabase-js": "^2.103.3",
     "@tailwindcss/postcss": "^4.2.1",
     "@yudiel/react-qr-scanner": "^2.5.1",
     "class-variance-authority": "^0.7.1",
