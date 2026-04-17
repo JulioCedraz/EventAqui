@@ -47,7 +47,8 @@ export default function ManageEventsPage() {
       .select("*")
       .order("created_at", { ascending: false });
 
-    // Se não for Admin, filtra apenas os eventos que este produtor criou
+    // Admin vê tudo.
+    // Filtra os eventos criados pelo id do produtor logado.
     if (!context.isAdmin) {
       query = query.eq("producer_id", context.uid);
     }
@@ -63,21 +64,23 @@ export default function ManageEventsPage() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
+      
       if (!session) {
         router.push("/");
         return;
       }
 
+      const userId = session.user.id;
+
       const { data: profile } = await supabase
         .from("profiles")
         .select("role")
-        .eq("id", session.user.id)
+        .eq("id", userId)
         .single();
 
       const role = profile?.role || "customer";
       const admins =
-        process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(",").map((e) => e.trim()) ||
-        [];
+        process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(",").map((e) => e.trim()) || [];
       const isAdmin =
         admins.includes(session.user.email || "") || role === "admin";
 
@@ -86,9 +89,14 @@ export default function ManageEventsPage() {
         router.push("/admin");
       } else {
         setAuthorized(true);
+        
+        const currentContext = { isAdmin, uid: userId };
+        setUserContext(currentContext);
+        fetchEvents(currentContext);
       }
       setIsCheckingAuth(false);
     };
+    
     checkAccess();
   }, [router]);
 
