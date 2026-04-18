@@ -138,9 +138,16 @@ function ProfileContent() {
     const toastId = toast.loading(isInvite ? 'Concluindo seu cadastro...' : 'Salvando as suas alterações...');
 
     try {
-      const authUpdates: { email?: string; password?: string } = {};
+      const authUpdates: { email?: string; password?: string; data?: any } = {};
       if (email !== originalEmail) authUpdates.email = email;
       if (newPassword) authUpdates.password = newPassword;
+
+      if (firstName || lastName) {
+        authUpdates.data = {
+          full_name: `${firstName} ${lastName}`.trim(),
+          name: `${firstName} ${lastName}`.trim()
+        };
+      }
 
       if (Object.keys(authUpdates).length > 0) {
         const { error: authUpdateError } = await supabase.auth.updateUser(authUpdates);
