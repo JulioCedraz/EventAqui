@@ -48,6 +48,7 @@ export type Database = {
 
       profiles: {
         Row: {
+          email: string;
           id: string;
           first_name: string | null;
           last_name: string | null;
@@ -60,6 +61,7 @@ export type Database = {
           specialty: string | null;
           role: 'admin' | 'producer' | 'agent' | 'customer' | null;
           producer_id: string | null;
+          created_at: string | number | Date | null;
         };
         Insert: {
           id: string;
