@@ -1,4 +1,4 @@
-import { createClient, User } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
 const supabaseAdmin = createClient(
@@ -26,31 +26,28 @@ export async function POST(request: Request) {
     });
 
     if (error) {
-      if (error.message.includes('already registered') || error.message.includes('already exists')) {
-        
-        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers();
-        
-        if (!authError && authData?.users) {
-          const existingUser = authData.users.find((u: User) => u.email === email.toLowerCase());
-          
-          if (existingUser) {
-            const { error: profileError } = await supabaseAdmin
-              .from('profiles')
-              .update({ 
-                role: 'agent', 
-                producer_id: producerId 
-              })
-              .eq('id', existingUser.id);
+      if (
+        error.message.includes('already registered') || 
+        error.message.includes('already exists') ||
+        error.status === 422
+      ) {
+        const { error: profileError } = await supabaseAdmin
+          .from('profiles')
+          .update({ 
+            role: 'agent', 
+            producer_id: producerId 
+          })
+          .eq('email', email.toLowerCase());
 
-            if (profileError) throw profileError;
-
-            return NextResponse.json({ 
-              success: true, 
-              message: 'Usuário já possuía conta e foi promovido à sua equipe de portaria.',
-              alreadyExists: true 
-            });
-          }
+        if (profileError) {
+          return NextResponse.json({ error: 'Erro ao vincular usuário existente à equipe.' }, { status: 500 });
         }
+
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Usuário já possuía conta e foi adicionado à sua equipe de portaria.',
+          alreadyExists: true 
+        });
       }
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
@@ -58,7 +55,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, user: data.user });
     
   } catch (err: any) {
-    console.error('Erro na API de Convite:', err);
+    console.error('Erro na API de Convite de Agentes:', err);
     return NextResponse.json({ error: 'Erro interno no servidor' }, { status: 500 });
   }
 }
