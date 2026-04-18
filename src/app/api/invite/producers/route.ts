@@ -19,6 +19,7 @@ export async function POST(request: Request) {
     const redirectToUrl = `${origin}/profile?invite=true`;
 
     const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+      data: { role: 'producer' },
       redirectTo: redirectToUrl
     });
 
@@ -28,9 +29,18 @@ export async function POST(request: Request) {
         error.message.includes('already exists') ||
         error.status === 422
       ) {
+        const { error: updateError } = await supabaseAdmin
+          .from('profiles')
+          .update({ role: 'producer' })
+          .eq('email', email);
+
+        if (updateError) {
+          return NextResponse.json({ error: 'Erro ao promover usuário existente a produtor.' }, { status: 500 });
+        }
+
         return NextResponse.json({ 
           success: true, 
-          message: 'Usuário já possuía conta e foi promovido a Produtor.',
+          message: 'Usuário já possuía conta e foi promovido a Produtor com sucesso!',
           alreadyExists: true 
         });
       }
