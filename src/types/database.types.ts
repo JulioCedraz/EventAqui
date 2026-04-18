@@ -54,9 +54,9 @@ export type Database = {
           last_name: string | null;
           cpf: string | null;
           occupation: string | null;
-          birth_date: string | null;
           role: 'admin' | 'producer' | 'agent' | 'customer' | null;
           producer_id: string | null;
+          birth_date: string | null;
           university: string | null;
           course: string | null;
           area: string | null;
@@ -70,9 +70,9 @@ export type Database = {
           last_name?: string | null;
           cpf?: string | null;
           occupation?: string | null;
-          birth_date?: string | null;
           role?: 'admin' | 'producer' | 'agent' | 'customer' | null;
           producer_id?: string | null;
+          birth_date?: string | null;
           university?: string | null;
           course?: string | null;
           area?: string | null;
@@ -85,9 +85,9 @@ export type Database = {
           last_name?: string | null;
           cpf?: string | null;
           occupation?: string | null;
-          birth_date?: string | null;
           role?: 'admin' | 'producer' | 'agent' | 'customer' | null;
           producer_id?: string | null;
+          birth_date?: string | null;
           university?: string | null;
           course?: string | null;
           area?: string | null;
@@ -163,47 +163,6 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
-      };
-
-      agents: {
-        Row: {
-          id: string;
-          email: string;
-          created_at: string;
-          producer_id: string | null;
-        };
-        Insert: {
-          id?: string;
-          email: string;
-          created_at?: string;
-          producer_id?: string | null;
-        };
-        Update: {
-          id?: string;
-          email?: string;
-          created_at?: string;
-          producer_id?: string | null;
-        };
-        Relationships: [];
-      };
-
-      producers: {
-        Row: {
-          id: string;
-          email: string;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          email: string;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          email?: string;
-          created_at?: string;
-        };
-        Relationships: [];
       };
     };
     Views: {
