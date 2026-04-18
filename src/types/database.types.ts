@@ -48,48 +48,50 @@ export type Database = {
 
       profiles: {
         Row: {
-          email: string;
           id: string;
+          email: string;
           first_name: string | null;
           last_name: string | null;
           cpf: string | null;
           occupation: string | null;
           birth_date: string | null;
+          role: 'admin' | 'producer' | 'agent' | 'customer' | null;
+          producer_id: string | null;
           university: string | null;
           course: string | null;
           area: string | null;
           specialty: string | null;
-          role: 'admin' | 'producer' | 'agent' | 'customer' | null;
-          producer_id: string | null;
           created_at: string | number | Date | null;
         };
         Insert: {
           id: string;
+          email?: string;
           first_name?: string | null;
           last_name?: string | null;
           cpf?: string | null;
           occupation?: string | null;
           birth_date?: string | null;
+          role?: 'admin' | 'producer' | 'agent' | 'customer' | null;
+          producer_id?: string | null;
           university?: string | null;
           course?: string | null;
           area?: string | null;
           specialty?: string | null;
-          role?: 'admin' | 'producer' | 'agent' | 'customer' | null;
-          producer_id?: string | null;
         };
         Update: {
           id?: string;
+          email?: string;
           first_name?: string | null;
           last_name?: string | null;
           cpf?: string | null;
           occupation?: string | null;
           birth_date?: string | null;
+          role?: 'admin' | 'producer' | 'agent' | 'customer' | null;
+          producer_id?: string | null;
           university?: string | null;
           course?: string | null;
           area?: string | null;
           specialty?: string | null;
-          role?: 'admin' | 'producer' | 'agent' | 'customer' | null;
-          producer_id?: string | null;
         };
         Relationships: [
           {
