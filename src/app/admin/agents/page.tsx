@@ -14,13 +14,16 @@ import {
   Loader2, ShieldCheck, UserPlus, Trash2, 
   ArrowLeft, Mail, Clock 
 } from "lucide-react";
+import { Database } from "../../../types/database.types";
+
+type Profile = Database['public']['Tables']['profiles']['Row'];
 
 export default function ManageAgentsPage() {
   const router = useRouter();
   
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [authorized, setAuthorized] = useState(false);
-  const [agents, setAgents] = useState<any[]>([]);
+  const [agents, setAgents] = useState<Profile[]>([]);
   const [newEmail, setNewEmail] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [dialog, setDialog] = useState<DialogConfig | null>(null);
@@ -123,8 +126,8 @@ export default function ManageAgentsPage() {
     }
   };
 
-  const handleDeleteClick = (agent: any) => {
-    const displayIdentifier = agent.email || agent.nome || 'este usuário';
+  const handleDeleteClick = (agent: Profile) => {
+    const displayIdentifier = agent.email || agent.first_name || 'este usuário';
     
     setDialog({
       isOpen: true,
@@ -226,9 +229,9 @@ export default function ManageAgentsPage() {
                             <Mail className="w-5 h-5" />
                           </div>
                           <div className="truncate">
-                            <p className="font-bold text-gray-900 truncate">{agent.email || agent.nome || 'Agente'}</p>
+                            <p className="font-bold text-gray-900 truncate">{agent.email || agent.first_name || 'Agente'}</p>
                             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                              <Clock className="w-3 h-3" /> Adicionado em {new Date(agent.created_at).toLocaleDateString('pt-BR')}
+                              <Clock className="w-3 h-3" /> Adicionado em {agent.created_at ? new Date(agent.created_at).toLocaleDateString('pt-BR') : 'Data desconhecida'}
                             </p>
                           </div>
                         </div>
