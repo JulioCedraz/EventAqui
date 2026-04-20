@@ -5,13 +5,11 @@ import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
 import PersonalDataFields, { validateCPF } from "../../components/PersonalDataFields";
 import SmartModal, { DialogConfig } from "../../components/SmartModal";
-
-// Importações do shadcn/ui e ícones
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,9 +20,7 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
-  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
-  const [emailStatus, setEmailStatus] = useState<"idle" | "valid" | "invalid">("idle");
-  const [emailMessage, setEmailMessage] = useState("");
+  const [emailFieldError, setEmailFieldError] = useState("");
   
   // Dados do Usuário
   const [email, setEmail] = useState("");
@@ -47,63 +43,9 @@ export default function LoginPage() {
   const [customArea, setCustomArea] = useState("");
   const [specialty, setSpecialty] = useState("");
 
-  // Estados dos Modais
   const [dialog, setDialog] = useState<DialogConfig | null>(null);
-  const [showCpfModal, setShowCpfModal] = useState(false);
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
   const [isModalProcessing, setIsModalProcessing] = useState(false);
-  const [cpfConflictEmail, setCpfConflictEmail] = useState("");
-  const [recoveryEmailInput, setRecoveryEmailInput] = useState("");
-  const [modalError, setModalError] = useState("");
-
-  const handleEmailBlur = async () => {
-    setEmailStatus("idle");
-    setEmailMessage("");
-
-    if (!email) return;
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setEmailStatus("invalid");
-      setEmailMessage("Por favor, digite um e-mail válido (ex: seu.nome@email.com).");
-      return;
-    }
-
-    setIsCheckingEmail(true);
-    setErrorMsg("");
-
-    try {
-      const { data: exists, error: checkError } = await supabase.rpc("check_email_exists", {
-        lookup_email: email,
-      });
-
-      if (checkError) throw checkError;
-
-      if (isLogin) {
-        if (exists) {
-          setEmailStatus("valid");
-          setEmailMessage("E-mail encontrado.");
-        } else {
-          setEmailStatus("invalid");
-          setEmailMessage("E-mail não cadastrado. Por favor, crie uma conta.");
-        }
-      } else {
-        if (exists) {
-          setErrorMsg("Identificamos que já possui um registo! Por favor, insira a sua senha.");
-          setIsLogin(true);
-          setEmailStatus("valid");
-          setEmailMessage("E-mail encontrado.");
-        } else {
-          setEmailStatus("valid");
-          setEmailMessage("E-mail disponível para cadastro.");
-        }
-      }
-    } catch (err) {
-      console.error("Erro ao verificar e-mail:", err);
-    } finally {
-      setIsCheckingEmail(false);
-    }
-  };
 
   const handlePasswordRecovery = () => {
     if (!email) {
@@ -160,67 +102,15 @@ export default function LoginPage() {
     setIsLoading(false);
   };
 
-  const handleSendRecoveryFromModal = async () => {
-    if (!recoveryEmailInput) {
-      setModalError("Por favor, digite o seu e-mail completo.");
-      return;
-    }
-    setIsModalProcessing(true);
-    setModalError("");
-    
-    try {
-      const { data: isMatch, error: matchError } = await supabase.rpc('verify_cpf_email_match', {
-        p_cpf: cpf,
-        p_email: recoveryEmailInput.trim()
-      });
-
-      if (matchError) throw matchError;
-
-      if (!isMatch) {
-        setModalError("O e-mail digitado não corresponde ao cadastrado com este CPF.");
-        setIsModalProcessing(false);
-        return;
-      }
-
-      const { error } = await supabase.auth.resetPasswordForEmail(recoveryEmailInput.trim(), {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-
-      if (error) throw error;
-
-      setShowCpfModal(false);
-      setRecoveryEmailInput("");
-      setCpf("");
-      setCpfStatus('idle');
-      setCpfMessage('');
-      setIsLogin(true);
-
-      setDialog({
-        isOpen: true,
-        type: 'success',
-        title: 'Recuperação Enviada',
-        message: 'E-mail de recuperação enviado com sucesso! Verifique a sua caixa de entrada e a pasta de Spam.'
-      });
-
-    } catch (err: any) {
-      setModalError("Ocorreu uma falha ao tentar recuperar a senha. Tente novamente.");
-    } finally {
-      setIsModalProcessing(false);
-    }
-  };
-
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setErrorMsg("");
     setSuccessMsg("");
+    setEmailFieldError("");
     setNeedsConfirmation(false);
 
     try {
-      if (emailStatus === "invalid") {
-        throw new Error("Verifique o e-mail informado antes de prosseguir.");
-      }
-
       if (isLogin) {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
@@ -252,10 +142,6 @@ export default function LoginPage() {
           throw new Error("CPF inválido. Verifique os números digitados.");
         }
 
-        if (cpfStatus === 'invalid') {
-          throw new Error("Não é possível prosseguir com um CPF inválido ou já cadastrado.");
-        }
-
         if (birthDateStatus === 'invalid') {
           throw new Error("Corrija a sua data de nascimento antes de prosseguir.");
         }
@@ -285,8 +171,7 @@ export default function LoginPage() {
         if (signUpError) throw signUpError;
 
         if (signUpData.user && signUpData.user.identities && signUpData.user.identities.length === 0) {
-          setErrorMsg("Este e-mail já está em uso. Por favor, faça login.");
-          setIsLogin(true);
+          setEmailFieldError("Este e-mail já está cadastrado.");
           return;
         }
 
@@ -303,22 +188,7 @@ export default function LoginPage() {
 
   let activeDialog: DialogConfig | null = dialog;
 
-  if (showCpfModal) {
-    activeDialog = {
-      isOpen: true,
-      type: 'cpf_conflict',
-      title: 'CPF já cadastrado',
-      conflictEmail: cpfConflictEmail,
-      inputValue: recoveryEmailInput,
-      onInputChange: (e) => {
-        setRecoveryEmailInput(e.target.value);
-        setModalError("");
-      },
-      modalError: modalError,
-      confirmText: 'Recuperar Senha',
-      onConfirm: handleSendRecoveryFromModal
-    };
-  } else if (showRecoveryModal) {
+  if (showRecoveryModal) {
     activeDialog = {
       isOpen: true,
       type: 'password_recovery',
@@ -331,10 +201,7 @@ export default function LoginPage() {
 
   const handleCloseModal = () => {
     setDialog(null);
-    setShowCpfModal(false);
     setShowRecoveryModal(false);
-    setRecoveryEmailInput("");
-    setModalError("");
   };
 
   return (
@@ -381,39 +248,36 @@ export default function LoginPage() {
 
             <div className="space-y-2 relative">
               <Label htmlFor="email">E-mail</Label>
-              <div className="relative">
-                <Input
-                  id="email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (emailStatus !== "idle") {
-                      setEmailStatus("idle");
-                      setEmailMessage("");
-                    }
-                  }}
-                  onBlur={handleEmailBlur}
-                  className={`py-6 rounded-xl ${
-                    emailStatus === "valid" ? "border-green-400 focus-visible:ring-green-400 bg-green-50/50" : 
-                    emailStatus === "invalid" ? "border-red-400 focus-visible:ring-red-400 bg-red-50/50" : ""
-                  }`}
-                />
-                {isCheckingEmail && (
-                  <div className="absolute right-4 top-3.5 flex items-center gap-2 text-xs font-medium text-gray-400">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Verificando...
-                  </div>
-                )}
-                {!isCheckingEmail && emailStatus === "valid" && (
-                  <CheckCircle2 className="absolute right-4 top-3.5 w-5 h-5 text-green-500 animate-in zoom-in" />
-                )}
-              </div>
-              {emailMessage && (
-                <p className={`text-xs font-medium animate-in fade-in slide-in-from-top-1 ${emailStatus === "valid" ? "text-green-600" : "text-red-600"}`}>
-                  {emailMessage}
-                </p>
+              <Input
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setEmailFieldError("");
+                  setErrorMsg("");
+                }}
+                className={`py-6 rounded-xl ${
+                  emailFieldError ? "border-red-400 focus-visible:ring-red-400 bg-red-50/50" : ""
+                }`}
+              />
+              {emailFieldError && (
+                <div className="flex flex-col gap-1 mt-1">
+                  <p className="text-xs font-medium text-red-600 animate-in fade-in slide-in-from-top-1">
+                    {emailFieldError}
+                  </p>
+                  {!isLogin && (
+                    <Button 
+                      variant="link" 
+                      type="button" 
+                      className="h-auto p-0 text-xs text-blue-600 self-start"
+                      onClick={() => { setIsLogin(true); setEmailFieldError(""); }}
+                    >
+                      Deseja fazer login?
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
 
@@ -425,11 +289,6 @@ export default function LoginPage() {
                   cpf={cpf} setCpf={setCpf}
                   cpfStatus={cpfStatus} setCpfStatus={setCpfStatus}
                   cpfMessage={cpfMessage} setCpfMessage={setCpfMessage}
-                  
-                  onCpfExists={(maskedEmail) => {
-                    setCpfConflictEmail(maskedEmail);
-                    setShowCpfModal(true);
-                  }}
 
                   birthDate={birthDate} setBirthDate={setBirthDate}
                   birthDateStatus={birthDateStatus} setBirthDateStatus={setBirthDateStatus}
@@ -507,8 +366,7 @@ export default function LoginPage() {
               setIsLogin(!isLogin);
               setErrorMsg("");
               setSuccessMsg("");
-              setEmailStatus("idle");
-              setEmailMessage("");
+              setEmailFieldError("");
               setNeedsConfirmation(false);
             }}
             className="text-sm font-medium text-gray-600 hover:text-blue-600"
