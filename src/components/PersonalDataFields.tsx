@@ -1,9 +1,8 @@
 'use client';
 
-import { supabase } from '../lib/supabase';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2, Loader2, AlertCircle } from "lucide-react";
+import { CheckCircle2, AlertCircle } from "lucide-react";
 
 export const UNIVERSITIES_LIST = [
   "UFBA", "UFRB", "UFOB", "UNEB", "UEFS", "UESC", "UESB", 
@@ -61,7 +60,7 @@ export const validateBirthDate = (dateStr: string) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const minDate = new Date(today);
-  minDate.setFullYear(today.getFullYear() - 10);
+  minDate.setFullYear(today.getFullYear() - 12);
   const inputDate = new Date(year, month - 1, day);
   if (inputDate > minDate) {
     return false;
@@ -94,7 +93,6 @@ interface PersonalDataFieldsProps {
   hasCpfInitially?: boolean;
   cpfStatus: 'idle' | 'valid' | 'invalid'; setCpfStatus: (val: 'idle' | 'valid' | 'invalid') => void;
   cpfMessage: string; setCpfMessage: (val: string) => void;
-  onCpfExists?: (maskedEmail: string) => void;
   birthDate: string; setBirthDate: (val: string) => void;
   birthDateStatus: 'idle' | 'valid' | 'invalid'; setBirthDateStatus: (val: 'idle' | 'valid' | 'invalid') => void;
   birthDateMessage: string; setBirthDateMessage: (val: string) => void;
@@ -110,7 +108,7 @@ interface PersonalDataFieldsProps {
 
 export default function PersonalDataFields({
   firstName, setFirstName, lastName, setLastName,
-  cpf, setCpf, hasCpfInitially = false, cpfStatus, setCpfStatus, cpfMessage, setCpfMessage, onCpfExists,
+  cpf, setCpf, hasCpfInitially = false, cpfStatus, setCpfStatus, cpfMessage, setCpfMessage,
   birthDate, setBirthDate, birthDateStatus, setBirthDateStatus, birthDateMessage, setBirthDateMessage,
   occupation, setOccupation,
   course, setCourse, customCourse, setCustomCourse,
@@ -119,7 +117,7 @@ export default function PersonalDataFields({
   specialty, setSpecialty
 }: PersonalDataFieldsProps) {
 
-  const handleCpfBlur = async () => {
+  const handleCpfBlur = () => {
     if (hasCpfInitially || !cpf) {
       setCpfStatus('idle');
       setCpfMessage('');
@@ -128,26 +126,7 @@ export default function PersonalDataFields({
     
     if (validateCPF(cpf)) {
       setCpfStatus('valid');
-      setCpfMessage('Verificando...');
-
-      try {
-        const { data: maskedEmail, error } = await supabase.rpc('check_cpf_exists', { lookup_cpf: cpf });
-        
-        if (error) throw error;
-
-        if (maskedEmail) {
-          setCpfStatus('invalid');
-          setCpfMessage('Este CPF já está em uso.');
-          if (onCpfExists) onCpfExists(maskedEmail);
-        } else {
-          setCpfStatus('valid');
-          setCpfMessage('CPF válido e disponível.');
-        }
-      } catch (err) {
-        console.error("Erro ao verificar CPF:", err);
-        setCpfStatus('valid');
-        setCpfMessage('CPF válido.');
-      }
+      setCpfMessage('');
     } else {
       setCpfStatus('invalid');
       setCpfMessage('CPF inválido. Verifique os números digitados.');
@@ -230,11 +209,6 @@ export default function PersonalDataFields({
                       : ''
               }`}
             />
-            {cpfMessage === 'Verificando...' && (
-              <div className="absolute right-3 top-3.5 flex items-center">
-                <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
-              </div>
-            )}
             {!hasCpfInitially && cpfStatus === 'valid' && (
               <CheckCircle2 className="absolute right-3 top-3.5 w-5 h-5 text-green-500 animate-in zoom-in" />
             )}
@@ -244,7 +218,7 @@ export default function PersonalDataFields({
           </div>
           {cpfMessage && !hasCpfInitially && (
             <p className={`text-xs font-medium animate-in fade-in slide-in-from-top-1 ${cpfStatus === 'valid' ? 'text-green-600' : 'text-red-600'}`}>
-              {cpfMessage === 'Verificando...' ? '' : cpfMessage}
+              {cpfMessage}
             </p>
           )}
         </div>
