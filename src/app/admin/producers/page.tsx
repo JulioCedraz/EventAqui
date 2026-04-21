@@ -46,17 +46,11 @@ export default function ManageProducersPage() {
         return;
       }
 
-      const userId = session.user.id;
-      const userEmail = session.user.email;
+      const user = session.user;
+      const userEmail = user.email;
+      const role = user.user_metadata?.role || user.app_metadata?.role || "customer";
       const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(",").map((email) => email.trim()) || [];
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", userId)
-        .single();
-
-      const role = profile?.role || "customer";
       const isAdmin = admins.includes(userEmail || "") || role === "admin";
 
       if (!isAdmin) {
@@ -84,10 +78,22 @@ export default function ManageProducersPage() {
 
     setIsAdding(true);
     try {
-      const response = await fetch("/api/invite/producers", {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Sessão expirada. Faça login novamente.');
+      }
+
+      const response = await fetch("/api/invite", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: newEmail.toLowerCase().trim() }),
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ 
+          email: newEmail.toLowerCase().trim(),
+          role: 'producer'
+        }),
       });
 
       const result = await response.json();
@@ -122,17 +128,31 @@ export default function ManageProducersPage() {
   const executeRevoke = async (id: string) => {
     setIsModalProcessing(true);
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ role: "customer" })
-        .eq("id", id);
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Sessão expirada. Faça login novamente.');
+      }
 
-      if (error) throw error;
+      const response = await fetch('/api/revoke', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ targetUserId: id })
+      });
 
-      toast.success("Acesso revogado com sucesso.");
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Erro ao revogar acesso.');
+      }
+
+      toast.success(result.message || "Acesso revogado com sucesso.");
       fetchProducers();
     } catch (error: any) {
-      toast.error("Erro ao revogar acesso do produtor.");
+      toast.error(error.message || "Erro ao revogar acesso do produtor.");
     } finally {
       setIsModalProcessing(false);
       setDialog(null);
