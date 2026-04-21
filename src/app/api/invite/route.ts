@@ -88,7 +88,7 @@ export async function POST(request: Request) {
 
     if (inviteError) {
       if (inviteError.message.includes('already registered') || inviteError.status === 422) {
-
+        // Busca o ID do usuário pelo e-mail
         const { data: existingUser } = await supabaseAdmin
           .from('profiles')
           .select('id')
@@ -96,10 +96,16 @@ export async function POST(request: Request) {
           .single();
 
         if (existingUser) {
-          await supabaseAdmin.from('profiles').update(metaData).eq('id', existingUser.id);
+          // Envia somente a role e o producer_id
+          const safeUpdatePayload = {
+            role: role,
+            producer_id: finalProducerId
+          };
 
+          await supabaseAdmin.from('profiles').update(safeUpdatePayload).eq('id', existingUser.id);
+          // Altera a role e producer_id e mantém os outros metadados.
           await supabaseAdmin.auth.admin.updateUserById(existingUser.id, {
-            user_metadata: metaData
+            user_metadata: safeUpdatePayload
           });
 
           return NextResponse.json({ 
