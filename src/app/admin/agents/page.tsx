@@ -59,19 +59,11 @@ export default function ManageAgentsPage() {
         return;
       }
 
-      const userId = session.user.id;
-      const userEmail = session.user.email;
-      
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .single();
-        
-      const role = profile?.role || 'customer';
+      const user = session.user;
+      const role = user.user_metadata?.role || user.app_metadata?.role || 'customer';
       const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
 
-      const isAdmin = admins.includes(userEmail || '') || role === 'admin';
+      const isAdmin = admins.includes(user.email || '') || role === 'admin';
       const isProducer = role === 'producer';
 
       if (!isAdmin && !isProducer) {
@@ -80,7 +72,7 @@ export default function ManageAgentsPage() {
         return;
       }
       
-      const context = { isAdmin, uid: userId };
+      const context = { isAdmin, uid: user.id };
       setUserContext(context);
       setAuthorized(true);
       fetchAgents(context);
@@ -101,12 +93,17 @@ export default function ManageAgentsPage() {
 
     setIsAdding(true);
     try {
-      const response = await fetch('/api/invite/agents', {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Sessão expirada. Faça login novamente.');
+      }
+      const response = await fetch('/api/invite', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}`},
         body: JSON.stringify({ 
           email: newEmail.toLowerCase().trim(),
-          producerId: userContext?.uid
+          role: 'agent' 
         })
       });
 
@@ -142,17 +139,31 @@ export default function ManageAgentsPage() {
   const executeRevoke = async (id: string) => {
     setIsModalProcessing(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: 'customer', producer_id: null })
-        .eq('id', id);
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Sessão expirada. Faça login novamente.');
+      }
 
-      if (error) throw error;
+      const response = await fetch('/api/revoke', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ targetUserId: id })
+      });
 
-      toast.success('Acesso revogado com sucesso.');
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Erro ao revogar acesso.');
+      }
+
+      toast.success(result.message || 'Acesso revogado com sucesso.');
       fetchAgents();
     } catch (error: any) {
-      toast.error('Erro ao revogar acesso do agente.');
+      toast.error(error.message || 'Erro ao revogar acesso do agente.');
     } finally {
       setIsModalProcessing(false);
       setDialog(null);
