@@ -29,17 +29,16 @@ export default function AdminHub() {
 
       const userId = session.user.id;
       const userEmail = session.user.email;
-      const firstName = session.user.user_metadata?.first_name || '';
-      
       const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
-      
+
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, first_name')
         .eq('id', userId)
         .single();
         
       const role = profile?.role || 'customer';
+      const firstName = profile?.first_name || session.user.user_metadata?.first_name || '';
       const isAdmin = admins.includes(userEmail || '') || role === 'admin';
       const isProducer = role === 'producer';
 
