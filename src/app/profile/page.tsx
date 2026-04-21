@@ -59,7 +59,7 @@ function ProfileContent() {
 
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('first_name, last_name, cpf, occupation, birth_date, university, course, area, specialty, role')
+        .select('first_name, last_name, cpf, occupation, role, birth_date, university, course, area, specialty')
         .eq('id', user.id)
         .single();
 
@@ -70,7 +70,15 @@ function ProfileContent() {
       if (profileData) {
         setFirstName(profileData.first_name || '');
         setLastName(profileData.last_name || '');
-        setBirthDate(profileData.birth_date || '');
+        let formattedBirthDate = '';
+        if (profileData.birth_date) {
+          const parts = profileData.birth_date.split('-');
+          if (parts.length === 3) {
+            formattedBirthDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+          }
+        }
+        setBirthDate(formattedBirthDate);
+
         setRole(profileData.role || 'customer');
         
         const userCpf = profileData.cpf || '';
@@ -158,14 +166,16 @@ function ProfileContent() {
         const finalUniversity = university === "Outra" ? customUniversity : university;
         const finalCourse = course === "Outro" ? customCourse : course;
         const finalArea = area === "Outra" ? customArea : area;
+        // Formato BR para interface do usuário, formato ISO para banco de dados
+        const isoBirthDate = birthDate ? birthDate.split('/').reverse().join('-') : null;
         const { data: { user } } = await supabase.auth.getUser();
 
         const profileUpdates: any = {
-          id: userId,
+          email: email,
           first_name: firstName || null,
           last_name: lastName || null,
           occupation: occupation || null,
-          birth_date: birthDate || null,
+          birth_date: isoBirthDate,
         };
 
         if (user?.user_metadata?.role) {
@@ -193,7 +203,8 @@ function ProfileContent() {
 
         const { error: profileUpdateError } = await supabase
           .from('profiles')
-          .upsert(profileUpdates, { onConflict: 'id' });
+          .update(profileUpdates)
+          .eq('id', userId);
 
         if (profileUpdateError) throw profileUpdateError;
       }
