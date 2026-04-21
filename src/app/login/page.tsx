@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
-import PersonalDataFields, { validateCPF } from "../../components/PersonalDataFields";
+import PersonalDataFields, { validateCPF, validateBirthDate } from "../../components/PersonalDataFields";
 import SmartModal, { DialogConfig } from "../../components/SmartModal";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,6 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 export default function LoginPage() {
   const router = useRouter();
 
-  // Estados do Formulário
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -22,7 +21,6 @@ export default function LoginPage() {
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [emailFieldError, setEmailFieldError] = useState("");
   
-  // Dados do Usuário
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -31,6 +29,7 @@ export default function LoginPage() {
   const [cpf, setCpf] = useState("");
   const [cpfStatus, setCpfStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
   const [cpfMessage, setCpfMessage] = useState('');
+  const [role, setRole] = useState("customer");
   const [birthDate, setBirthDate] = useState("");
   const [birthDateStatus, setBirthDateStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
   const [birthDateMessage, setBirthDateMessage] = useState('');
@@ -46,6 +45,14 @@ export default function LoginPage() {
   const [dialog, setDialog] = useState<DialogConfig | null>(null);
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
   const [isModalProcessing, setIsModalProcessing] = useState(false);
+
+  useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const urlRole = params.get('role');
+  if (urlRole && ['admin', 'producer', 'agent'].includes(urlRole)) {
+    setRole(urlRole);
+  }
+}, []);
 
   const handlePasswordRecovery = () => {
     if (!email) {
@@ -142,10 +149,13 @@ export default function LoginPage() {
           throw new Error("CPF inválido. Verifique os números digitados.");
         }
 
-        if (birthDateStatus === 'invalid') {
+        if (!birthDate || !validateBirthDate(birthDate)) {
+          setBirthDateStatus('invalid');
+          setBirthDateMessage('Data inválida.');
           throw new Error("Corrija a sua data de nascimento antes de prosseguir.");
         }
 
+        const isoBirthDate = birthDate.split('/').reverse().join('-');
         const finalUniversity = university === "Outra" ? customUniversity : university;
         const finalArea = area === "Outra" ? customArea : area;
         const finalCourse = course === "Outro" ? customCourse : course;
@@ -157,9 +167,11 @@ export default function LoginPage() {
             data: {
               first_name: firstName,
               last_name: lastName,
+              full_name: `${firstName} ${lastName}`,
               cpf: cpf,
               occupation: occupation,
-              birth_date: birthDate,
+              role: role,
+              birth_date: isoBirthDate,
               university: occupation === "estudante" ? finalUniversity : null,
               course: occupation === "estudante" ? finalCourse : null,
               area: occupation === "profissional" ? finalArea : null,
