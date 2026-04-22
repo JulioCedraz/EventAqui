@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, ArrowLeft, UserCircle, Save, Mail, Lock, Sparkles, AlertCircle, ShieldCheck, X } from "lucide-react";
+import { Loader2, ArrowLeft, UserCircle, Save, Mail, Sparkles, AlertCircle, X } from "lucide-react";
 
 function ProfileContent() {
   const router = useRouter();
@@ -22,10 +22,8 @@ function ProfileContent() {
   const [isSaving, setIsSaving] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   
-  // Estado para controle de mudanças (Dirty Check)
   const [initialData, setInitialData] = useState<any>(null);
   
-  // Estados de Email e Segurança
   const [originalEmail, setOriginalEmail] = useState('');
   const [email, setEmail] = useState('');
   const [isEmailEditable, setIsEmailEditable] = useState(false);
@@ -33,7 +31,6 @@ function ProfileContent() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   
-  // Estados de Dados Pessoais
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [cpf, setCpf] = useState('');
