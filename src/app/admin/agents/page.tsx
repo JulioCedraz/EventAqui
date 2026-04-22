@@ -124,13 +124,16 @@ export default function ManageAgentsPage() {
   };
 
   const handleDeleteClick = (agent: Profile) => {
-    const displayIdentifier = agent.email || agent.first_name || 'este usuário';
+    const hasName = agent.first_name || agent.last_name;
+    const displayIdentifier = hasName 
+      ? `${agent.first_name || ''} ${agent.last_name || ''}`.trim() 
+      : (agent.email || 'este usuário'); 
     
     setDialog({
       isOpen: true,
       type: 'confirm',
       title: 'Revogar Acesso',
-      message: `Deseja remover ${displayIdentifier} da sua equipe de portaria?`,
+      message: <span>Deseja remover <b>{displayIdentifier}</b> da sua equipe de portaria?</span>,
       confirmText: 'Revogar Acesso',
       onConfirm: () => executeRevoke(agent.id)
     });
