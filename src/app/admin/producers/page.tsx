@@ -113,13 +113,16 @@ export default function ManageProducersPage() {
   };
 
   const handleDeleteClick = (producer: Profile) => {
-    const displayIdentifier = producer.email || producer.first_name || 'este usuário';
+    const hasName = producer.first_name || producer.last_name;
+    const displayIdentifier = hasName 
+      ? `${producer.first_name || ''} ${producer.last_name || ''}`.trim() 
+      : (producer.email || 'este usuário');
     
     setDialog({
       isOpen: true,
       type: "confirm",
       title: "Revogar Acesso de Produtor",
-      message: `Tem certeza que deseja revogar o acesso de ${displayIdentifier}? Ele perderá o acesso ao painel, mas os eventos já criados por ele continuarão ativos.`,
+      message: <span>Tem certeza que deseja revogar o acesso de <b>{displayIdentifier}</b>? Os seus eventos continuarão ativos.</span>,
       confirmText: "Revogar Acesso",
       onConfirm: () => executeRevoke(producer.id),
     });
@@ -224,24 +227,30 @@ export default function ManageProducersPage() {
                 ) : (
                   <ul className="divide-y divide-gray-100">
                     {producers.map((producer) => (
-                      <li key={producer.id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors">
+                      <li key={producer.id} className="p-4 sm:p-5 flex  sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors">
                         <div className="flex items-center gap-3 overflow-hidden">
                           <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
                             <Mail className="w-5 h-5" />
                           </div>
                           <div className="truncate">
-                            <p className="font-bold text-gray-900 truncate">{producer.email || producer.first_name || 'Produtor'}</p>
+                            <p className="font-bold text-gray-900 truncate">{producer.email || 'E-mail indisponível'}</p>
+                            {(
+                              <p className="text-sm text-gray-600 truncate mt-0.5">
+                                {`${producer.first_name || ''} ${producer.last_name || ''}`.trim()}
+                              </p>
+                            )}
                             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                              <Clock className="w-3 h-3" /> Adicionado em {producer.created_at ? new Date(producer.created_at).toLocaleDateString("pt-BR") : 'Data desconhecida'}
+                              <Clock className="w-3 h-3" /> Desde {producer.created_at ? new Date(producer.created_at).toLocaleDateString("pt-BR") : 'Data desconhecida'}
                             </p>
                           </div>
                         </div>
 
                         <Button
                           variant="ghost" size="sm" onClick={() => handleDeleteClick(producer)}
-                          className="text-red-500 hover:text-red-600 hover:bg-red-50 font-medium shrink-0 self-start sm:self-center"
+                          className="text-red-500 hover:text-red-600 hover:bg-red-50 font-medium shrink-0"
                         >
-                          <Trash2 className="w-4 h-4 mr-2" /> Revogar
+                          <Trash2 className="w-4 h-4 sm:mr-2" />
+                          <span className="hidden sm:inline">Revogar</span>
                         </Button>
                       </li>
                     ))}
