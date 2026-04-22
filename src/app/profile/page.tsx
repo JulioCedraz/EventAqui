@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import PersonalDataFields, { validateCPF, UNIVERSITIES_LIST, COURSES_LIST } from '../../components/PersonalDataFields';
@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, ArrowLeft, UserCircle, LogOut, Save, Mail, Lock, Sparkles } from "lucide-react";
+import { Loader2, ArrowLeft, UserCircle, Save, Mail, Lock, Sparkles, AlertCircle, ShieldCheck, X } from "lucide-react";
 
 function ProfileContent() {
   const router = useRouter();
@@ -21,10 +21,19 @@ function ProfileContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  
+  // Estado para controle de mudanças (Dirty Check)
+  const [initialData, setInitialData] = useState<any>(null);
+  
+  // Estados de Email e Segurança
   const [originalEmail, setOriginalEmail] = useState('');
   const [email, setEmail] = useState('');
+  const [isEmailEditable, setIsEmailEditable] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
   
+  // Estados de Dados Pessoais
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [cpf, setCpf] = useState('');
@@ -54,78 +63,88 @@ function ProfileContent() {
       }
 
       setUserId(user.id);
-      setEmail(user.email || '');
-      setOriginalEmail(user.email || '');
+      const userEmail = user.email || '';
+      setEmail(userEmail);
+      setOriginalEmail(userEmail);
 
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('first_name, last_name, cpf, occupation, role, birth_date, university, course, area, specialty')
+        .select('*')
         .eq('id', user.id)
         .single();
-
-      if (profileError && profileError.code !== 'PGRST116') {
-        console.error('Erro ao carregar o perfil do banco de dados:', profileError.message);
-      }
-
+      
+        if (profileError && profileError.code !== 'PGRST116') {
+          console.error('Erro ao carregar o perfil:', profileError.message);
+          toast.error('Erro ao sincronizar os dados do perfil.');
+        }
+      
       if (profileData) {
         setFirstName(profileData.first_name || '');
         setLastName(profileData.last_name || '');
         let formattedBirthDate = '';
         if (profileData.birth_date) {
           const parts = profileData.birth_date.split('-');
-          if (parts.length === 3) {
-            formattedBirthDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
-          }
+          formattedBirthDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : '';
         }
         setBirthDate(formattedBirthDate);
-
         setRole(profileData.role || 'customer');
-        
-        const userCpf = profileData.cpf || '';
-        setCpf(userCpf);
-        setHasCpfInitially(!!userCpf);
-
+        setCpf(profileData.cpf || '');
+        setHasCpfInitially(!!profileData.cpf);
         if (profileData.occupation === 'profissional' || profileData.occupation === 'estudante') {
           setOccupation(profileData.occupation);
         }
-
-        const dbUniversity = profileData.university || '';
-        if (dbUniversity) {
-          if (UNIVERSITIES_LIST.includes(dbUniversity)) {
-            setUniversity(dbUniversity);
-          } else {
-            setUniversity("Outra");
-            setCustomUniversity(dbUniversity);
-          }
+        
+        if (profileData.university) {
+          if (UNIVERSITIES_LIST.includes(profileData.university)) setUniversity(profileData.university);
+          else { setUniversity("Outra"); setCustomUniversity(profileData.university); }
         }
-
-        const dbCourse = profileData.course || '';
-        if (dbCourse) {
-          if (COURSES_LIST.includes(dbCourse)) {
-            setCourse(dbCourse);
-          } else {
-            setCourse("Outro");
-            setCustomCourse(dbCourse);
-          }
+        if (profileData.course) {
+          if (COURSES_LIST.includes(profileData.course)) setCourse(profileData.course);
+          else { setCourse("Outro"); setCustomCourse(profileData.course); }
         }
-
-        const dbArea = profileData.area || '';
-        if (dbArea) {
-          if (COURSES_LIST.includes(dbArea)) {
-            setArea(dbArea);
-          } else {
-            setArea("Outra");
-            setCustomArea(dbArea);
-          }
+        if (profileData.area) {
+          if (COURSES_LIST.includes(profileData.area)) setArea(profileData.area);
+          else { setArea("Outra"); setCustomArea(profileData.area); }
         }
         setSpecialty(profileData.specialty || '');
-      }
 
+        setInitialData({
+          email: userEmail,
+          firstName: profileData.first_name || '',
+          lastName: profileData.last_name || '',
+          cpf: profileData.cpf || '',
+          birthDate: formattedBirthDate,
+          occupation: profileData.occupation || 'estudante',
+          university: profileData.university || '',
+          course: profileData.course || '',
+          area: profileData.area || '',
+          specialty: profileData.specialty || ''
+        });
+      }
       setIsLoading(false);
     };
-
     loadProfile();
   }, [router]);
+
+  const hasChanges = useMemo(() => {
+    if (!initialData) return false;
+    
+    const fieldChanges = 
+      email !== initialData.email ||
+      firstName !== initialData.firstName ||
+      lastName !== initialData.lastName ||
+      (cpf !== initialData.cpf && !hasCpfInitially) ||
+      birthDate !== initialData.birthDate ||
+      occupation !== initialData.occupation ||
+      specialty !== initialData.specialty ||
+      (university === "Outra" ? customUniversity : university) !== initialData.university ||
+      (course === "Outro" ? customCourse : course) !== initialData.course ||
+      (area === "Outra" ? customArea : area) !== initialData.area;
+
+    const securityChanges = newPassword !== '' || currentPassword !== '' || confirmNewPassword !== '';
+
+    return fieldChanges || securityChanges;
+  }, [email, firstName, lastName, cpf, birthDate, occupation, university, customUniversity, course, customCourse, area, customArea, specialty, newPassword, currentPassword, confirmNewPassword, initialData, hasCpfInitially]);
 
   const handleUpdateProfile = async (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -135,26 +154,34 @@ function ProfileContent() {
       return;
     }
 
+    if (newPassword && newPassword !== confirmNewPassword) {
+      toast.error('A nova senha e a confirmação não coincidem.');
+      return;
+    }
+
     if (!hasCpfInitially && cpf && !validateCPF(cpf)) {
       setCpfStatus('invalid');
-      setCpfMessage('Corrija o CPF antes de salvar.');
       toast.error('O CPF informado é inválido.');
       return;
     }
 
     setIsSaving(true);
-    const toastId = toast.loading(isInvite ? 'Concluindo seu cadastro...' : 'Salvando as suas alterações...');
+    const toastId = toast.loading(isInvite ? 'Concluindo seu cadastro...' : 'Processando alterações...');
 
     try {
-      const authUpdates: { email?: string; password?: string; data?: any } = {};
+      if (!isInvite && newPassword && currentPassword) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: originalEmail,
+          password: currentPassword,
+        });
+        if (signInError) throw new Error('A senha atual está incorreta.');
+      }
+
+      const authUpdates: any = {};
       if (email !== originalEmail) authUpdates.email = email;
       if (newPassword) authUpdates.password = newPassword;
-
       if (firstName || lastName) {
-        authUpdates.data = {
-          full_name: `${firstName} ${lastName}`.trim(),
-          name: `${firstName} ${lastName}`.trim()
-        };
+        authUpdates.data = { full_name: `${firstName} ${lastName}`.trim(), name: `${firstName} ${lastName}`.trim() };
       }
 
       if (Object.keys(authUpdates).length > 0) {
@@ -163,73 +190,38 @@ function ProfileContent() {
       }
 
       if (userId) {
-        const finalUniversity = university === "Outra" ? customUniversity : university;
-        const finalCourse = course === "Outro" ? customCourse : course;
-        const finalArea = area === "Outra" ? customArea : area;
-        // Formato BR para interface do usuário, formato ISO para banco de dados
         const isoBirthDate = birthDate ? birthDate.split('/').reverse().join('-') : null;
-        const { data: { user } } = await supabase.auth.getUser();
-
         const profileUpdates: any = {
-          email: email,
+          email,
           first_name: firstName || null,
           last_name: lastName || null,
           occupation: occupation || null,
           birth_date: isoBirthDate,
+          university: occupation === "estudante" ? (university === "Outra" ? customUniversity : university) : null,
+          course: occupation === "estudante" ? (course === "Outro" ? customCourse : course) : null,
+          area: occupation === "profissional" ? (area === "Outra" ? customArea : area) : null,
+          specialty: occupation === "profissional" && area === "Medicina" ? specialty : null,
         };
 
-        if (user?.user_metadata?.role) {
-          profileUpdates.role = user.user_metadata.role;
-        }
-        if (user?.user_metadata?.producer_id) {
-          profileUpdates.producer_id = user.user_metadata.producer_id;
-        }
-
-        if (!hasCpfInitially && cpf) {
-          profileUpdates.cpf = cpf;
-        }
-        
-        if (occupation === "estudante") {
-          profileUpdates.university = finalUniversity || null;
-          profileUpdates.course = finalCourse || null;
-          profileUpdates.area = null;
-          profileUpdates.specialty = null;
-        } else {
-          profileUpdates.area = finalArea || null;
-          profileUpdates.specialty = finalArea === "Medicina" ? specialty : null;
-          profileUpdates.university = null;
-          profileUpdates.course = null;
-        }
-
-        const { error: profileUpdateError } = await supabase
-          .from('profiles')
-          .update(profileUpdates)
-          .eq('id', userId);
-
+        const { error: profileUpdateError } = await supabase.from('profiles').update(profileUpdates).eq('id', userId);
         if (profileUpdateError) throw profileUpdateError;
       }
 
-      if (!hasCpfInitially && cpf) {
-        setHasCpfInitially(true);
-        setCpfStatus('idle');
-        setCpfMessage('');
-      }
-      
-      setNewPassword('');
-      if (email !== originalEmail) setOriginalEmail(email);
-
+      toast.success(isInvite ? 'Cadastro concluído!' : 'Perfil atualizado!', { id: toastId });
       if (isInvite) {
         window.history.replaceState(null, '', '/profile');
-        toast.success('Cadastro concluído com sucesso! Bem-vindo(a) à plataforma.', { id: toastId });
-      } else {
-        toast.success('Perfil atualizado com sucesso!', { 
-          id: toastId,
-          description: email !== originalEmail ? 'Como você alterou o e-mail, verifique a sua caixa de entrada para confirmar.' : undefined
-        });
+        router.refresh();
       }
+      
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+      setIsEmailEditable(false);
+      setOriginalEmail(email);
+      setInitialData(prev => ({ ...prev, email, firstName, lastName, cpf, birthDate, occupation }));
 
     } catch (err: any) {
-      toast.error(err.message || 'Ocorreu um erro ao salvar os dados.', { id: toastId });
+      toast.error(err.message || 'Erro ao salvar dados.', { id: toastId });
     } finally {
       setIsSaving(false);
     }
@@ -237,170 +229,178 @@ function ProfileContent() {
 
   const renderRoleBadge = () => {
     if (!role || role === 'customer') return null;
-
-    const badgesConfig = {
-      admin: { label: 'Administrador', classes: 'bg-blue-100 text-blue-700 hover:bg-blue-100 border-transparent' },
-      producer: { label: 'Produtor', classes: 'bg-purple-100 text-purple-700 hover:bg-purple-100 border-transparent' },
-      agent: { label: 'Agente de Portaria', classes: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-transparent' },
+    const badges = {
+      admin: { label: 'Administrador', classes: 'bg-blue-100 text-blue-700' },
+      producer: { label: 'Produtor', classes: 'bg-purple-100 text-purple-700' },
+      agent: { label: 'Agente', classes: 'bg-emerald-100 text-emerald-700' },
     };
-
-    const config = badgesConfig[role];
-    if (!config) return null;
-
-    return (
-      <Badge className={`ml-3 align-middle text-sm px-3 py-0.5 ${config.classes}`}>
-        {config.label}
-      </Badge>
-    );
+    const config = badges[role];
+    return config ? <Badge className={`ml-3 align-middle text-sm px-3 py-0.5 border-transparent ${config.classes}`}>{config.label}</Badge> : null;
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center space-y-4">
-        <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
-        <p className="text-gray-500 font-medium">Carregando seu perfil...</p>
-      </div>
-    );
-  }
+  if (isLoading) return (
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center space-y-4">
+      <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+      <p className="text-gray-500 font-medium">Carregando...</p>
+    </div>
+  );
 
   return (
     <main className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto space-y-6">
-
-        {/* CABEÇALHO DINÂMICO */}
+      <div className="max-w-3xl mx-auto space-y-8">
+        
+        {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-3">
-              {isInvite ? (
-                <Sparkles className="w-10 h-10 text-amber-500" />
-              ) : (
-                <UserCircle className="w-10 h-10 text-blue-600" />
-              )}
+              {isInvite ? <Sparkles className="w-10 h-10 text-amber-500" /> : <UserCircle className="w-10 h-10 text-blue-600" />}
               <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center flex-wrap gap-2">
                 {isInvite ? 'Concluir Cadastro' : 'Meu Perfil'}
                 {!isInvite && renderRoleBadge()}
               </h1>
             </div>
-            {isInvite && (
-              <p className="text-gray-600 font-medium ml-13">
-                Bem-vindo(a)! Defina uma senha e preencha seus dados para liberar seu acesso.
-              </p>
-            )}
           </div>
-          
           {!isInvite && (
-            <Button
-              variant="ghost"
-              onClick={() => router.back()}
-              className="text-gray-600 hover:text-blue-600 self-start sm:self-auto font-bold"
-            >
+            <Button variant="ghost" onClick={() => router.back()} className="text-gray-600 hover:text-blue-600 font-bold self-start sm:self-auto">
               <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
             </Button>
           )}
         </div>
 
-        {/* FORMULÁRIO PRINCIPAL */}
-        <Card className={`shadow-lg border-gray-100 rounded-3xl overflow-hidden ${isInvite ? 'ring-2 ring-amber-500/20' : ''}`}>
-          <CardContent className="p-6 sm:p-8">
-            <form onSubmit={handleUpdateProfile} className="space-y-8">
+        <form onSubmit={handleUpdateProfile} className="space-y-8">
+          
+          {/* CONTEINER 1: DADOS PESSOAIS */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-gray-800 ml-1">Dados Pessoais</h2>
+            <Card className="shadow-lg border-gray-100 rounded-3xl overflow-hidden">
+              <CardContent className="p-6 sm:p-8">
+                <PersonalDataFields
+                  firstName={firstName} setFirstName={setFirstName}
+                  lastName={lastName} setLastName={setLastName}
+                  cpf={cpf} setCpf={setCpf}
+                  hasCpfInitially={hasCpfInitially}
+                  cpfStatus={cpfStatus} setCpfStatus={setCpfStatus}
+                  cpfMessage={cpfMessage} setCpfMessage={setCpfMessage}
+                  birthDate={birthDate} setBirthDate={setBirthDate}
+                  birthDateStatus={birthDateStatus} setBirthDateStatus={setBirthDateStatus}
+                  birthDateMessage={birthDateMessage} setBirthDateMessage={setBirthDateMessage}
+                  occupation={occupation} setOccupation={setOccupation}
+                  course={course} setCourse={setCourse}
+                  customCourse={customCourse} setCustomCourse={setCustomCourse}
+                  university={university} setUniversity={setUniversity}
+                  customUniversity={customUniversity} setCustomUniversity={setCustomUniversity}
+                  area={area} setArea={setArea}
+                  customArea={customArea} setCustomArea={setCustomArea}
+                  specialty={specialty} setSpecialty={setSpecialty}
+                />
+              </CardContent>
+            </Card>
+          </div>
 
-              <PersonalDataFields
-                firstName={firstName} setFirstName={setFirstName}
-                lastName={lastName} setLastName={setLastName}
-                cpf={cpf} setCpf={setCpf}
-                hasCpfInitially={hasCpfInitially}
-                cpfStatus={cpfStatus} setCpfStatus={setCpfStatus}
-                cpfMessage={cpfMessage} setCpfMessage={setCpfMessage}
-                birthDate={birthDate} setBirthDate={setBirthDate}
-                birthDateStatus={birthDateStatus} setBirthDateStatus={setBirthDateStatus}
-                birthDateMessage={birthDateMessage} setBirthDateMessage={setBirthDateMessage}
-                occupation={occupation} setOccupation={setOccupation}
-                course={course} setCourse={setCourse}
-                customCourse={customCourse} setCustomCourse={setCustomCourse}
-                university={university} setUniversity={setUniversity}
-                customUniversity={customUniversity} setCustomUniversity={setCustomUniversity}
-                area={area} setArea={setArea}
-                customArea={customArea} setCustomArea={setCustomArea}
-                specialty={specialty} setSpecialty={setSpecialty}
-              />
+          {/* CONTEINER 2: SEGURANÇA */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-gray-800 ml-1">Segurança e Acesso</h2>
+            <Card className="shadow-lg border-gray-100 rounded-3xl overflow-hidden">
+              <CardContent className="p-6 sm:p-8 space-y-6">
+                
+                {/* Linha 1: Email e Senha Atual */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="email" className="flex items-center gap-2 text-gray-700 font-semibold">
+                        <Mail className="w-4 h-4 text-gray-400" /> E-mail
+                      </Label>
+                      {!isInvite && (
+                        <Button 
+                          type="button" variant="link" 
+                          onClick={() => { setIsEmailEditable(!isEmailEditable); if(isEmailEditable) setEmail(originalEmail); }} 
+                          className={`h-auto p-0 text-sm font-bold ${isEmailEditable ? 'text-red-500' : 'text-blue-600'}`}
+                        >
+                          {isEmailEditable ? 'Cancelar' : 'Alterar e-mail'}
+                        </Button>
+                      )}
+                    </div>
+                    <Input
+                      id="email" type="email" required disabled={!isEmailEditable && !isInvite}
+                      value={email} onChange={(e) => setEmail(e.target.value)}
+                      className={`h-12 rounded-xl border-gray-200 ${!isEmailEditable && !isInvite ? 'bg-gray-50' : 'border-blue-200'}`}
+                    />
+                  </div>
 
-              <div className="border-t border-gray-100 pt-8 space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-gray-400" />
-                    E-mail
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    required
-                    disabled={isInvite}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="h-12 rounded-xl"
-                  />
                   {!isInvite && (
-                    <p className="text-xs text-muted-foreground ml-1">
-                      Se alterar o seu e-mail, será necessário confirmar o novo endereço.
+                    <div className="space-y-2">
+                      <Label htmlFor="currentPassword" title="Necessário para alterar e-mail ou senha">Senha Atual</Label>
+                      <Input
+                        id="currentPassword" type="password"
+                        placeholder="Confirme sua identidade"
+                        value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}
+                        className="h-12 rounded-xl border-gray-200"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Linha 2: Novas Senhas */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">{isInvite ? 'Defina sua Senha' : 'Nova Senha'}</Label>
+                    <Input
+                      id="newPassword" type="password"
+                      placeholder={isInvite ? "Mínimo 6 caracteres" : "Deixe vazio para não alterar"}
+                      value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+                      className="h-12 rounded-xl border-gray-200"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
+                    <Input
+                      id="confirmPassword" type="password"
+                      placeholder="Repita a nova senha"
+                      value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      className="h-12 rounded-xl border-gray-200"
+                    />
+                  </div>
+                </div>
+
+                {isEmailEditable && (
+                  <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl flex gap-3">
+                    <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
+                    <p className="text-xs text-amber-700">
+                      Ao salvar um novo e-mail, você precisará confirmar a alteração através do link enviado para o novo endereço.
                     </p>
-                  )}
-                </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="flex items-center gap-2">
-                    <Lock className={`w-4 h-4 ${isInvite ? 'text-amber-500' : 'text-gray-400'}`} />
-                    {isInvite ? 'Defina sua Senha' : 'Nova Senha'}
-                  </Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    required={isInvite}
-                    placeholder={isInvite ? "Mínimo de 6 caracteres" : "Deixe em branco para não alterar"}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    minLength={6}
-                    className={`h-12 rounded-xl ${isInvite ? 'border-amber-200 focus-visible:ring-amber-500' : ''}`}
-                  />
-                </div>
-              </div>
+          {/* BOTÕES DE RODAPÉ */}
+          <div className="pt-4 flex flex-col-reverse sm:flex-row items-center justify-end gap-3">
+            <Button
+              type="button" variant="ghost"
+              onClick={() => router.back()}
+              className="w-full sm:w-auto h-12 text-red-500 hover:text-red-600 hover:bg-red-50 font-bold rounded-xl"
+            >
+              <X className="w-4 h-4 mr-2" /> Descartar e Voltar
+            </Button>
 
-              {/* BOTÕES DE AÇÃO */}
-              <div className="pt-4 flex flex-col-reverse sm:flex-row items-center justify-end gap-3 border-t border-gray-100">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={async () => {
-                    await supabase.auth.signOut();
-                    router.push('/login');
-                  }}
-                  className="w-full sm:w-auto h-12 text-red-500 hover:text-red-600 hover:bg-red-50 font-bold rounded-xl"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  {isInvite ? 'Cancelar e Sair' : 'Sair da Conta'}
-                </Button>
+            <Button
+              type="submit"
+              disabled={isSaving || !hasChanges}
+              className={`w-full sm:w-auto h-12 px-10 font-extrabold text-white rounded-xl shadow-md transition-all ${
+                isInvite ? 'bg-amber-600 hover:bg-amber-700' : 'bg-blue-600 hover:bg-blue-700'
+              } disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed`}
+            >
+              {isSaving ? (
+                <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Processando</>
+              ) : (
+                <><Save className="w-5 h-5 mr-2" /> Salvar Alterações</>
+              )}
+            </Button>
+          </div>
+        </form>
 
-                <Button
-                  type="submit"
-                  disabled={isSaving}
-                  className={`w-full sm:w-auto h-12 px-8 font-bold text-white rounded-xl shadow-md ${
-                    isInvite 
-                      ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20' 
-                      : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'
-                  }`}
-                >
-                  {isSaving ? (
-                    <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> {isInvite ? 'Concluindo' : 'Salvando'}</>
-                  ) : (
-                    <><Save className="w-5 h-5 mr-2" /> {isInvite ? 'Concluir Cadastro' : 'Salvar Alterações'}</>
-                  )}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-        
         {!isInvite && <PrivacySettings email={email} />}
-
       </div>
     </main>
   );
@@ -408,11 +408,7 @@ function ProfileContent() {
 
 export default function ProfilePage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center space-y-4">
-        <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
-      </div>
-    }>
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-blue-600" /></div>}>
       <ProfileContent />
     </Suspense>
   );
