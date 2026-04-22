@@ -14,7 +14,7 @@ export type DialogConfig = {
   isOpen: boolean;
   type: 'confirm' | 'alert' | 'success' | 'cpf_conflict' | 'password_recovery';
   title: string;
-  message?: string;
+  message?: string | React.ReactNode;
   confirmText?: string;
   onConfirm?: () => Promise<void> | void;
   
