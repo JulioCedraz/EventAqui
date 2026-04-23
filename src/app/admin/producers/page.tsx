@@ -247,10 +247,10 @@ export default function ManageProducersPage() {
 
                         <Button
                           variant="ghost" size="sm" onClick={() => handleDeleteClick(producer)}
-                          className="text-red-500 hover:text-red-600 hover:bg-red-50 font-medium shrink-0"
+                          className="text-red-500 hover:text-red-600 hover:bg-red-50 font-medium shrink-0 self-center"
                         >
-                          <Trash2 className="w-4 h-4 sm:mr-2" />
-                          <span className="hidden sm:inline">Revogar</span>
+                          <Trash2 className="w-4 h-4 sm:mr-2" /> 
+                          Revogar
                         </Button>
                       </li>
                     ))}
