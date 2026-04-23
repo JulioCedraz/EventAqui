@@ -227,7 +227,7 @@ export default function ManageProducersPage() {
                 ) : (
                   <ul className="divide-y divide-gray-100">
                     {producers.map((producer) => (
-                      <li key={producer.id} className="p-4 sm:p-5 flex  sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors">
+                      <li key={producer.id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors">
                         <div className="flex items-center gap-3 overflow-hidden">
                           <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
                             <Mail className="w-5 h-5" />
@@ -249,7 +249,7 @@ export default function ManageProducersPage() {
                           variant="ghost" size="sm" onClick={() => handleDeleteClick(producer)}
                           className="text-red-500 hover:text-red-600 hover:bg-red-50 font-medium shrink-0 self-center"
                         >
-                          <Trash2 className="w-4 h-4 sm:mr-2" /> 
+                          <Trash2 className="w-4 h-4 mr-2" /> 
                           Revogar
                         </Button>
                       </li>
