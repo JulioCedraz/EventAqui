@@ -385,7 +385,7 @@ function ProfileContent() {
                           placeholder="Digite sua senha atual"
                           value={currentPassword}
                           onChange={(e) => setCurrentPassword(e.target.value)}
-                          className="h-12 rounded-xl border-gray-200 text-center text-lg tracking-widest pr-12"
+                          className="h-12 rounded-xl border-gray-200 text-center text-lg tracking-wide pr-12"
                         />
                         <button
                           type="button"
