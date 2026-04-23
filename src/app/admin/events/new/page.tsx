@@ -367,7 +367,7 @@ function EventForm() {
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-gray-100 flex justify-end gap-3">
+              <div className="pt-6 border-t border-gray-100 flex flex-col-reverse sm:flex-row justify-end gap-3">
                 <Link href="/admin/events" className="w-full sm:w-auto">
                   <Button type="button" variant="outline" className="w-full sm:w-auto h-12 px-6 rounded-xl font-bold">
                     Cancelar
