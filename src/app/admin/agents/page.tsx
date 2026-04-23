@@ -245,22 +245,23 @@ export default function ManageAgentsPage() {
                           <div className="truncate flex flex-col justify-center">
                             <p className="font-bold text-gray-900 truncate">{agent.email || 'E-mail indisponível'}</p>
                             
-                            {(agent.first_name || agent.last_name) && (
+                            {(
                               <p className="text-sm text-gray-600 truncate mt-0.5">
                                 {`${agent.first_name || ''} ${agent.last_name || ''}`.trim()}
                               </p>
                             )}
                             
                             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                              <Clock className="w-3 h-3" /> Adicionado em {agent.created_at ? new Date(agent.created_at).toLocaleDateString('pt-BR') : 'Data desconhecida'}
+                              <Clock className="w-3 h-3" /> Desde {agent.created_at ? new Date(agent.created_at).toLocaleDateString('pt-BR') : 'Data desconhecida'}
                             </p>
                           </div>
                         </div>
                         <Button 
                           variant="ghost" size="sm" onClick={() => handleDeleteClick(agent)}
-                          className="text-red-500 hover:text-red-600 hover:bg-red-50 font-medium shrink-0"
+                          className="text-red-500 hover:text-red-600 hover:bg-red-50 font-medium shrink-0 self-center"
                         >
-                          <Trash2 className="w-4 h-4 mr-2" /> Revogar
+                          <Trash2 className="w-4 h-4 mr-2" /> 
+                          Revogar
                         </Button>
                       </li>
                     ))}
