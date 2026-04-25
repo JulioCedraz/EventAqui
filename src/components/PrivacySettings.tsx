@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { ShieldAlert, ChevronDown, AlertTriangle, LockKeyhole, Loader2, Trash2 } from "lucide-react";
+import { ShieldAlert, ChevronDown, AlertTriangle, LockKeyhole, Loader2, Trash2, Eye, EyeOff } from "lucide-react";
 
 interface PrivacySettingsProps {
   email: string;
@@ -17,17 +17,62 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
 
   const [isDangerZoneExpanded, setIsDangerZoneExpanded] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  
+  // Estados de Segurança e Fluxo
+  const [authProvider, setAuthProvider] = useState<string>('email');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  
   const [deleteToken, setDeleteToken] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSendingToken, setIsSendingToken] = useState(false);
   const [isTokenSent, setIsTokenSent] = useState(false);
 
+  useEffect(() => {
+    const fetchProvider = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data.user) {
+        const provider = data.user.app_metadata.provider || 'email';
+        setAuthProvider(provider);
+      }
+    };
+    fetchProvider();
+  }, []);
+
   const handleSendDeleteToken = async () => {
     setIsSendingToken(true);
+    setPasswordError('');
     
     try {
+      // 1. Step-Up Authentication (Verificação de Identidade)
+      if (authProvider === 'email') {
+        if (!currentPassword) {
+          setPasswordError('A senha atual é obrigatória.');
+          setIsSendingToken(false);
+          return;
+        }
+
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password: currentPassword
+        });
+
+        if (signInError) {
+          setPasswordError('Senha incorreta. Tente novamente.');
+          setIsSendingToken(false);
+          return;
+        }
+      } else {
+        // [FUTURO] Preparado para Login Social (OAuth)
+        // const { error: oauthError } = await supabase.auth.signInWithOAuth({ provider: authProvider as any });
+        // if (oauthError) throw new Error('Erro na reautenticação social.');
+      }
+
+      // 2. Disparo do Código de Segurança (OTP)
       const { error } = await supabase.auth.reauthenticate();
       if (error) throw new Error('Erro ao enviar o código de segurança. Tente novamente.');
+      
       setIsTokenSent(true);
       toast.success('Código de segurança enviado para o seu e-mail.');
     } catch (err: any) {
@@ -46,6 +91,7 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
     setIsDeleting(true);
 
     try {
+      // Confirmação do OTP via Supabase
       const { error: verifyError } = await supabase.auth.updateUser({
         nonce: deleteToken,
         data: { lgpd_deletion_requested: true } 
@@ -56,19 +102,28 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Sessão expirada. Faça login novamente.");
 
-      const response = await fetch('/api/user/delete', {
-        method: 'DELETE',
+      const response = await fetch('/api/user/deletion-request', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
-        }
+        },
+        body: JSON.stringify({})
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Erro interno ao excluir a conta.');
+      
+      // Tratamento especial se o usuário cliente tiver ingressos ou se for um produtor e tiver eventos ativos (Regra de Negócio do Backend)
+      if (!response.ok) {
+        if (data.code === 'CUSTOMER_HAS_TICKETS' || data.code === 'PRODUCER_ACTIVE_EVENTS') {
+           // Implementar o modal de confirmação de perda de ingressos aqui, em breve.
+           throw new Error(data.error); 
+        }
+        throw new Error(data.error || 'Erro interno ao processar a solicitação.');
+      }
 
       await supabase.auth.signOut();
-      toast.success('Conta excluída com sucesso.');
+      toast.success(data.message || 'Conta agendada para exclusão com sucesso.');
       router.push('/login');
 
     } catch (err: any) {
@@ -81,6 +136,8 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
     setIsDeleteModalOpen(false);
     setIsTokenSent(false);
     setDeleteToken('');
+    setCurrentPassword('');
+    setPasswordError('');
   };
 
   return (
@@ -105,15 +162,15 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
             <h4 className="text-sm font-bold text-red-800 mb-3">
               A segurança das suas informações é a nossa prioridade. Seus dados são protegidos por rigorosos padrões tecnológicos e utilizados exclusivamente para garantir o seu acesso aos eventos. <br /> <br /> 
               Em total respeito a você e à Lei Geral de Proteção de Dados Pessoais (LGPD), o controle sobre a sua conta é absoluto e estará sempre em suas mãos. <br /> <br /> 
-              O que acontece ao excluir sua conta?
+              O que acontece ao solicitar a exclusão?
             </h4>
             <ul className="text-sm text-red-700 space-y-2 mb-6 list-disc list-inside">
-              <li><strong>Dados apagados:</strong> Seu nome, e-mail, CPF e todos os seus demais dados serão removidos permanentemente desta plataforma.</li>
-              <li><strong>Acesso revogado:</strong> Você perderá o acesso à plataforma e a todos os ingressos ativos comprados com esta conta.</li>
-              <li><strong>Anonimato:</strong> O seu histórico financeiro será mantido exclusivamente para fins de auditoria, mas sem qualquer vínculo com a sua identidade pessoal.</li>
+              <li><strong>Carência de 30 dias:</strong> Sua conta será imediatamente suspensa, mas os dados só serão apagados após 30 dias.</li>
+              <li><strong>Acesso revogado:</strong> Você perderá imediatamente o acesso à plataforma e a todos os ingressos.</li>
+              <li><strong>Anonimato definitivo:</strong> Após o prazo, seu histórico será desvinculado da sua identidade, e os dados pessoais apagados.</li>
             </ul>
             <p className="text-sm font-medium text-red-800 mb-6">
-              Atenção: Esta ação é <span className="underline decoration-red-400 font-bold">irreversível</span>.
+              Atenção: Ao fim do prazo, esta ação será <span className="underline decoration-red-400 font-bold">irreversível</span>.
             </p>
             
             <Button
@@ -138,21 +195,48 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
                   <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center shrink-0">
                     <AlertTriangle className="w-6 h-6 text-red-600" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 leading-tight">Deseja mesmo continuar?</h3>
+                  <h3 className="text-xl font-bold text-gray-900 leading-tight">Agendar Exclusão</h3>
                 </div>
                 
                 <p className="text-sm text-gray-600 mb-5 leading-relaxed text-justify">
-                  Todos os seus dados pessoais, históricos de acessos e ingressos ativos serão apagados definitivamente. Se você mudar de ideia futuramente, precisará realizar um novo cadastro. <br /> <br /> 
-                  O seu e-mail poderá ser reutilizado nesta plataforma após 24 horas da confirmação de exclusão.
+                  Para agendar a exclusão da sua conta (efetivada em 30 dias), confirme sua identidade. Enviaremos um código de segurança para o seu e-mail logo em seguida.
                 </p>
 
-                <div className="bg-yellow-50 border border-yellow-100 p-4 rounded-xl mb-8">
-                  <p className="text-xs text-yellow-800 font-medium text-center leading-relaxed">
-                    Para garantir sua segurança, precisamos enviar um código de confirmação para o seu e-mail antes de prosseguir.
-                  </p>
-                </div>
+                {/* Bloco de Step-Up Authentication */}
+                {authProvider === 'email' ? (
+                  <div className="mb-6">
+                    <div className="relative">
+                      <Input
+                        type={showCurrentPassword ? "text" : "password"}
+                        placeholder="Digite sua senha atual"
+                        value={currentPassword}
+                        onChange={(e) => {
+                          setCurrentPassword(e.target.value);
+                          setPasswordError('');
+                        }}
+                        className={`h-12 rounded-xl text-center tracking-wide pr-12 ${passwordError ? 'border-red-300 focus-visible:ring-red-500' : 'border-gray-200 focus-visible:ring-blue-500'}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
+                      >
+                        {showCurrentPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                    {passwordError && (
+                      <p className="text-xs font-bold text-red-500 mt-2 text-center animate-in fade-in">{passwordError}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-6 text-center">
+                    <p className="text-xs font-bold text-blue-800">
+                      Sua conta utiliza login social ({authProvider}). Será necessário realizar um re-login para confirmar a exclusão.
+                    </p>
+                  </div>
+                )}
                 
-                <div className="flex sm:flex-row gap-3 pt-2">
+                <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
                   <Button 
                     variant="secondary"
                     onClick={closeModal} 
@@ -167,7 +251,7 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
                     className="flex-1 h-12 text-base font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm"
                   >
                     {isSendingToken ? (
-                      <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Enviando</>
+                      <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Verificando</>
                     ) : (
                       'Enviar Código'
                     )}
@@ -201,7 +285,7 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
                     variant="secondary"
                     onClick={closeModal} 
                     disabled={isDeleting} 
-                    className="flex-1 font-bold"
+                    className="flex-1 font-bold h-12 rounded-xl"
                   >
                     Cancelar
                   </Button>
@@ -209,12 +293,12 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
                     variant="destructive"
                     onClick={handleDeleteAccount} 
                     disabled={isDeleting || deleteToken.length < 6} 
-                    className="flex-1 font-bold"
+                    className="flex-1 font-bold h-12 rounded-xl"
                   >
                     {isDeleting ? (
-                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Excluindo</>
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processando</>
                     ) : (
-                      'Excluir Conta'
+                      'Suspender Conta'
                     )}
                   </Button>
                 </div>
