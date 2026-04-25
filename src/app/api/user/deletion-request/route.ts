@@ -63,7 +63,7 @@ export async function POST(request: Request) {
     }
 
     // FLUXO DO CLIENTE / GERAL (CUSTOMER)
-    // Verifica se o usuário tem ingressos válidos para eventos que ainda não aconteceram
+    // Verifica se o usuário tem ingressos válidos e ainda sem uso.
     const { data: futureTickets, error: ticketsError } = await supabaseAdmin
       .from('tickets')
       .select('id, events!inner(event_date)')
@@ -96,16 +96,9 @@ export async function POST(request: Request) {
 
     if (updateError) throw updateError;
 
-    // SUSPENSÃO NO SUPABASE AUTH por 720 horas = 30 dias
-    const { error: banError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
-      ban_duration: '720h'
-    });
-
-    if (banError) throw banError;
-
     return NextResponse.json({ 
       success: true, 
-      message: 'Sua conta foi suspensa e agendada para exclusão definitiva em 30 dias.' 
+      message: 'Sua solicitação foi processada e a conta agendada para exclusão definitiva em 30 dias.' 
     });
 
   } catch (error: any) {
