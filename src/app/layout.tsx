@@ -5,6 +5,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { Toaster } from "@/components/ui/sonner";
 import EmailConfirmationHandler from '@/components/EmailConfirmationHandler';
+import ReactivationGuard from '@/components/ReactivationGuard';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -24,6 +25,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={`${inter.variable} font-sans antialiased bg-gray-50 min-h-screen flex flex-col`}>
+        <ReactivationGuard />
         <Header />
         
         <main className="grow flex flex-col">
