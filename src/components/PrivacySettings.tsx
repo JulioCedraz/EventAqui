@@ -241,14 +241,14 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
                     variant="secondary"
                     onClick={closeModal} 
                     disabled={isSendingToken} 
-                    className="flex-1 h-12 text-base font-bold rounded-xl"
+                    className="flex-1 min-h-14 text-base font-bold rounded-xl"
                   >
                     Cancelar
                   </Button>
                   <Button 
                     onClick={handleSendDeleteToken} 
                     disabled={isSendingToken} 
-                    className="flex-1 h-12 text-base font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm"
+                    className="flex-1 min-h-14 text-base font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm"
                   >
                     {isSendingToken ? (
                       <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Verificando</>
