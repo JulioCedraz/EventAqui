@@ -1,6 +1,6 @@
 # 🎟️ EventAqui - Plataforma de Gestão e Venda de Ingressos
 
-O **EventAqui** é um sistema web completo e responsivo desenhado para facilitar a criação de eventos, a venda de ingressos com aprovação instantânea via PIX e a gestão de portaria através de leitura de QR Code.
+O **EventAqui** é um sistema web completo e responsivo desenhado para promover criação e divulgação de eventos, venda de ingressos com aprovação instantânea via PIX e a gestão de portaria através de leitura de QR Code.
 
 ![Next.js](https://img.shields.io/badge/Next.js-black?style=for-the-badge&logo=next.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
@@ -25,9 +25,14 @@ O **EventAqui** é um sistema web completo e responsivo desenhado para facilitar
 
 ### Engine e Integrações
 * **Onboarding Inteligente:** Usuários convidados recebem e-mails mágicos e são redirecionados automaticamente para a conclusão de perfil e definição de senha.
-* **Sistema "Uber" de Portaria (Conta Unificada):** O porteiro cria sua conta apenas uma vez no EventAqui. Qualquer produtor pode contratá-lo simplesmente digitando seu e-mail no painel. O sistema reconhece o agente instantaneamente e faz a ponte entre eles nos bastidores, liberando o acesso aos novos eventos sem exigir que o porteiro crie outro cadastro.
+* **Sistema "Uber" de Portaria (Conta Unificada):** O produtor de eventos pode recrutar os seus próprios agentes de portaria enviando um e-mail personalizado diretamente da plataforma. A pessoa convidada cria sua conta apenas uma vez no EventAqui e já terá acesso ao leitor de QR code para validação dos ingressos vendidos pelo produtor contratante. Qualquer outro produtor pode contratá-lo simplesmente digitando seu e-mail no painel. O sistema reconhece o agente de portaria instantaneamente e faz a ponte entre eles nos bastidores, liberando o acesso aos novos eventos sem exigir que o porteiro crie outro cadastro.
 * **Baixa Automática (Webhook):** Comunicação direta e validada com o Mercado Pago para aprovar ingressos automaticamente assim que o PIX é pago.
 * **Segurança Avançada (RLS):** Row Level Security implementado no Supabase para garantir que produtores e agentes acessem única e exclusivamente os dados que lhes pertencem.
+
+### Segurança e Conformidade (LGPD)
+* **Step-Up Authentication:** Ações destrutivas (como exclusão de conta) exigem revalidação da senha e envio de código OTP via e-mail, prevenindo sequestro de sessão (*Session Hijacking*).
+* **Retenção Inteligente (Soft Delete):** Sistema de exclusão com carência de 30 dias. Usuários arrependidos são interceptados por uma "parede de vidro" (Reactivation Guard) no próximo login, permitindo a restauração instantânea da conta com um clique.
+* **Validação de Ingressos e Eventos:** Travas de segurança arquiteturais impedem que clientes deletem contas com ingressos futuros ativos sem confirmação explícita de abandono, e bloqueiam produtores com eventos em andamento.
 
 ---
 
