@@ -4,19 +4,16 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Search, Ticket, Store, CreditCard, 
-  Smartphone, Mail, MessageCircle 
+  Mail, MessageCircle, ShieldCheck
 } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function HelpCenterPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  
-  // Referências para capturar a área de clique e a área de rolagem
   const interactiveAreaRef = useRef<HTMLDivElement>(null);
   const faqSectionRef = useRef<HTMLElement>(null);
 
-  // Efeito para limpar o filtro quando clicar fora dos cards ou do FAQ
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (interactiveAreaRef.current && !interactiveAreaRef.current.contains(event.target as Node)) {
@@ -27,40 +24,68 @@ export default function HelpCenterPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Base de dados das categorias dos cards
   const categories = [
     { id: 'comprador', title: 'Sou Comprador', desc: 'Dúvidas sobre ingressos e acesso.', icon: Ticket, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { id: 'produtor', title: 'Sou Produtor', desc: 'Gestão de eventos e equipe.', icon: Store, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { id: 'produtor', title: 'Sou Produtor', desc: 'Gestão de eventos, equipe e portaria.', icon: Store, color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { id: 'pagamentos', title: 'Pagamentos', desc: 'PIX, reembolsos e taxas.', icon: CreditCard, color: 'text-purple-600', bg: 'bg-purple-50' },
-    { id: 'portaria', title: 'Portaria', desc: 'Leitura de QR Code e check-in.', icon: Smartphone, color: 'text-amber-600', bg: 'bg-amber-50' },
+    { id: 'seguranca', title: 'Segurança e Suporte', desc: 'LGPD, regras, contas e antifraude.', icon: ShieldCheck, color: 'text-amber-600', bg: 'bg-amber-50' },
   ];
 
-  // Base de dados de perguntas com categorias atreladas
   const faqs = [
     {
-      category: 'comprador',
+      categories: ['comprador'],
       question: "Como faço para acessar o meu ingresso?",
       answer: "Assim que o seu pagamento via PIX for aprovado, o ingresso será enviado para o seu e-mail de cadastro. Você também pode acessá-lo a qualquer momento fazendo login na plataforma e clicando em 'Meus Ingressos'."
     },
     {
-      category: 'pagamentos',
+      categories: ['pagamentos', 'comprador'],
       question: "O pagamento via PIX demora quanto tempo para aprovar?",
       answer: "A aprovação do PIX é instantânea! Geralmente, em menos de 10 segundos após o pagamento no seu banco, o sistema já libera o seu ingresso automaticamente."
     },
     {
-      category: 'produtor',
+      categories: ['produtor', 'pagamentos'],
       question: "Sou produtor, como recebo o dinheiro das vendas?",
       answer: "Os valores das vendas processadas via PIX são creditados diretamente na sua conta do Mercado Pago vinculada à plataforma, de acordo com as taxas e prazos acordados no Termo de Uso."
     },
     {
-      category: 'pagamentos',
+      categories: ['pagamentos', 'comprador', 'seguranca'],
       question: "Posso cancelar minha compra e pedir reembolso?",
       answer: "Sim. De acordo com o Código de Defesa do Consumidor, você tem até 7 dias corridos após a compra para solicitar o cancelamento, desde que seja feito até 48 horas antes do início do evento."
     },
     {
-      category: 'portaria',
+      categories: ['produtor'],
       question: "Como funciona a validação na portaria?",
-      answer: "O produtor do evento autoriza agentes de portaria que utilizarão nosso Scanner integrado. Basta apresentar o QR Code do seu ingresso (no celular ou impresso) para o agente na entrada do evento."
+      answer: "Como produtor, você autoriza agentes de portaria utilizando o e-mail deles. A pessoa convidada acessará a plataforma e utilizará nosso Scanner integrado. O comprador só precisa apresentar o QR Code na entrada do evento para liberação."
+    },
+    {
+      categories: ['seguranca', 'comprador', 'produtor'],
+      question: "Como faço para excluir minha conta permanentemente?",
+      answer: "Acesse o seu Perfil e clique em 'Privacidade e Exclusão de Conta'. Por segurança, será necessário confirmar sua senha atual e inserir um código enviado ao seu e-mail. Sua conta será suspensa imediatamente e agendada para exclusão definitiva em 30 dias, em conformidade com a LGPD."
+    },
+    {
+      categories: ['seguranca'],
+      question: "Solicitei a exclusão da minha conta, posso me arrepender?",
+      answer: "Sim! Oferecemos uma carência de 30 dias após o pedido. Se você mudar de ideia dentro desse prazo, basta fazer login normalmente. O sistema exibirá uma tela segura com a opção 'Reativar Minha Conta', restaurando todo o seu acesso instantaneamente."
+    },
+    {
+      categories: ['seguranca', 'comprador'],
+      question: "Posso excluir minha conta se eu ainda tiver ingressos para eventos futuros?",
+      answer: "Se você possuir ingressos válidos para eventos que ainda não aconteceram, o sistema emitirá um alerta ao tentar excluir a conta. Será necessário confirmar explicitamente que você está abrindo mão desses ingressos ou solicitar o estorno antes de agendar a exclusão."
+    },
+    {
+      categories: ['seguranca', 'produtor'],
+      question: "Sou produtor de eventos. Posso excluir minha conta a qualquer momento?",
+      answer: "Para garantir a segurança dos compradores, o sistema bloqueia automaticamente a exclusão de contas de produtores com eventos ativos ou futuros. É necessário realizar o evento, processar estornos e encerrar pendências financeiras antes da exclusão."
+    },
+    {
+      categories: ['seguranca', 'comprador'],
+      question: "Comprei ingresso de terceiros (cambistas), vocês garantem a entrada?",
+      answer: "Não. O EventAqui não se responsabiliza por ingressos comprados fora da nossa plataforma oficial. Ingressos falsificados ou duplicados por terceiros serão bloqueados automaticamente pelo nosso validador na portaria."
+    },
+    {
+      categories: ['seguranca', 'comprador'],
+      question: "Quem tem direito à meia-entrada?",
+      answer: "O benefício da meia-entrada é garantido por lei para estudantes, idosos, PCDs e jovens de baixa renda, mediante apresentação de documento comprobatório válido na portaria do evento. As regras específicas podem variar conforme a legislação local ou determinação do produtor."
     }
   ];
 
@@ -70,7 +95,7 @@ export default function HelpCenterPage() {
              faq.answer.toLowerCase().includes(searchQuery.toLowerCase());
     }
     if (selectedCategory) {
-      return faq.category === selectedCategory;
+      return faq.categories.includes(selectedCategory);
     }
     return true; 
   });
@@ -87,7 +112,6 @@ export default function HelpCenterPage() {
       setSelectedCategory(categoryId);
       setSearchQuery(''); 
 
-      // Lógica de UX: Rola suavemente para o FAQ em telas de celular
       if (window.innerWidth < 768) {
         setTimeout(() => {
           faqSectionRef.current?.scrollIntoView({ 
@@ -205,7 +229,7 @@ export default function HelpCenterPage() {
               <div className="text-center py-12 bg-white rounded-2xl border border-gray-100 shadow-sm">
                 <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-bold text-gray-900">Nenhum resultado encontrado</h3>
-                <p className="text-gray-500 mt-1">Não encontramos respostas para esta categoria.</p>
+                <p className="text-gray-500 mt-1">Não encontramos respostas para esta busca ou categoria.</p>
               </div>
             )}
           </div>
