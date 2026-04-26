@@ -44,7 +44,7 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const { 
-      email, role, producerId, name, firstName, lastName, 
+      email, role, producerId, fullName, firstName, lastName, 
       cpf, occupation, birthDate, university, course, area, specialty 
     } = body;
 
@@ -68,8 +68,9 @@ export async function POST(request: Request) {
     const redirectToUrl = `${origin}/profile?invite=true`;
     
     const metaData: any = { 
-        first_name: firstName || (name ? name.split(' ')[0] : ''),
-        last_name: lastName || (name ? name.split(' ').slice(1).join(' ') : ''),
+        full_name: fullName || '',
+        first_name: firstName || (fullName ? fullName.split(' ')[0] : ''),
+        last_name: lastName || (fullName ? fullName.split(' ').slice(1).join(' ') : ''),
         cpf: cpf || null,
         occupation: occupation || null,
         role: role,
