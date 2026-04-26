@@ -253,6 +253,7 @@ function ProfileContent() {
         const profileUpdates: any = {
           first_name: firstName || null,
           last_name: lastName || null,
+          cpf: cpf || null,
           occupation: occupation || null,
           birth_date: isoBirthDate,
           university: occupation === "estudante" ? (university === "Outra" ? customUniversity : university) : null,
