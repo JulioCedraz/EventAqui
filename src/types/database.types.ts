@@ -62,6 +62,8 @@ export type Database = {
           area: string | null;
           specialty: string | null;
           created_at: string | number | Date | null;
+          status: string | null;
+          deletion_scheduled_at: string | null;
         };
         Insert: {
           id: string;
@@ -77,6 +79,8 @@ export type Database = {
           course?: string | null;
           area?: string | null;
           specialty?: string | null;
+          status?: string | null;
+          deletion_scheduled_at?: string | null;
         };
         Update: {
           id?: string;
@@ -92,6 +96,8 @@ export type Database = {
           course?: string | null;
           area?: string | null;
           specialty?: string | null;
+          status?: string | null;
+          deletion_scheduled_at?: string | null;
         };
         Relationships: [
           {
