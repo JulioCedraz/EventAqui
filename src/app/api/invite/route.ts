@@ -38,9 +38,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
     }
 
-    const requesterRole = requester.user_metadata?.role || requester.app_metadata?.role || 'customer';
     const requesterId = requester.id;
     const requesterEmail = requester.email;
+
+    const { data: requesterProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('role')
+      .eq('id', requesterId)
+      .single();
+
+    const requesterRole = requesterProfile?.role || 'customer';
 
     const body = await request.json();
     const { 
@@ -68,7 +75,7 @@ export async function POST(request: Request) {
     const redirectToUrl = `${origin}/profile?invite=true`;
     
     const metaData: any = { 
-        full_name: fullName || '',
+        full_name: fullName,
         first_name: firstName || (fullName ? fullName.split(' ')[0] : ''),
         last_name: lastName || (fullName ? fullName.split(' ').slice(1).join(' ') : ''),
         cpf: cpf || null,
@@ -79,7 +86,8 @@ export async function POST(request: Request) {
         course: course || null,
         area: area || null,
         specialty: specialty || null
-     };
+    };
+     
     if (finalProducerId) metaData.producer_id = finalProducerId;
 
     const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
@@ -89,7 +97,6 @@ export async function POST(request: Request) {
 
     if (inviteError) {
       if (inviteError.message.includes('already registered') || inviteError.status === 422) {
-        // Busca o ID do usuário pelo e-mail
         const { data: existingUser } = await supabaseAdmin
           .from('profiles')
           .select('id')
@@ -97,14 +104,13 @@ export async function POST(request: Request) {
           .single();
 
         if (existingUser) {
-          // Envia somente a role e o producer_id
           const safeUpdatePayload = {
             role: role,
             producer_id: finalProducerId
           };
 
           await supabaseAdmin.from('profiles').update(safeUpdatePayload).eq('id', existingUser.id);
-          // Altera a role e producer_id e mantém os outros metadados.
+          
           await supabaseAdmin.auth.admin.updateUserById(existingUser.id, {
             user_metadata: safeUpdatePayload
           });
