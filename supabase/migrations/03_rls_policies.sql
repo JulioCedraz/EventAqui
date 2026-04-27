@@ -10,9 +10,7 @@ ALTER TABLE public.tickets ENABLE ROW LEVEL SECURITY;
 -- ==========================================
 DROP POLICY IF EXISTS "Profiles - Leitura Segura" ON public.profiles;
 CREATE POLICY "Profiles - Leitura Segura" ON public.profiles FOR SELECT USING (
-  (select auth.uid()) = id 
-  OR public.get_user_role() = 'admin'
-  OR (public.get_user_role() = 'producer' AND producer_id = (select auth.uid()))
+  id = (select auth.uid()) OR producer_id = (select auth.uid())
 );
 
 DROP POLICY IF EXISTS "Profiles - Inserção automática" ON public.profiles;
@@ -22,15 +20,7 @@ CREATE POLICY "Profiles - Inserção automática" ON public.profiles FOR INSERT 
 
 DROP POLICY IF EXISTS "Profiles - Edição Protegida" ON public.profiles;
 CREATE POLICY "Profiles - Edição Protegida" ON public.profiles FOR UPDATE USING (
-  (select auth.uid()) = id OR public.get_user_role() = 'admin'
-) WITH CHECK (
-  (
-    (select auth.uid()) = id AND 
-    public.get_user_role() != 'admin' AND 
-    role::text = public.get_user_role() AND 
-    producer_id = (SELECT p.producer_id FROM public.profiles p WHERE p.id = (select auth.uid()))
-  ) OR 
-  public.get_user_role() = 'admin'
+  id = (select auth.uid())
 );
 
 -- ==========================================
