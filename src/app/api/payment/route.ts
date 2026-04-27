@@ -1,3 +1,5 @@
+// src\app\api\payment\route.ts
+
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 
@@ -5,10 +7,31 @@ export async function POST(request: Request) {
   try {
     const { title, price, email, ticketId, expires_at } = await request.json();
 
-    if (!title || !price || !email || !ticketId || !expires_at) {
+    if (!title || price === undefined || !email || !ticketId) {
       return NextResponse.json({ erro: 'Dados incompletos' }, { status: 400 });
     }
 
+    // =========================================
+    // EVENTOS GRATUITOS
+    // =========================================
+    if (Number(price) === 0) {
+      return NextResponse.json({
+        id: `free_${crypto.randomUUID()}`,
+        is_free: true,
+        status: 'approved',
+        qr_code: null,
+        qr_code_base64: null,
+        expires_at: null
+      });
+    }
+
+    if (!expires_at) {
+      return NextResponse.json({ erro: 'Dados de expiração incompletos' }, { status: 400 });
+    }
+
+    // =========================================
+    // INTEGRAÇÃO MERCADO PAGO (Eventos Pagos)
+    // =========================================
     const idempotencyKey = crypto.randomUUID();
 
     const paymentData = {
