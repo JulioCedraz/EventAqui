@@ -30,9 +30,9 @@ CREATE TABLE public.events (
     producer_id uuid DEFAULT auth.uid() REFERENCES public.profiles(id) ON DELETE SET NULL,
     title text NOT NULL,
     description text,
-    event_date timestamp with time zone NOT NULL,
-    price numeric(10, 2) NOT NULL DEFAULT 0.00,
-    total_spots integer NOT NULL DEFAULT 0,
+    event_date timestamp with time zone,
+    price numeric(10, 2) DEFAULT 0.00,
+    total_spots integer DEFAULT 0,
     image_url text,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now())
 );
