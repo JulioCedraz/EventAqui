@@ -239,7 +239,7 @@ function ProfileContent() {
       if (email !== originalEmail) authUpdates.email = email;
       if (newPassword) authUpdates.password = newPassword;
       if (firstName || lastName) {
-        authUpdates.data = { full_name: `${firstName} ${lastName}`.trim(), name: `${firstName} ${lastName}`.trim() };
+        authUpdates.data = { full_name: `${firstName} ${lastName}`.trim() };
       }
 
       if (Object.keys(authUpdates).length > 0) {
@@ -273,8 +273,7 @@ function ProfileContent() {
       }
 
       if (isInvite) {
-        window.history.replaceState(null, '', '/profile');
-        router.refresh();
+        router.push('/');
       }
       
       setNewPassword('');
