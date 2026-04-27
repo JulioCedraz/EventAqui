@@ -45,7 +45,7 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
     setPasswordError('');
     
     try {
-      // 1. Step-Up Authentication (Verificação de Identidade)
+      // Step-Up Authentication (Verificação de Identidade)
       if (authProvider === 'email') {
         if (!currentPassword) {
           setPasswordError('A senha atual é obrigatória.');
@@ -69,7 +69,7 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
         // if (oauthError) throw new Error('Erro na reautenticação social.');
       }
 
-      // 2. Disparo do Código de Segurança (OTP)
+      // Disparo do Código de Segurança (OTP)
       const { error } = await supabase.auth.reauthenticate();
       if (error) throw new Error('Erro ao enviar o código de segurança. Tente novamente.');
       
@@ -84,7 +84,7 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
 
   const handleDeleteAccount = async () => {
     if (!deleteToken || deleteToken.length < 6) {
-      toast.error('Por favor, digite o código de 6 dígitos válido.');
+      toast.error('Por favor, digite o código válido (até 8 dígitos).');
       return;
     }
 
@@ -268,16 +268,16 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
                 </div>
                 
                 <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-                  Digite o código de 6 dígitos que enviamos para o seu e-mail (<b className="break-all">{email}</b>) para confirmar a exclusão.
+                  Digite o código de segurança que enviamos para o seu e-mail (<b className="break-all">{email}</b>) para confirmar a exclusão.
                 </p>
 
                 <Input
                   type="text"
-                  maxLength={6}
-                  placeholder="000000"
+                  maxLength={8}
+                  placeholder="00000000"
                   value={deleteToken}
                   onChange={(e) => setDeleteToken(e.target.value.replace(/\D/g, ''))}
-                  className="w-full text-center text-3xl tracking-[0.4em] font-extrabold py-8 rounded-xl focus-visible:ring-red-500 mb-8 bg-gray-50"
+                  className="w-full text-center text-3xl tracking-[0.2em] font-extrabold py-8 rounded-xl focus-visible:ring-red-500 mb-8 bg-gray-50"
                 />
                 
                 <div className="flex flex-col-reverse sm:flex-row gap-3">
@@ -292,7 +292,7 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
                   <Button 
                     variant="destructive"
                     onClick={handleDeleteAccount} 
-                    disabled={isDeleting || deleteToken.length < 6} 
+                    disabled={isDeleting || deleteToken.length < 6}
                     className="flex-1 font-bold h-12 rounded-xl"
                   >
                     {isDeleting ? (
