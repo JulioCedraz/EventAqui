@@ -1,3 +1,5 @@
+// src\app\admin\events\new\page.tsx
+
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -27,6 +29,7 @@ function EventForm() {
   const [eventDate, setEventDate] = useState('');
   const [hasNoDate, setHasNoDate] = useState(false);
   const [price, setPrice] = useState('');
+  const [isFree, setIsFree] = useState(false);
   const [totalSpots, setTotalSpots] = useState('');
   const [hasNoSpotLimit, setHasNoSpotLimit] = useState(false);
   const [image, setImage] = useState<File | null>(null);
@@ -88,6 +91,11 @@ function EventForm() {
           }
 
           setPrice(data.price.toString());
+          if (Number(data.price) === 0) {
+            setIsFree(true);
+          } else {
+            setIsFree(false);
+          }
           
           if (data.total_spots !== null && data.total_spots !== undefined) {
             setTotalSpots(data.total_spots.toString());
@@ -175,7 +183,7 @@ function EventForm() {
         title,
         description,
         event_date: hasNoDate ? null : new Date(eventDate).toISOString(),
-        price: parseFloat(price),
+        price: isFree ? 0 : parseFloat(price),
         total_spots: hasNoSpotLimit ? null : parseInt(totalSpots, 10),
       };
 
@@ -301,16 +309,32 @@ function EventForm() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="price">Preço (R$)</Label>
+                  <div className="flex justify-between items-center">
+                    <Label htmlFor="price">Preço (R$)</Label>
+                    <label className="flex items-center space-x-2 text-xs font-medium text-gray-500 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={isFree} 
+                        onChange={(e) => {
+                          setIsFree(e.target.checked);
+                          if (e.target.checked) setPrice('0');
+                          else setPrice('');
+                        }} 
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                      />
+                      <span>Gratuito</span>
+                    </label>
+                  </div>
                   <Input 
                     id="price"
                     type="number" 
                     step="0.01" 
                     min="0" 
-                    required 
-                    value={price} 
+                    required={!isFree} 
+                    disabled={isFree}
+                    value={isFree ? '0' : price} 
                     onChange={(e) => setPrice(e.target.value)} 
-                    className="h-12 rounded-xl"
+                    className={`h-12 rounded-xl ${isFree ? 'bg-gray-100 text-gray-400' : ''}`}
                     placeholder="0.00"
                   />
                 </div>
