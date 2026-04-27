@@ -5,11 +5,16 @@
 -- Leitura do cargo do usuário logado
 CREATE OR REPLACE FUNCTION public.get_user_role()
 RETURNS text
-LANGUAGE sql
+LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, auth
 AS $$
-  SELECT role::text FROM public.profiles WHERE id = auth.uid();
+DECLARE
+  user_role text;
+BEGIN
+  SELECT role::text INTO user_role FROM public.profiles WHERE id = auth.uid();
+  RETURN user_role;
+END;
 $$;
 
 -- Permissões vitais para o Supabase conseguir usar a função do Hook
@@ -63,3 +68,37 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- ==============================================================
+-- 2. GATILHO DE BLINDAGEM (Substitui o WITH CHECK)
+-- ==============================================================
+  CREATE OR REPLACE FUNCTION public.protect_sensitive_profile_fields()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  -- Se a requisição vier da API pública do frontend (usuário logado ou visitante)
+  IF current_user IN ('authenticated', 'anon') THEN
+    -- Trava silenciosamente as colunas sensíveis, mantendo os valores originais.
+    NEW.role = OLD.role;
+    NEW.producer_id = OLD.producer_id;
+    NEW.status = OLD.status;
+    NEW.deletion_scheduled_at = OLD.deletion_scheduled_at;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS enforce_profile_protection ON public.profiles;
+CREATE TRIGGER enforce_profile_protection
+  BEFORE UPDATE ON public.profiles
+  FOR EACH ROW EXECUTE PROCEDURE public.protect_sensitive_profile_fields();
+
+
+-- ==============================================================
+-- BYPASS MESTRE: ACESSO DE LEITURA PARA O ADMINISTRADOR
+-- ==============================================================
+DROP POLICY IF EXISTS "Admin Bypass - Leitura" ON public.profiles;
+
+CREATE POLICY "Admin Bypass - Leitura" ON public.profiles 
+FOR SELECT USING (public.get_user_role() = 'admin');
