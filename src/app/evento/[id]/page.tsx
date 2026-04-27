@@ -1,3 +1,5 @@
+// src\app\evento\[id]\page.tsx
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -5,7 +7,7 @@ import { supabase } from '../../../lib/supabase';
 import { useRouter, useParams } from 'next/navigation';
 import { Database } from '../../../types/database.types';
 import SmartModal, { DialogConfig } from '../../../components/SmartModal';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -121,7 +123,8 @@ export default function EventDetails() {
 
   const handleBuy = async () => {
     setBuying(true);
-    const toastId = toast.loading('Gerando PIX seguro e reservando a sua vaga...');
+    const isFree = event!.price === 0;
+    const toastId = toast.loading(isFree ? 'Garantindo sua vaga...' : 'Gerando PIX seguro e reservando a sua vaga...');
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -170,8 +173,27 @@ export default function EventDetails() {
       });
 
       const paymentResponse = await res.json();
-      if (!res.ok) throw new Error(paymentResponse.erro || 'Falha ao gerar o PIX');
+      if (!res.ok) throw new Error(paymentResponse.erro || 'Falha ao processar o pedido');
 
+      // ==========================================
+      // LÓGICA DE APROVAÇÃO PARA EVENTOS GRATUITOS
+      // ==========================================
+      if (paymentResponse.is_free) {
+        const { error: updateFreeError } = await supabase.from('tickets').update({
+          payment_status: 'approved'
+        }).eq('id', createdTicket.id);
+
+        if (updateFreeError) console.error("ALERTA: Falha ao aprovar ingresso gratuito:", updateFreeError);
+
+        toast.success('Inscrição confirmada com sucesso!', { id: toastId });
+        setShowConfirmModal(false);
+        router.push('/tickets');
+        return;
+      }
+
+      // ==========================================
+      // LÓGICA PIX PARA EVENTOS PAGOS
+      // ==========================================
       const { error: updateError } = await supabase.from('tickets').update({
         pix_qr_code: paymentResponse.qr_code,
         pix_qr_code_base64: paymentResponse.qr_code_base64
@@ -188,7 +210,7 @@ export default function EventDetails() {
       toast.success('PIX gerado! Realize o pagamento em até 30 minutos.', { id: toastId });
 
     } catch (error: any) {
-      toast.error(error.message || 'Erro ao processar compra.', { id: toastId });
+      toast.error(error.message || 'Erro ao processar requisição.', { id: toastId });
       setShowConfirmModal(false);
     } finally {
       setBuying(false);
@@ -209,7 +231,6 @@ export default function EventDetails() {
     }
   };
 
-  // VISTA 1: CARREGANDO
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -221,7 +242,6 @@ export default function EventDetails() {
     );
   }
 
-  // VISTA 2: EVENTO NÃO ENCONTRADO
   if (!event) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -240,6 +260,7 @@ export default function EventDetails() {
   const isSoldOut = event.total_spots !== null && soldTickets >= event.total_spots;
   const availableSpots = event.total_spots !== null ? Math.max(0, event.total_spots - soldTickets) : null;
   const maxSelectable = availableSpots !== null ? Math.min(10, availableSpots) : 10;
+  const isFreeEvent = event.price === 0;
 
   return (
     <main className="min-h-screen bg-gray-50 py-8 sm:py-12 px-4 sm:px-6 lg:px-8 relative">
@@ -265,30 +286,35 @@ export default function EventDetails() {
                     <Ticket className="w-4 h-4 text-blue-500" />
                     Ingresso ({quantity}x)
                   </span>
-                  <span className="font-semibold text-gray-900">R$ {event.price.toFixed(2).replace('.', ',')} / cada</span>
-                </div>
-                
-                <div className="flex justify-between items-center text-gray-600">
-                  <span className="font-medium flex items-center gap-2">
-                    <CreditCard className="w-4 h-4 text-blue-500" />
-                    Pagamento
-                  </span>
-                  <span className="flex gap-2 items-center justify-center font-semibold text-gray-900">
-                    Pix
-                    <img src="/pix.svg" className="w-5 h-5" alt="Pix" />
+                  <span className="font-semibold text-gray-900">
+                    {isFreeEvent ? 'Gratuito' : `R$ ${event.price.toFixed(2).replace('.', ',')} / cada`}
                   </span>
                 </div>
                 
-                <div className="pt-5 mt-2 border-t border-gray-100 flex justify-between items-center bg-blue-50/50 p-4 rounded-2xl">
+                {/* Oculta a linha "Pagamento via PIX" se for gratuito */}
+                {!isFreeEvent && (
+                  <div className="flex justify-between items-center text-gray-600">
+                    <span className="font-medium flex items-center gap-2">
+                      <CreditCard className="w-4 h-4 text-blue-500" />
+                      Pagamento
+                    </span>
+                    <span className="flex gap-2 items-center justify-center font-semibold text-gray-900">
+                      Pix
+                      <img src="/pix.svg" className="w-5 h-5" alt="Pix" />
+                    </span>
+                  </div>
+                )}
+                
+                <div className={`pt-5 mt-2 border-t border-gray-100 flex justify-between items-center p-4 rounded-2xl ${isFreeEvent ? 'bg-emerald-50 border border-emerald-100' : 'bg-blue-50/50'}`}>
                   <span className="text-gray-900 font-bold">Total a pagar:</span>
-                  <span className="text-3xl font-black text-blue-600 tracking-tight">
-                    R$ {(event.price * (Number(quantity) || 1)).toFixed(2).replace('.', ',')}
+                  <span className={`text-3xl font-black tracking-tight ${isFreeEvent ? 'text-emerald-600' : 'text-blue-600'}`}>
+                    {isFreeEvent ? 'Gratuito' : `R$ ${(event.price * (Number(quantity) || 1)).toFixed(2).replace('.', ',')}`}
                   </span>
                 </div>
                 
                 <p className="text-xs text-center text-muted-foreground mt-2 flex items-center justify-center gap-1.5">
                   <Clock className="w-3.5 h-3.5" />
-                  O código PIX será gerado na próxima tela.
+                  {isFreeEvent ? 'Sua vaga será reservada imediatamente.' : 'O código PIX será gerado na próxima tela.'}
                 </p>
               </div>
 
@@ -304,7 +330,7 @@ export default function EventDetails() {
                 <Button 
                   onClick={handleBuy}
                   disabled={buying}
-                  className="flex-1 h-12 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20"
+                  className={`flex-1 h-12 rounded-xl font-bold text-white shadow-md ${isFreeEvent ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'}`}
                 >
                   {buying ? (
                     <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Processando</>
@@ -372,7 +398,7 @@ export default function EventDetails() {
                 <div>
                   <span className="block text-sm font-bold text-gray-500 mb-1 uppercase tracking-wider">Valor Unitário</span>
                   <span className="block text-2xl text-emerald-600 font-black tracking-tight">
-                    R$ {event.price.toFixed(2).replace('.', ',')}
+                    {isFreeEvent ? 'Gratuito' : `R$ ${event.price.toFixed(2).replace('.', ',')}`}
                   </span>
                 </div>
               </div>
@@ -521,10 +547,10 @@ export default function EventDetails() {
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row justify-between items-center text-gray-900 bg-blue-50/50 p-6 rounded-2xl border border-blue-100 gap-2">
+                <div className={`flex flex-col sm:flex-row justify-between items-center p-6 rounded-2xl border gap-2 ${isFreeEvent ? 'bg-emerald-50/50 border-emerald-100' : 'bg-blue-50/50 border-blue-100'}`}>
                   <span className="font-bold text-gray-500 text-lg">Total a pagar:</span>
-                  <span className="text-4xl font-black text-blue-600 tracking-tight">
-                    R$ {(event.price * (Number(quantity) || 1)).toFixed(2).replace('.', ',')}
+                  <span className={`text-4xl font-black tracking-tight ${isFreeEvent ? 'text-emerald-600' : 'text-blue-600'}`}>
+                    {isFreeEvent ? 'Gratuito' : `R$ ${(event.price * (Number(quantity) || 1)).toFixed(2).replace('.', ',')}`}
                   </span>
                 </div>
 
@@ -532,9 +558,13 @@ export default function EventDetails() {
                   size="lg"
                   onClick={() => setShowConfirmModal(true)}
                   disabled={buying}
-                  className="w-full h-16 bg-blue-600 text-white font-black text-xl rounded-2xl hover:bg-blue-700 shadow-xl shadow-blue-600/20 transition-all hover:scale-[1.01] active:scale-[0.99]"
+                  className={`w-full h-16 text-white font-black text-xl rounded-2xl shadow-xl transition-all hover:scale-[1.01] active:scale-[0.99] ${
+                    isFreeEvent 
+                    ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20' 
+                    : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'
+                  }`}
                 >
-                  Garantir o meu Ingresso
+                  {isFreeEvent ? 'Garantir Vaga (Gratuito)' : 'Garantir o meu Ingresso'}
                 </Button>
               </div>
             )}
