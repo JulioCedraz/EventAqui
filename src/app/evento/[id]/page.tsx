@@ -137,16 +137,48 @@ export default function EventDetails() {
       const validQuantity = Number(quantity) || 1;
       const totalPrice = event!.price * validQuantity;
 
+      const buyerName = session.user.user_metadata?.first_name 
+        ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name || ''}`.trim()
+        : (session.user.user_metadata?.full_name || 'Usuário');
+
+      // ==============================================================
+      // FLUXO DE INGRESSO GRATUITO
+      // ==============================================================
+      if (isFree || totalPrice === 0) {
+        const newFreeTicket = {
+          event_id: event!.id,
+          user_id: session.user.id,
+          buyer_name: buyerName,
+          buyer_email: session.user.email!,
+          payment_status: 'approved',
+          quantity: validQuantity,
+          is_used: false,
+          expires_at: null
+        };
+
+        const { error: insertFreeError } = await supabase.from('tickets').insert(newFreeTicket);
+
+        if (insertFreeError) {
+          throw new Error('Erro ao registrar o ingresso no banco de dados.');
+        }
+
+        toast.success('Inscrição confirmada com sucesso!', { id: toastId });
+        setShowConfirmModal(false);
+        router.push('/tickets');
+        return;
+      }
+
+      // ==============================================================
+      // FLUXO NORMAL: EVENTOS PAGOS VIA MERCADO PAGO (PIX)
+      // ==============================================================
       const expirationDate = new Date();
       expirationDate.setMinutes(expirationDate.getMinutes() + 30);
       const isoExpiration = expirationDate.toISOString();
 
-      const newTicket = {
+      const newPaidTicket = {
         event_id: event!.id,
         user_id: session.user.id,
-        buyer_name: session.user.user_metadata?.first_name 
-          ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name || ''}`.trim()
-          : (session.user.user_metadata?.full_name || 'Usuário'),
+        buyer_name: buyerName,
         buyer_email: session.user.email!,
         payment_status: 'pending',
         quantity: validQuantity,
@@ -154,10 +186,10 @@ export default function EventDetails() {
         expires_at: isoExpiration
       };
 
-      const { data: createdTicket, error: supabaseError } = await supabase.from('tickets').insert(newTicket).select().single();
+      const { data: createdTicket, error: supabaseError } = await supabase.from('tickets').insert(newPaidTicket).select().single();
       
       if (supabaseError || !createdTicket) {
-        throw new Error('Erro ao registrar o ingresso no banco de dados.');
+        throw new Error('Erro ao registrar o ingresso pendente no banco de dados.');
       }
       
       const res = await fetch('/api/payment', {
@@ -173,27 +205,8 @@ export default function EventDetails() {
       });
 
       const paymentResponse = await res.json();
-      if (!res.ok) throw new Error(paymentResponse.erro || 'Falha ao processar o pedido');
+      if (!res.ok) throw new Error(paymentResponse.erro || 'Falha ao processar o pedido no Mercado Pago');
 
-      // ==========================================
-      // LÓGICA DE APROVAÇÃO PARA EVENTOS GRATUITOS
-      // ==========================================
-      if (paymentResponse.is_free) {
-        const { error: updateFreeError } = await supabase.from('tickets').update({
-          payment_status: 'approved'
-        }).eq('id', createdTicket.id);
-
-        if (updateFreeError) console.error("ALERTA: Falha ao aprovar ingresso gratuito:", updateFreeError);
-
-        toast.success('Inscrição confirmada com sucesso!', { id: toastId });
-        setShowConfirmModal(false);
-        router.push('/tickets');
-        return;
-      }
-
-      // ==========================================
-      // LÓGICA PIX PARA EVENTOS PAGOS
-      // ==========================================
       const { error: updateError } = await supabase.from('tickets').update({
         pix_qr_code: paymentResponse.qr_code,
         pix_qr_code_base64: paymentResponse.qr_code_base64
