@@ -8,7 +8,6 @@ import { Scanner } from '@yudiel/react-qr-scanner';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
   ArrowLeft, Camera, CameraOff, Loader2, CheckCircle2, 
@@ -22,45 +21,45 @@ export default function CheckinPage() {
   const [authorized, setAuthorized] = useState(false);
   const [ticketId, setTicketId] = useState('');
   const [loading, setLoading] = useState(false);
+  
   const [result, setResult] = useState<{ 
     status: 'success' | 'error' | 'warning' | null, 
     message: string,
-    userData?: { fullName: string, cpf: string, occupation: string }
+    userData?: { name: string, email: string, occupation: string, event: string }
   }>({ status: null, message: '' });
   
   const [isScanning, setIsScanning] = useState(false);
-  
   const inputRef = useRef<HTMLInputElement>(null);
 
-useEffect(() => {
-  const checkAccess = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      router.push('/');
-      return;
-    }
+  useEffect(() => {
+    const checkAccess = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push('/');
+        return;
+      }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', session.user.id)
-      .single();
-      
-    const role = profile?.role || 'customer';
-    const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(e => e.trim()) || [];
-    const isAdmin = admins.includes(session.user.email || '') || role === 'admin';
-    const hasAccess = isAdmin || role === 'producer' || role === 'agent';
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+        
+      const role = profile?.role || 'customer';
+      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(e => e.trim()) || [];
+      const isAdmin = admins.includes(session.user.email || '') || role === 'admin';
+      const hasAccess = isAdmin || role === 'producer' || role === 'agent';
 
-    if (!hasAccess) {
-      toast.error('Acesso negado.', { id: 'unauthorized-checkin' });
-      router.push('/');
-    } else {
-      setAuthorized(true);
-    }
-    setIsCheckingAuth(false);
-  };
-  checkAccess();
-}, [router]);
+      if (!hasAccess) {
+        toast.error('Acesso negado.', { id: 'unauthorized-checkin' });
+        router.push('/');
+      } else {
+        setAuthorized(true);
+      }
+      setIsCheckingAuth(false);
+    };
+    checkAccess();
+  }, [router]);
 
   const handleCheckin = async (e?: React.SyntheticEvent | null, scannedId?: string) => {
     if (e) e.preventDefault();
@@ -87,24 +86,25 @@ useEffect(() => {
       const data = await res.json();
 
       if (!res.ok) {
-        setResult({ status: 'error', message: data.error || 'Erro ao validar ingresso.' });
+        setResult({ 
+          status: 'error', 
+          message: data.error || 'Erro ao validar ingresso.',
+          userData: data.userData
+        });
+        toast.error(data.error || 'Erro ao validar ingresso.');
         return;
       }
 
-      if (data.status === 'success') {
-        setResult({ 
-          status: 'success', 
-          message: data.message,
-          userData: data.userData 
-        });
-      } else if (data.status === 'used' || data.status === 'invalid') {
-        setResult({ status: 'error', message: data.message });
-      } else if (data.status === 'pending') {
-        setResult({ status: 'warning', message: data.message });
-      }
+      setResult({ 
+        status: 'success', 
+        message: data.message,
+        userData: data.userData 
+      });
+      toast.success(data.message);
 
     } catch (error) {
       setResult({ status: 'error', message: 'Falha de conexão com o servidor.' });
+      toast.error('Falha de conexão com o servidor.');
     } finally {
       setLoading(false);
       setTicketId('');
@@ -162,9 +162,9 @@ useEffect(() => {
               <div className="p-4 border-2 border-blue-100 rounded-2xl bg-white animate-in zoom-in-95">
                 <div className="w-full max-w-sm mx-auto overflow-hidden rounded-xl border border-gray-100 shadow-inner">
                   <Scanner
-                    onScan={(result) => {
-                      if (result && result.length > 0) {
-                        const code = result[0].rawValue;
+                    onScan={(scanResult) => {
+                      if (scanResult && scanResult.length > 0) {
+                        const code = scanResult[0].rawValue;
                         setTicketId(code);
                         setIsScanning(false);
                         handleCheckin(null, code);
@@ -173,9 +173,7 @@ useEffect(() => {
                     onError={(error) => {
                       console.log("Aguardando leitura...", error);
                     }}
-                    components={{
-                      finder: true, 
-                    }}
+                    components={{ finder: true }}
                   />
                 </div>
                 <p className="text-sm text-center text-muted-foreground mt-4 font-medium flex items-center justify-center gap-2">
@@ -218,52 +216,54 @@ useEffect(() => {
           </CardContent>
         </Card>
 
-        {/* Resultado da Validação */}
+        {/* Card Responsivo e Dinâmico do Resultado */}
         {result.status && (
           <Card className={`overflow-hidden border-2 animate-in slide-in-from-bottom-4 shadow-xl ${
-            result.status === 'success' ? 'bg-green-50 border-green-400' : 
+            result.status === 'success' ? 'bg-emerald-50 border-emerald-400' : 
             result.status === 'warning' ? 'bg-yellow-50 border-yellow-400' : 
             'bg-red-50 border-red-400'
           }`}>
-            <CardContent className="p-8 flex flex-col items-center text-center">
-              {result.status === 'success' && <CheckCircle2 className="w-16 h-16 text-green-600 mb-4" />}
-              {result.status === 'error' && <XCircle className="w-16 h-16 text-red-600 mb-4" />}
-              {result.status === 'warning' && <AlertTriangle className="w-16 h-16 text-yellow-600 mb-4" />}
+            <CardContent className="p-6 sm:p-8 flex flex-col items-center text-center">
+              
+              <div className="flex items-center justify-center mb-4">
+                {result.status === 'success' && <CheckCircle2 className="w-16 h-16 text-emerald-600" />}
+                {result.status === 'error' && <XCircle className="w-16 h-16 text-red-600" />}
+                {result.status === 'warning' && <AlertTriangle className="w-16 h-16 text-yellow-600" />}
+              </div>
               
               <h2 className={`text-2xl font-black mb-6 ${
-                result.status === 'success' ? 'text-green-800' : 
+                result.status === 'success' ? 'text-emerald-800' : 
                 result.status === 'warning' ? 'text-yellow-800' : 
                 'text-red-800'
               }`}>
                 {result.message}
               </h2>
 
-              {/* Box com os dados do cliente */}
-              {result.status === 'success' && result.userData && (
-                <div className="w-full bg-white rounded-2xl p-6 shadow-sm border border-green-100 text-left">
+              {/* Card de dados do usuário */}
+              {result.userData && (
+                <div className="w-full bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 text-left mt-2">
                   <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
-                    <ShieldAlert className="w-4 h-4 text-green-600" />
-                    <span className="text-xs uppercase tracking-widest text-green-700 font-extrabold">
+                    <ShieldAlert className={`w-4 h-4 ${result.status === 'success' ? 'text-emerald-600' : 'text-gray-400'}`} />
+                    <span className={`text-xs uppercase tracking-widest font-extrabold ${result.status === 'success' ? 'text-emerald-700' : 'text-gray-500'}`}>
                       Conferência de Identidade
                     </span>
                   </div>
                   
                   <div className="space-y-4">
                     <div>
-                      <p className="text-sm text-muted-foreground font-medium mb-1">Nome do Titular</p>
-                      <p className="text-xl font-bold text-gray-900 leading-none">{result.userData.fullName}</p>
+                      <p className="text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Participante</p>
+                      <p className="text-xl font-bold text-gray-900 leading-none">{result.userData.name}</p>
+                      <p className="text-sm text-gray-500 mt-1">{result.userData.email}</p>
                     </div>
                     
-                    <div className="flex items-end justify-between">
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
                       <div>
-                        <p className="text-sm text-muted-foreground font-medium mb-1">Documento (CPF)</p>
-                        <p className="text-lg font-mono font-semibold text-gray-800">{result.userData.cpf}</p>
+                        <p className="text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Ocupação</p>
+                        <p className="text-sm font-bold text-blue-600">{result.userData.occupation}</p>
                       </div>
-                      
-                      <div className="text-right">
-                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-sm">
-                          {result.userData.occupation || 'Não informada'}
-                        </Badge>
+                      <div>
+                        <p className="text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Evento</p>
+                        <p className="text-sm font-bold text-gray-700 line-clamp-2">{result.userData.event}</p>
                       </div>
                     </div>
                   </div>
