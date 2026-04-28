@@ -262,8 +262,36 @@ export default function EventDetails() {
   const maxSelectable = availableSpots !== null ? Math.min(10, availableSpots) : 10;
   const isFreeEvent = event.price === 0;
 
+  // Função para formatar dia da semana, data e horário
+  const formatEventDate = (dateString: string) => {
+    const dateObj = new Date(dateString);
+    
+    const weekday = dateObj.toLocaleDateString("pt-BR", { weekday: "long" });
+    const capWeekday = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+    
+    const longDate = dateObj.toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" });
+    
+    const shortDate = dateObj.toLocaleDateString("pt-BR", { day: "numeric", month: "short", year: "numeric" }).replace(/\./g, '');
+    
+    const timeStr = dateObj.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+    return (
+      <div className="flex flex-col gap-0.5">
+        <span className="capitalize text-gray-900">{capWeekday}</span>
+        
+        {/* Renderiza a data curta no celular, e esconde no desktop */}
+        <span className="md:hidden text-blue-600 font-extrabold">{shortDate}</span>
+        
+        {/* Renderiza a data longa no desktop, e esconde no celular */}
+        <span className="hidden md:block text-blue-600 font-extrabold">{longDate}</span>
+        
+        <span className="text-gray-600">{timeStr}</span>
+      </div>
+    );
+  };
+  
   return (
-    <main className="min-h-screen bg-gray-50 py-8 sm:py-12 px-4 sm:px-6 lg:px-8 relative">
+    <main className="min-h-screen bg-gray-50 py-8 md:py-12 px-4 md:px-6 lg:px-8 relative">
 
       <SmartModal 
         dialog={dialog} 
@@ -279,7 +307,7 @@ export default function EventDetails() {
               <CardTitle className="text-2xl font-extrabold text-gray-900">Resumo do Pedido</CardTitle>
             </CardHeader>
             
-            <CardContent className="p-6 sm:p-8">
+            <CardContent className="p-6 md:p-8">
               <div className="space-y-5 mb-8">
                 <div className="flex justify-between items-center text-gray-600">
                   <span className="font-medium flex items-center gap-2">
@@ -318,7 +346,7 @@ export default function EventDetails() {
                 </p>
               </div>
 
-              <div className="flex sm:flex-row gap-3">
+              <div className="flex md:flex-row gap-3">
                 <Button 
                   variant="outline"
                   onClick={() => setShowConfirmModal(false)}
@@ -365,8 +393,8 @@ export default function EventDetails() {
             </div>
           )}
 
-          <div className="p-6 sm:p-10">
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-6 tracking-tight leading-tight">
+          <div className="p-6 md:p-10">
+            <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6 tracking-tight leading-tight">
               {event.title}
             </h1>
             
@@ -375,29 +403,32 @@ export default function EventDetails() {
             </p>
             
             {/* INFORMAÇÕES DO EVENTO */}
-            <div className="bg-gray-50 rounded-2xl p-6 sm:p-8 mb-10 border border-gray-100 flex flex-col sm:flex-row gap-6 sm:gap-12">
+            <div className="bg-gray-50 rounded-2xl p-6 md:p-8 mb-10 border border-gray-100 flex flex-col md:flex-row gap-6 md:gap-12">
               <div className="flex items-start gap-4 flex-1">
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center shrink-0 mt-1">
                   <Calendar className="w-6 h-6 text-blue-600" />
                 </div>
                 <div>
-                  <span className="block text-sm font-bold text-gray-500 mb-1 uppercase tracking-wider">Data e Hora</span>
-                  <span className="block text-lg text-gray-900 font-bold">
-                    {event.event_date ? new Date(event.event_date).toLocaleString('pt-BR') : 'Sem data definida'}
-                  </span>
+                  <span className="block text-sm font-bold text-gray-500 mb-2 uppercase tracking-wider">Data e Hora</span>
+                  
+                  {/* Container da Data Atualizado */}
+                  <div className="text-lg font-bold leading-tight">
+                    {event.event_date ? formatEventDate(event.event_date) : 'Sem data definida'}
+                  </div>
+
                 </div>
               </div>
               
-              <div className="w-px bg-gray-200 hidden sm:block"></div>
-              <div className="h-px w-full bg-gray-200 sm:hidden"></div>
+              <div className="w-px bg-gray-200 hidden md:block"></div>
+              <div className="h-px w-full bg-gray-200 md:hidden"></div>
 
               <div className="flex items-start gap-4 flex-1">
-                <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 mt-1">
                   <CreditCard className="w-6 h-6 text-emerald-600" />
                 </div>
                 <div>
-                  <span className="block text-sm font-bold text-gray-500 mb-1 uppercase tracking-wider">Valor Unitário</span>
-                  <span className="block text-2xl text-emerald-600 font-black tracking-tight">
+                  <span className="block text-sm font-bold text-gray-500 mb-2 uppercase tracking-wider">Valor Unitário</span>
+                  <span className="block text-2xl text-emerald-600 font-black tracking-tight mt-1">
                     {isFreeEvent ? 'Gratuito' : `R$ ${event.price.toFixed(2).replace('.', ',')}`}
                   </span>
                 </div>
@@ -462,7 +493,7 @@ export default function EventDetails() {
                     Identificamos que você já iniciou a compra de <strong>{pendingTicket.quantity || 1} ingresso(s)</strong> para este evento. O pagamento aguarda confirmação.
                   </p>
                   
-                  <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
+                  <div className="flex flex-col md:flex-row gap-3 w-full max-w-md">
                     <Button 
                       variant="outline"
                       onClick={promptCancelPending}
@@ -490,7 +521,7 @@ export default function EventDetails() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-8 max-w-md mx-auto sm:max-w-none sm:mx-0">
+              <div className="space-y-8 max-w-md mx-auto md:max-w-none md:mx-0">
                 
                 {availableSpots !== null && availableSpots <= 5 && (
                   <Badge variant="destructive" className="w-full justify-center text-sm py-2.5 bg-red-50 text-red-700 border-red-200 font-bold animate-pulse rounded-xl">
@@ -498,7 +529,7 @@ export default function EventDetails() {
                   </Badge>
                 )}
 
-                <div className="flex flex-col sm:flex-row items-center justify-between p-6 border border-gray-200 rounded-2xl bg-white shadow-sm gap-6">
+                <div className="flex flex-col md:flex-row items-center justify-between p-6 border border-gray-200 rounded-2xl bg-white shadow-sm gap-6">
                   <span className="font-bold text-gray-700 text-lg">Quantidade de Ingressos:</span>
 
                   <div className="flex items-center gap-5">
@@ -547,7 +578,7 @@ export default function EventDetails() {
                   </div>
                 </div>
 
-                <div className={`flex flex-col sm:flex-row justify-between items-center p-6 rounded-2xl border gap-2 ${isFreeEvent ? 'bg-emerald-50/50 border-emerald-100' : 'bg-blue-50/50 border-blue-100'}`}>
+                <div className={`flex flex-col md:flex-row justify-between items-center p-6 rounded-2xl border gap-2 ${isFreeEvent ? 'bg-emerald-50/50 border-emerald-100' : 'bg-blue-50/50 border-blue-100'}`}>
                   <span className="font-bold text-gray-500 text-lg">Total a pagar:</span>
                   <span className={`text-4xl font-black tracking-tight ${isFreeEvent ? 'text-emerald-600' : 'text-blue-600'}`}>
                     {isFreeEvent ? 'Gratuito' : `R$ ${(event.price * (Number(quantity) || 1)).toFixed(2).replace('.', ',')}`}
@@ -564,7 +595,7 @@ export default function EventDetails() {
                     : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'
                   }`}
                 >
-                  {isFreeEvent ? 'Garantir Vaga (Gratuito)' : 'Garantir o meu Ingresso'}
+                  {isFreeEvent ? 'Garantir minha vaga' : 'Garantir o meu ingresso'}
                 </Button>
               </div>
             )}
