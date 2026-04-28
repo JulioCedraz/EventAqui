@@ -69,7 +69,7 @@ export async function POST(request: Request) {
 
     if (ticket.is_used) {
       return NextResponse.json({ 
-        error: 'ALERTA: Este ingresso já foi validado anteriormente!',
+        error: 'Este ingresso já foi usado!',
         userData: {
           name: ticket.buyer_name,
           email: ticket.buyer_email,
@@ -79,16 +79,28 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    const { error: updateError } = await supabase
+    const { data: updatedRow, error: updateError } = await supabase
       .from('tickets')
       .update({ is_used: true })
-      .eq('id', ticketId);
+      .eq('id', ticketId)
+      .select('id')
+      .single();
 
-    if (updateError) throw updateError;
+    if (updateError || !updatedRow) {
+      return NextResponse.json({ 
+        error: 'Você não é o produtor ou agente autorizado deste evento.',
+        userData: {
+          name: ticket.buyer_name,
+          email: ticket.buyer_email,
+          occupation: profile?.occupation || 'Não informada',
+          event: (ticket.events as any)?.title
+        }
+      }, { status: 403 });
+    }
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Check-in realizado com sucesso!',
+      message: 'Entrada autorizada!',
       userData: {
         name: ticket.buyer_name,
         email: ticket.buyer_email,
