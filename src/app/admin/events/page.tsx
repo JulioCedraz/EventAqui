@@ -135,6 +135,36 @@ export default function ManageEventsPage() {
     }
   };
 
+  // Função auxiliar para formatar a data com dia da semana e horário
+const formatEventDate = (dateString: string) => {
+    if (!dateString) return "Sem data definida";
+    
+    const dateObj = new Date(dateString);
+    
+    // 1. Strings para o Formato Curto (Mobile)
+    const shortWeekday = dateObj.toLocaleDateString("pt-BR", { weekday: "short" });
+    const capShortWeekday = shortWeekday.charAt(0).toUpperCase() + shortWeekday.slice(1).replace(".", "");
+    const shortDate = dateObj.toLocaleDateString("pt-BR");
+    
+    // 2. Strings para o Formato Longo (Desktop)
+    const longWeekday = dateObj.toLocaleDateString("pt-BR", { weekday: "long" });
+    const capLongWeekday = longWeekday.charAt(0).toUpperCase() + longWeekday.slice(1);
+    const longDate = dateObj.toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" });
+
+    const timeStr = dateObj.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+    return (
+      <>
+        <span className="max-[869px]:inline min-[870px]:hidden">
+          {capShortWeekday}, {shortDate} às {timeStr}
+        </span>
+        <span className="hidden min-[870px]:inline">
+          {capLongWeekday}, {longDate} às {timeStr}
+        </span>
+      </>
+    );
+  };
+
   if (isCheckingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -215,9 +245,9 @@ export default function ManageEventsPage() {
                     key={evt.id}
                     className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-5 hover:bg-gray-50/80 transition-colors group bg-white"
                   >
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-start sm:items-center gap-4">
                       {/* Miniatura da Capa */}
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-gray-100 shrink-0 overflow-hidden border border-gray-200 flex items-center justify-center">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-gray-100 shrink-0 overflow-hidden border border-gray-200 flex items-center justify-center mt-1 sm:mt-0">
                         {evt.image_url ? (
                           <img
                             src={evt.image_url}
@@ -230,29 +260,31 @@ export default function ManageEventsPage() {
                       </div>
 
                       <div className="space-y-1.5">
-                        <h3 className="font-bold text-gray-900 line-clamp-1 text-lg">
+                        <h3 className="font-bold text-gray-900 line-clamp-2 sm:line-clamp-1 text-lg">
                           {evt.title}
                         </h3>
-                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5" />
-                            {evt.event_date
-                              ? new Date(evt.event_date).toLocaleDateString(
-                                  "pt-BR",
-                                )
-                              : "Sem data"}
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1.5 text-gray-600">
+                            <Clock className="w-3.5 h-3.5 shrink-0" />
+                            {formatEventDate(evt.event_date)}
                           </span>
                           <Badge
                             variant="outline"
-                            className="text-green-700 bg-green-50 border-green-200"
+                            className={
+                              Number(evt.price) === 0
+                                ? "text-emerald-700 bg-emerald-50 border-emerald-200"
+                                : "text-green-700 bg-green-50 border-green-200"
+                            }
                           >
-                            R$ {evt.price.toFixed(2).replace(".", ",")}
+                            {Number(evt.price) === 0
+                              ? "Gratuito"
+                              : `R$ ${Number(evt.price).toFixed(2).replace(".", ",")}`}
                           </Badge>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                    <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 mt-2 sm:mt-0">
                       <Button
                         variant="secondary"
                         size="sm"
