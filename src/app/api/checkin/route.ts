@@ -1,3 +1,5 @@
+// src\app\api\checkin\route.ts
+
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
@@ -11,9 +13,7 @@ export async function POST(request: Request) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
+          getAll() { return cookieStore.getAll(); },
           setAll(cookiesToSet) {
             try {
               cookiesToSet.forEach(({ name, value, options }) =>
@@ -25,10 +25,15 @@ export async function POST(request: Request) {
       }
     );
 
-    const { data: { session } } = await supabase.auth.getSession();
+    const authHeader = request.headers.get('Authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    const { data: { user }, error: authError } = token 
+      ? await supabase.auth.getUser(token) 
+      : await supabase.auth.getUser();
 
-    if (!session) {
-      return NextResponse.json({ error: 'Não autorizado. Faça login novamente.' }, { status: 401 });
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Não autorizado. Sessão inválida ou expirada.' }, { status: 401 });
     }
 
     const { ticketId, eventId } = await request.json();
@@ -36,62 +41,38 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Dados do ingresso incompletos.' }, { status: 400 });
     }
 
-    const userId = session.user.id;
-
-    const [eventResponse, profileResponse] = await Promise.all([
-      supabase.from('events').select('producer_id').eq('id', eventId).single(),
-      supabase.from('profiles').select('role, producer_id').eq('id', userId).single()
-    ]);
-
-    if (eventResponse.error || !eventResponse.data) {
-      return NextResponse.json({ error: 'Evento não encontrado.' }, { status: 404 });
-    }
-
-    if (profileResponse.error || !profileResponse.data) {
-      return NextResponse.json({ error: 'Perfil do usuário não encontrado.' }, { status: 404 });
-    }
-
-    const eventOwnerId = eventResponse.data.producer_id;
-    const { role, producer_id } = profileResponse.data;
-
-    if (
-      role !== 'admin' &&
-      !(role === 'producer' && userId === eventOwnerId) &&
-      !(role === 'agent' && producer_id === eventOwnerId)
-    ) {
-      return NextResponse.json({ error: 'Você não tem permissão para este evento.' }, { status: 403 });
-    }
-
     const { data: ticket, error: ticketError } = await supabase
       .from('tickets')
-      .select('id, status')
+      .select('id, is_used, payment_status')
       .eq('id', ticketId)
       .eq('event_id', eventId)
       .single();
 
     if (ticketError || !ticket) {
-      return NextResponse.json({ error: 'Ingresso não encontrado ou não pertence a este evento.' }, { status: 404 });
+      return NextResponse.json({ error: 'Ingresso não encontrado ou você não tem permissão para esta portaria.' }, { status: 404 });
     }
 
-    if (ticket.status === 'used') {
-      return NextResponse.json({ error: 'ALERTA: Este ingresso já foi utilizado.' }, { status: 400 });
+    if (ticket.payment_status !== 'approved') {
+      return NextResponse.json({ error: `ALERTA: Ingresso não está pago. Status: ${ticket.payment_status}` }, { status: 400 });
+    }
+
+    if (ticket.is_used) {
+      return NextResponse.json({ error: 'ALERTA: Este ingresso já foi validado anteriormente!' }, { status: 400 });
     }
 
     const { error: updateError } = await supabase
       .from('tickets')
-      .update({ 
-        status: 'used', 
-        checked_in_at: new Date().toISOString(),
-        checked_by: userId 
-      })
+      .update({ is_used: true })
       .eq('id', ticketId);
 
-    if (updateError) throw updateError;
+    if (updateError) {
+      throw updateError;
+    }
 
     return NextResponse.json({ success: true, message: 'Check-in validado com sucesso!' });
 
   } catch (err: any) {
     console.error('Erro na API de Check-in:', err);
-    return NextResponse.json({ error: 'Erro interno no servidor ao validar.' }, { status: 500 });
+    return NextResponse.json({ error: 'Erro interno no servidor ao validar o ingresso.' }, { status: 500 });
   }
 }
