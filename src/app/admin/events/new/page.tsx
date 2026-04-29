@@ -219,9 +219,9 @@ function EventForm() {
 
   if (isCheckingAuth || isLoadingEvent) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 space-y-4">
-        <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
-        <p className="text-gray-500 font-medium">Carregando formulário...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-background transition-colors space-y-4">
+        <Loader2 className="w-10 h-10 animate-spin text-blue-600 dark:text-blue-500" />
+        <p className="text-gray-500 dark:text-gray-400 font-medium transition-colors">Carregando formulário...</p>
       </div>
     );
   }
@@ -229,29 +229,29 @@ function EventForm() {
   if (!authorized) return null;
 
   return (
-    <main className="bg-gray-50 py-10 px-4 sm:px-6 lg:px-8 grow flex flex-col items-center min-h-screen">
+    <main className="bg-gray-50 dark:bg-background py-10 px-4 sm:px-6 lg:px-8 grow flex flex-col items-center min-h-screen transition-colors">
       <div className="w-full max-w-4xl space-y-8">
         
         <div className="pt-1 pb-1">
-          <Link href="/admin/events" className="text-sm font-medium text-muted-foreground hover:text-blue-600 flex items-center transition-colors w-fit mb-4">
+          <Link href="/admin/events" className="text-sm font-medium text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 flex items-center transition-colors w-fit mb-4">
             <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
           </Link>
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight transition-colors">
             {editId ? 'Editar Evento' : 'Novo Evento'}
           </h1>
-          <p className="text-gray-500">
+          <p className="text-gray-500 dark:text-gray-400 transition-colors">
             {editId ? 'Ajuste as informações deste evento.' : 'Preencha os detalhes abaixo para criar um novo evento na plataforma.'}
           </p>
         </div>
 
-        <Card className={`shadow-md border-0 transition-all duration-300 rounded-3xl overflow-hidden ${editId ? 'ring-2 ring-blue-500/50 shadow-blue-500/10' : ''}`}>
-          <CardHeader className="bg-white border-b border-gray-100 pb-6">
-            <CardTitle className="text-xl font-bold flex items-center gap-2">
-              {editId ? <><Pencil className="w-5 h-5 text-blue-500" /> Formulário de Edição</> : <><Calendar className="w-5 h-5 text-blue-500" /> Informações do Evento</>}
+        <Card className={`shadow-md border-0 transition-all duration-300 rounded-3xl overflow-hidden ${editId ? 'ring-2 ring-blue-500/50 shadow-blue-500/10' : 'dark:border dark:border-border'}`}>
+          <CardHeader className="border-b border-gray-100 dark:border-border pb-6 transition-colors">
+            <CardTitle className="text-xl font-bold flex items-center gap-2 transition-colors">
+              {editId ? <><Pencil className="w-5 h-5 text-blue-500 dark:text-blue-400" /> Formulário de Edição</> : <><Calendar className="w-5 h-5 text-blue-500 dark:text-blue-400" /> Informações do Evento</>}
             </CardTitle>
           </CardHeader>
           
-          <CardContent className="pt-6 bg-white">
+          <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               
               <div className="space-y-2">
@@ -261,7 +261,7 @@ function EventForm() {
                   required 
                   value={title} 
                   onChange={(e) => setTitle(e.target.value)} 
-                  className="h-12 rounded-xl"
+                  className="h-12 rounded-xl transition-colors"
                   placeholder="Ex: Simpósio de Medicina 2026"
                 />
               </div>
@@ -274,7 +274,7 @@ function EventForm() {
                   required 
                   value={description} 
                   onChange={(e) => setDescription(e.target.value)} 
-                  className="flex w-full rounded-xl border border-input bg-background px-4 py-3 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                  className="flex w-full rounded-xl border border-input bg-background px-4 py-3 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none transition-colors"
                   placeholder="Detalhes sobre o evento, palestrantes, local..."
                 />
               </div>
@@ -284,7 +284,7 @@ function EventForm() {
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <Label htmlFor="eventDate">Data e Hora</Label>
-                    <label className="flex items-center space-x-2 text-xs font-medium text-gray-500 cursor-pointer">
+                    <label className="flex items-center space-x-2 text-xs font-medium text-gray-500 dark:text-gray-400 cursor-pointer transition-colors">
                       <input 
                         type="checkbox" 
                         checked={hasNoDate} 
@@ -292,7 +292,7 @@ function EventForm() {
                           setHasNoDate(e.target.checked);
                           if (e.target.checked) setEventDate('');
                         }} 
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                        className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-800 text-blue-600 focus:ring-blue-500 w-4 h-4 transition-colors"
                       />
                       <span>Sem data definida</span>
                     </label>
@@ -304,14 +304,14 @@ function EventForm() {
                     disabled={hasNoDate}
                     value={eventDate} 
                     onChange={(e) => setEventDate(e.target.value)} 
-                    className={`h-12 rounded-xl ${hasNoDate ? 'bg-gray-100 text-gray-400' : ''}`}
+                    className={`h-12 rounded-xl transition-colors ${hasNoDate ? 'bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-gray-500' : ''}`}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <Label htmlFor="price">Preço (R$)</Label>
-                    <label className="flex items-center space-x-2 text-xs font-medium text-gray-500 cursor-pointer">
+                    <label className="flex items-center space-x-2 text-xs font-medium text-gray-500 dark:text-gray-400 cursor-pointer transition-colors">
                       <input 
                         type="checkbox" 
                         checked={isFree} 
@@ -320,7 +320,7 @@ function EventForm() {
                           if (e.target.checked) setPrice('0');
                           else setPrice('');
                         }} 
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                        className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-800 text-blue-600 focus:ring-blue-500 w-4 h-4 transition-colors"
                       />
                       <span>Gratuito</span>
                     </label>
@@ -334,7 +334,7 @@ function EventForm() {
                     disabled={isFree}
                     value={isFree ? '0' : price} 
                     onChange={(e) => setPrice(e.target.value)} 
-                    className={`h-12 rounded-xl ${isFree ? 'bg-gray-100 text-gray-400' : ''}`}
+                    className={`h-12 rounded-xl transition-colors ${isFree ? 'bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-gray-500' : ''}`}
                     placeholder="0.00"
                   />
                 </div>
@@ -342,7 +342,7 @@ function EventForm() {
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <Label htmlFor="totalSpots">Vagas Totais</Label>
-                    <label className="flex items-center space-x-2 text-xs font-medium text-gray-500 cursor-pointer">
+                    <label className="flex items-center space-x-2 text-xs font-medium text-gray-500 dark:text-gray-400 cursor-pointer transition-colors">
                       <input 
                         type="checkbox" 
                         checked={hasNoSpotLimit} 
@@ -350,7 +350,7 @@ function EventForm() {
                           setHasNoSpotLimit(e.target.checked);
                           if (e.target.checked) setTotalSpots('');
                         }} 
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                        className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-800 text-blue-600 focus:ring-blue-500 w-4 h-4 transition-colors"
                       />
                       <span>Sem limite</span>
                     </label>
@@ -363,7 +363,7 @@ function EventForm() {
                     disabled={hasNoSpotLimit}
                     value={totalSpots} 
                     onChange={(e) => setTotalSpots(e.target.value)} 
-                    className={`h-12 rounded-xl ${hasNoSpotLimit ? 'bg-gray-100 text-gray-400' : ''}`}
+                    className={`h-12 rounded-xl transition-colors ${hasNoSpotLimit ? 'bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-gray-500' : ''}`}
                     placeholder="Ex: 100"
                   />
                 </div>
@@ -377,21 +377,21 @@ function EventForm() {
                     type="file" 
                     accept="image/jpeg, image/png, image/webp" 
                     onChange={handleImageChange} 
-                    className={`h-12 rounded-xl cursor-pointer pt-2.5 ${
-                      imageError ? 'border-red-400 bg-red-50 text-red-600' : ''
+                    className={`h-12 rounded-xl cursor-pointer pt-2.5 transition-colors ${
+                      imageError ? 'border-red-400 bg-red-50 text-red-600 dark:border-red-500/50 dark:bg-red-500/10 dark:text-red-400' : ''
                     }`}
                   />
                   {imageError ? (
-                    <p className="text-xs font-medium text-red-600 animate-in fade-in flex items-center gap-1">
+                    <p className="text-xs font-medium text-red-600 dark:text-red-400 animate-in fade-in flex items-center gap-1 transition-colors">
                       {imageError}
                     </p>
                   ) : (
-                    <p className="text-xs text-muted-foreground">JPEG, PNG ou WEBP (Max: 3MB).</p>
+                    <p className="text-xs text-muted-foreground transition-colors">JPEG, PNG ou WEBP (Max: 3MB).</p>
                   )}
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-gray-100 flex flex-col-reverse sm:flex-row justify-end gap-3">
+              <div className="pt-6 border-t border-gray-100 dark:border-border flex flex-col-reverse sm:flex-row justify-end gap-3 transition-colors">
                 <Link href="/admin/events" className="w-full sm:w-auto">
                   <Button type="button" variant="outline" className="w-full sm:w-auto h-12 px-6 rounded-xl font-bold">
                     Cancelar
@@ -400,7 +400,7 @@ function EventForm() {
                 <Button 
                   type="submit" 
                   disabled={loading} 
-                  className="w-full sm:w-auto h-12 px-8 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20"
+                  className="w-full sm:w-auto h-12 px-8 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 shadow-md shadow-blue-600/20 text-white transition-colors"
                 >
                   {loading ? (
                     <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Processando</>
@@ -424,8 +424,8 @@ function EventForm() {
 export default function NewEventPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background transition-colors">
+        <Loader2 className="w-10 h-10 animate-spin text-blue-600 dark:text-blue-500" />
       </div>
     }>
       <EventForm />
