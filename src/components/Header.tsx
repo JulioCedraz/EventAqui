@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Menu, X, UserCircle, Ticket, LogOut, ShieldAlert, ScanBarcode } from "lucide-react";
+import { useTheme } from "next-themes";
+import { Menu, X, UserCircle, Ticket, LogOut, ShieldAlert, ScanBarcode, Sun, Moon } from "lucide-react";
 
 export default function Header() {
   const router = useRouter();
@@ -15,11 +16,16 @@ export default function Header() {
   const [hasScannerAccess, setHasScannerAccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (isMenuOpen && menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        // Evita conflito se clicar no próprio botão de fechar/abrir
         const toggleButton = document.getElementById("mobile-menu-toggle");
         if (toggleButton && toggleButton.contains(event.target as Node)) return;
         
@@ -86,14 +92,13 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full">
-      {/* BARRA PRINCIPAL (CAMADA SUPERIOR) */}
-      <div className="relative z-20 bg-white/80 backdrop-blur-md border-b border-gray-200">
+      <div className="relative z-20 bg-white/80 dark:bg-background/80 backdrop-blur-md border-b border-gray-200 dark:border-border transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             
             {/* LOGO */}
             <div className="shrink-0">
-              <Link href="/" className="text-2xl font-extrabold text-blue-600 tracking-tighter hover:opacity-80 transition-opacity">
+              <Link href="/" className="text-2xl font-extrabold text-blue-600 dark:text-blue-500 tracking-tighter hover:opacity-80 transition-opacity">
                 EventAqui
               </Link>
             </div>
@@ -104,7 +109,7 @@ export default function Header() {
                 <>
                   {hasPanelAccess && (
                     <Link href="/admin" passHref className="hidden min-[740px]:flex">
-                      <Button variant="ghost" className="text-gray-600 hover:text-blue-600 gap-2 font-medium px-3">
+                      <Button variant="ghost" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 gap-2 font-medium px-3">
                         <ShieldAlert className="w-4 h-4" /> Painel
                       </Button>
                     </Link>
@@ -112,20 +117,20 @@ export default function Header() {
 
                   {hasScannerAccess && (
                     <Link href="/admin/checkin" passHref className="hidden min-[740px]:flex">
-                      <Button variant="ghost" className="text-gray-600 hover:text-blue-600 gap-2 font-medium px-3">
+                      <Button variant="ghost" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 gap-2 font-medium px-3">
                         <ScanBarcode className="w-4 h-4" /> Scanner
                       </Button>
                     </Link>
                   )}
 
                   <Link href="/tickets" passHref className="hidden min-[570px]:flex">
-                    <Button variant="ghost" className="text-gray-600 hover:text-blue-600 gap-2 font-medium px-3">
+                    <Button variant="ghost" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 gap-2 font-medium px-3">
                       <Ticket className="w-4 h-4" /> Meus Ingressos
                     </Button>
                   </Link>
 
                   <Link href="/profile" passHref className="hidden min-[570px]:flex">
-                    <Button variant="ghost" className="text-gray-600 hover:text-blue-600 gap-2 font-medium px-3">
+                    <Button variant="ghost" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 gap-2 font-medium px-3">
                       <UserCircle className="w-4 h-4" /> Meu Perfil
                     </Button>
                   </Link>
@@ -135,19 +140,39 @@ export default function Header() {
 
             {/* AÇÕES DIREITA */}
             <div className="flex items-center gap-2 ml-auto">
+              
+              {/* THEME TOGGLE BUTTON */}
+              {mounted ? (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+                  className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 mr-1"
+                  title="Alternar tema"
+                >
+                  {resolvedTheme === "dark" ? (
+                    <Sun className="h-5 w-5" />
+                  ) : (
+                    <Moon className="h-5 w-5" />
+                  )}
+                </Button>
+              ) : (
+                <div className="w-9 h-9 mr-1" />
+              )}
+
               {!loading && (
                 <>
                   {user ? (
                     <Button 
                       variant="ghost" 
                       onClick={handleSignOut} 
-                      className="text-red-500 hover:text-red-600 hover:bg-red-50 px-3 font-bold gap-2"
+                      className="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/50 px-3 font-bold gap-2"
                     >
-                      <LogOut className="w-4 h-4" /> Sair
+                      <LogOut className="w-4 h-4" /> <span className="hidden sm:inline">Sair</span>
                     </Button>
                   ) : (
                     <Link href="/login" passHref>
-                      <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full px-6">
+                      <Button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold rounded-full px-6">
                         Entrar
                       </Button>
                     </Link>
@@ -161,7 +186,7 @@ export default function Header() {
                 variant="ghost" 
                 size="icon" 
                 onClick={() => setIsMenuOpen(!isMenuOpen)} 
-                className="min-[740px]:hidden text-gray-600"
+                className="min-[740px]:hidden text-gray-600 dark:text-gray-300"
               >
                 {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               </Button>
@@ -173,7 +198,7 @@ export default function Header() {
       {/* MENU MOBILE (CAMADA INFERIOR) */}
       <div 
         ref={menuRef}
-        className={`absolute top-full left-0 w-full z-10 border-b border-gray-100 bg-white shadow-lg transition-all duration-300 ease-in-out min-[740px]:hidden ${
+        className={`absolute top-full left-0 w-full z-10 border-b border-gray-100 dark:border-border bg-white dark:bg-background shadow-lg transition-all duration-300 ease-in-out min-[740px]:hidden ${
           isMenuOpen 
             ? "translate-y-0 opacity-100 visible" 
             : "-translate-y-full opacity-0 invisible"
@@ -184,33 +209,33 @@ export default function Header() {
             <>
               {hasPanelAccess && (
                 <Link href="/admin" passHref>
-                  <Button variant="ghost" className="w-full justify-start text-left text-gray-700 font-medium" onClick={() => setIsMenuOpen(false)}>
-                    <ShieldAlert className="w-4 h-4 mr-3 text-gray-400" /> Painel Administrativo
+                  <Button variant="ghost" className="w-full justify-start text-left text-gray-700 dark:text-gray-300 font-medium" onClick={() => setIsMenuOpen(false)}>
+                    <ShieldAlert className="w-4 h-4 mr-3 text-gray-400 dark:text-gray-500" /> Painel Administrativo
                   </Button>
                 </Link>
               )}
               
               {hasScannerAccess && (
                 <Link href="/admin/checkin" passHref>
-                  <Button variant="ghost" className="w-full justify-start text-left text-gray-700 font-medium" onClick={() => setIsMenuOpen(false)}>
-                    <ScanBarcode className="w-4 h-4 mr-3 text-gray-400" /> Scanner (Validação de ingressos)
+                  <Button variant="ghost" className="w-full justify-start text-left text-gray-700 dark:text-gray-300 font-medium" onClick={() => setIsMenuOpen(false)}>
+                    <ScanBarcode className="w-4 h-4 mr-3 text-gray-400 dark:text-gray-500" /> Scanner (Validação de ingressos)
                   </Button>
                 </Link>
               )}
 
               <Link href="/tickets" passHref>
-                <Button variant="ghost" className="w-full justify-start text-left text-gray-700 font-medium" onClick={() => setIsMenuOpen(false)}>
-                  <Ticket className="w-4 h-4 mr-3 text-gray-400" /> Meus Ingressos
+                <Button variant="ghost" className="w-full justify-start text-left text-gray-700 dark:text-gray-300 font-medium" onClick={() => setIsMenuOpen(false)}>
+                  <Ticket className="w-4 h-4 mr-3 text-gray-400 dark:text-gray-500" /> Meus Ingressos
                 </Button>
               </Link>
 
               <Link href="/profile" passHref>
-                <Button variant="ghost" className="w-full justify-start text-left text-gray-700 font-medium" onClick={() => setIsMenuOpen(false)}>
-                  <UserCircle className="w-4 h-4 mr-3 text-gray-400" /> Meu Perfil
+                <Button variant="ghost" className="w-full justify-start text-left text-gray-700 dark:text-gray-300 font-medium" onClick={() => setIsMenuOpen(false)}>
+                  <UserCircle className="w-4 h-4 mr-3 text-gray-400 dark:text-gray-500" /> Meu Perfil
                 </Button>
               </Link>
               
-              <Button variant="ghost" onClick={handleSignOut} className="w-full justify-start text-left text-red-500 font-bold">
+              <Button variant="ghost" onClick={handleSignOut} className="w-full justify-start text-left text-red-500 dark:text-red-400 font-bold">
                 <LogOut className="w-4 h-4 mr-3" /> Sair
               </Button>
             </>
