@@ -113,12 +113,21 @@ export default function Footer() {
               Transações Protegidas Por
             </span>
             <div className="flex items-center gap-3">
-              {/* Logo Oficial do Mercado Pago */}
+              
+              {/* Logo Oficial do Mercado Pago - Dinâmico conforme tema */}
               <div className="h-8 flex items-center">
+                {/* SVG Original: Visível apenas no Light Mode */}
                 <img
                   src="/mercado-pago.svg"
                   alt="Mercado Pago"
-                  className="h-14 w-auto opacity-90 dark:opacity-80 hover:opacity-100 dark:hover:opacity-100 transition-opacity"
+                  className="h-14 w-auto opacity-90 hover:opacity-100 transition-opacity block dark:hidden"
+                />
+                
+                {/* PNG Branco: Visível apenas no Dark Mode */}
+                <img
+                  src="/mercado-pago-dark.png"
+                  alt="Mercado Pago"
+                  className="h-14 w-auto opacity-80 hover:opacity-100 transition-opacity hidden dark:block"
                 />
               </div>
 
