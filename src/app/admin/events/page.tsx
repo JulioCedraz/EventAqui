@@ -136,7 +136,7 @@ export default function ManageEventsPage() {
   };
 
   // Função auxiliar para formatar a data com dia da semana e horário
-const formatEventDate = (dateString: string) => {
+  const formatEventDate = (dateString: string) => {
     if (!dateString) return "Sem data definida";
     
     const dateObj = new Date(dateString);
@@ -167,10 +167,10 @@ const formatEventDate = (dateString: string) => {
 
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background transition-colors">
         <div className="text-center space-y-4">
-          <Loader2 className="w-10 h-10 animate-spin text-blue-600 mx-auto" />
-          <p className="text-gray-500 font-medium">
+          <Loader2 className="w-10 h-10 animate-spin text-blue-600 dark:text-blue-500 mx-auto" />
+          <p className="text-gray-500 dark:text-gray-400 font-medium transition-colors">
             Carregando painel de eventos...
           </p>
         </div>
@@ -181,7 +181,7 @@ const formatEventDate = (dateString: string) => {
   if (!authorized) return null;
 
   return (
-    <main className="bg-gray-50 py-10 px-4 sm:px-6 lg:px-8 grow flex flex-col items-center min-h-screen">
+    <main className="bg-gray-50 dark:bg-background py-10 px-4 sm:px-6 lg:px-8 grow flex flex-col items-center min-h-screen transition-colors">
       <SmartModal
         dialog={dialog}
         onClose={() => setDialog(null)}
@@ -194,39 +194,39 @@ const formatEventDate = (dateString: string) => {
           <div>
             <Link
               href="/admin"
-              className="text-sm font-medium text-muted-foreground hover:text-blue-600 flex items-center transition-colors w-fit mb-2"
+              className="text-sm font-medium text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 flex items-center transition-colors w-fit mb-2"
             >
               <ArrowLeft className="w-4 h-4 mr-1" /> Voltar ao Painel
             </Link>
-            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight transition-colors">
               Gerenciar Eventos
             </h1>
-            <p className="text-gray-500 mt-1">
+            <p className="text-gray-500 dark:text-gray-400 mt-1 transition-colors">
               Publique novos eventos, visualize, edite ou exclua os eventos
               publicados na plataforma.
             </p>
           </div>
           <Link href="/admin/events/new">
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-12 px-6 rounded-xl shadow-sm transition-all hover:scale-105 w-full sm:w-auto">
+            <Button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold h-12 px-6 rounded-xl shadow-sm transition-all hover:scale-105 w-full sm:w-auto">
               <PlusCircle className="w-5 h-5 mr-2" /> Criar Novo Evento
             </Button>
           </Link>
         </div>
 
         {/* LISTA DE EVENTOS PUBLICADOS */}
-        <Card className="shadow-md border-0 rounded-3xl overflow-hidden">
-          <CardHeader className="bg-white border-b border-gray-100 pb-6">
+        <Card className="shadow-md border-0 dark:border dark:border-border rounded-3xl overflow-hidden transition-colors">
+          <CardHeader className="bg-white dark:bg-card border-b border-gray-100 dark:border-border pb-6 transition-colors">
             <div>
-              <CardTitle className="text-xl font-bold flex items-center gap-2">
+              <CardTitle className="text-xl font-bold flex items-center gap-2 transition-colors">
                 Eventos Publicados
                 <Badge
                   variant="secondary"
-                  className="bg-gray-100 text-gray-700 font-bold px-2.5 py-0.5 rounded-md ml-2"
+                  className="bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 font-bold px-2.5 py-0.5 rounded-md ml-2 transition-colors"
                 >
                   {events.length}
                 </Badge>
               </CardTitle>
-              <CardDescription className="mt-1.5">
+              <CardDescription className="mt-1.5 transition-colors">
                 Lista de todos os eventos ativos no sistema.
               </CardDescription>
             </div>
@@ -234,20 +234,20 @@ const formatEventDate = (dateString: string) => {
 
           <CardContent className="p-0">
             {events.length === 0 ? (
-              <div className="p-12 text-center text-muted-foreground flex flex-col items-center gap-3 bg-gray-50">
-                <Calendar className="w-12 h-12 text-gray-300" />
+              <div className="p-12 text-center text-muted-foreground flex flex-col items-center gap-3 bg-gray-50 dark:bg-card transition-colors">
+                <Calendar className="w-12 h-12 text-gray-300 dark:text-slate-700 transition-colors" />
                 <p>Nenhum evento cadastrado ainda.</p>
               </div>
             ) : (
-              <ul className="divide-y divide-gray-100">
+              <ul className="divide-y divide-gray-100 dark:divide-border transition-colors">
                 {events.map((evt) => (
                   <li
                     key={evt.id}
-                    className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-5 hover:bg-gray-50/80 transition-colors group bg-white"
+                    className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-5 hover:bg-gray-50/80 dark:hover:bg-slate-800/50 transition-colors group bg-white dark:bg-transparent"
                   >
                     <div className="flex items-start sm:items-center gap-4">
                       {/* Miniatura da Capa */}
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-gray-100 shrink-0 overflow-hidden border border-gray-200 flex items-center justify-center mt-1 sm:mt-0">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-gray-100 dark:bg-slate-800 shrink-0 overflow-hidden border border-gray-200 dark:border-slate-700 flex items-center justify-center mt-1 sm:mt-0 transition-colors">
                         {evt.image_url ? (
                           <img
                             src={evt.image_url}
@@ -255,26 +255,26 @@ const formatEventDate = (dateString: string) => {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           />
                         ) : (
-                          <ImageIcon className="w-6 h-6 text-gray-300" />
+                          <ImageIcon className="w-6 h-6 text-gray-300 dark:text-slate-600 transition-colors" />
                         )}
                       </div>
 
                       <div className="space-y-1.5">
-                        <h3 className="font-bold text-gray-900 line-clamp-2 sm:line-clamp-1 text-lg">
+                        <h3 className="font-bold text-gray-900 dark:text-gray-100 line-clamp-2 sm:line-clamp-1 text-lg transition-colors">
                           {evt.title}
                         </h3>
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1.5 text-gray-600">
+                          <span className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400 transition-colors">
                             <Clock className="w-3.5 h-3.5 shrink-0" />
                             {formatEventDate(evt.event_date)}
                           </span>
                           <Badge
                             variant="outline"
-                            className={
+                            className={`transition-colors ${
                               Number(evt.price) === 0
-                                ? "text-emerald-700 bg-emerald-50 border-emerald-200"
-                                : "text-green-700 bg-green-50 border-green-200"
-                            }
+                                ? "text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20"
+                                : "text-green-700 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-500/10 dark:border-green-500/20"
+                            }`}
                           >
                             {Number(evt.price) === 0
                               ? "Gratuito"
@@ -289,7 +289,7 @@ const formatEventDate = (dateString: string) => {
                         variant="secondary"
                         size="sm"
                         onClick={() => handleEdit(evt.id)}
-                        className="font-bold h-10 px-4"
+                        className="font-bold h-10 px-4 transition-colors"
                       >
                         <Pencil className="w-4 h-4 mr-2" /> Editar
                       </Button>
@@ -298,7 +298,7 @@ const formatEventDate = (dateString: string) => {
                         variant="destructive"
                         size="sm"
                         onClick={() => handleDeleteClick(evt.id)}
-                        className="font-bold h-10 px-4 bg-red-50 text-red-600 border border-red-100 hover:bg-red-600 hover:text-white shadow-none"
+                        className="font-bold h-10 px-4 bg-red-50 text-red-600 border border-red-100 hover:bg-red-600 hover:text-white dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20 dark:hover:bg-red-600 dark:hover:text-white shadow-none transition-colors"
                       >
                         <Trash2 className="w-4 h-4 sm:mr-2" />
                         <span className="hidden sm:inline">Excluir</span>
