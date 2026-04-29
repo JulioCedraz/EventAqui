@@ -47,12 +47,12 @@ export default function LoginPage() {
   const [isModalProcessing, setIsModalProcessing] = useState(false);
 
   useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  const urlRole = params.get('role');
-  if (urlRole && ['admin', 'producer', 'agent'].includes(urlRole)) {
-    setRole(urlRole);
-  }
-}, []);
+    const params = new URLSearchParams(window.location.search);
+    const urlRole = params.get('role');
+    if (urlRole && ['admin', 'producer', 'agent'].includes(urlRole)) {
+      setRole(urlRole);
+    }
+  }, []);
 
   const handlePasswordRecovery = () => {
     if (!email) {
@@ -217,7 +217,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <main className="min-h-screen bg-gray-50 dark:bg-background flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden transition-colors">
       
       <SmartModal 
         dialog={activeDialog} 
@@ -225,12 +225,12 @@ export default function LoginPage() {
         isProcessing={isModalProcessing} 
       />
 
-      <Card key={isLogin ? "card-login" : "card-signup"} className="w-full max-w-md mx-auto shadow-xl shadow-blue-900/5 rounded-3xl border-gray-100 animate-in fade-in zoom-in-95 slide-in-from-bottom-8 duration-500 ease-out">
+      <Card key={isLogin ? "card-login" : "card-signup"} className="w-full max-w-md mx-auto shadow-xl shadow-blue-900/5 dark:shadow-none rounded-3xl border-gray-100 dark:border-border dark:bg-card animate-in fade-in zoom-in-95 slide-in-from-bottom-8 duration-500 ease-out transition-colors">
         <CardHeader className="text-center pb-6">
-          <CardTitle className="text-3xl font-extrabold text-gray-900 tracking-tight">
+          <CardTitle className="text-3xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight transition-colors">
             {isLogin ? "Acesse sua conta" : "Crie a sua conta"}
           </CardTitle>
-          <CardDescription className="text-base mt-2">
+          <CardDescription className="text-base mt-2 dark:text-gray-400 transition-colors">
             {isLogin ? "Insira as suas credenciais para continuar." : "Preencha os dados abaixo para se cadastrar."}
           </CardDescription>
         </CardHeader>
@@ -238,14 +238,14 @@ export default function LoginPage() {
         <CardContent>
           <form className="space-y-5" onSubmit={handleSubmit}>
             {errorMsg && (
-              <div className="bg-red-50 border border-red-100 text-red-600 text-sm p-3 rounded-xl text-center font-medium animate-in fade-in slide-in-from-top-2">
+              <div className="bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 text-sm p-3 rounded-xl text-center font-medium animate-in fade-in slide-in-from-top-2 transition-colors">
                 {errorMsg}
                 {needsConfirmation && (
                   <Button
                     type="button"
                     variant="outline"
                     onClick={handleResendConfirmation}
-                    className="mt-3 w-full border-red-200 text-red-700 bg-red-100 hover:bg-red-200"
+                    className="mt-3 w-full border-red-200 text-red-700 bg-red-100 hover:bg-red-200 dark:bg-red-500/20 dark:border-red-800/50 dark:text-red-300 dark:hover:bg-red-500/30 transition-colors"
                   >
                     Reenviar link de confirmação
                   </Button>
@@ -253,7 +253,7 @@ export default function LoginPage() {
               </div>
             )}
             {successMsg && (
-              <div className="bg-green-50 border border-green-100 text-green-600 text-sm p-3 rounded-xl text-center font-medium animate-in fade-in slide-in-from-top-2">
+              <div className="bg-green-50 dark:bg-emerald-500/10 border border-green-100 dark:border-emerald-500/20 text-green-600 dark:text-emerald-400 text-sm p-3 rounded-xl text-center font-medium animate-in fade-in slide-in-from-top-2 transition-colors">
                 {successMsg}
               </div>
             )}
@@ -270,20 +270,20 @@ export default function LoginPage() {
                   setEmailFieldError("");
                   setErrorMsg("");
                 }}
-                className={`py-6 rounded-xl ${
-                  emailFieldError ? "border-red-400 focus-visible:ring-red-400 bg-red-50/50" : ""
+                className={`py-6 rounded-xl transition-colors ${
+                  emailFieldError ? "border-red-400 focus-visible:ring-red-400 bg-red-50/50 dark:border-red-500/50 dark:bg-red-500/10" : ""
                 }`}
               />
               {emailFieldError && (
                 <div className="flex flex-col gap-1 mt-1">
-                  <p className="text-xs font-medium text-red-600 animate-in fade-in slide-in-from-top-1">
+                  <p className="text-xs font-medium text-red-600 dark:text-red-400 animate-in fade-in slide-in-from-top-1 transition-colors">
                     {emailFieldError}
                   </p>
                   {!isLogin && (
                     <Button 
                       variant="link" 
                       type="button" 
-                      className="h-auto p-0 text-xs text-blue-600 self-start"
+                      className="h-auto p-0 text-xs text-blue-600 dark:text-blue-400 self-start transition-colors"
                       onClick={() => { setIsLogin(true); setEmailFieldError(""); }}
                     >
                       Deseja fazer login?
@@ -325,7 +325,7 @@ export default function LoginPage() {
                     variant="link"
                     type="button"
                     onClick={handlePasswordRecovery}
-                    className="h-auto p-0 text-xs font-medium text-blue-600 hover:text-blue-500"
+                    className="h-auto p-0 text-xs font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                   >
                     Esqueci minha senha
                   </Button>
@@ -339,12 +339,12 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   minLength={6}
-                  className="py-6 rounded-xl pr-12"
+                  className="py-6 rounded-xl pr-12 transition-colors"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 focus:outline-none transition-colors"
                 >
                   {showPassword ? (
                     <EyeOff className="h-5 w-5" />
@@ -358,7 +358,7 @@ export default function LoginPage() {
             <Button
               type="submit"
               disabled={isLoading || (!isLogin && cpfStatus === 'invalid')}
-              className="w-full py-6 rounded-xl text-base font-bold bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 transition-all active:scale-[0.98] mt-4"
+              className="w-full py-6 rounded-xl text-base font-bold bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 shadow-md shadow-blue-600/20 dark:shadow-none transition-all active:scale-[0.98] mt-4"
             >
               {isLoading ? (
                 <>
@@ -370,7 +370,7 @@ export default function LoginPage() {
           </form>
         </CardContent>
 
-        <CardFooter className="flex justify-center border-t border-gray-100 pt-6">
+        <CardFooter className="flex justify-center border-t border-gray-100 dark:border-border pt-6 transition-colors">
           <Button
             variant="ghost"
             type="button"
@@ -381,7 +381,7 @@ export default function LoginPage() {
               setEmailFieldError("");
               setNeedsConfirmation(false);
             }}
-            className="text-sm font-medium text-gray-600 hover:text-blue-600"
+            className="text-sm font-medium text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors"
           >
             {isLogin ? "Ainda não tem conta? Cadastre-se" : "Já tem uma conta? Fazer login"}
           </Button>
