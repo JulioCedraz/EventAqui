@@ -128,7 +128,7 @@ export default function AdminHub() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {menuActions.map((action, index) => (
-            <Card key={index} className="border-0 dark:border dark:border-border shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group overflow-hidden rounded-3xl flex flex-col bg-transparent">
+            <Card key={index} className="border-0 dark:border dark:border-border dark:hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group overflow-hidden rounded-3xl flex flex-col bg-transparent">
               <CardHeader className={`${action.color} pb-8 grow transition-colors`}>
                 <div className="w-12 h-12 bg-white dark:bg-card rounded-2xl flex items-center justify-center shadow-sm mb-4 group-hover:scale-110 transition-all">
                   {action.icon}
