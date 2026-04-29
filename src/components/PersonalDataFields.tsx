@@ -148,7 +148,7 @@ export default function PersonalDataFields({
     }
   };
 
-  const selectClassName = "flex h-12 w-full items-center justify-between rounded-xl border border-input bg-background px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+  const selectClassName = "flex h-12 w-full items-center justify-between rounded-xl border border-input bg-background px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors";
 
   return (
     <div className="space-y-5 animate-in fade-in slide-in-from-top-4 duration-300">
@@ -163,7 +163,7 @@ export default function PersonalDataFields({
             required
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
-            className="h-12 rounded-xl"
+            className="h-12 rounded-xl transition-colors"
           />
         </div>
         <div className="space-y-2">
@@ -174,7 +174,7 @@ export default function PersonalDataFields({
             required
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
-            className="h-12 rounded-xl"
+            className="h-12 rounded-xl transition-colors"
           />
         </div>
       </div>
@@ -201,23 +201,23 @@ export default function PersonalDataFields({
               placeholder="000.000.000-00"
               className={`h-12 rounded-xl transition-colors ${
                 hasCpfInitially
-                  ? 'bg-gray-100 text-gray-500 opacity-100'
+                  ? 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 opacity-100'
                   : cpfStatus === 'valid'
-                    ? 'border-green-400 focus-visible:ring-green-400 bg-green-50/50'
+                    ? 'border-green-400 dark:border-emerald-500 focus-visible:ring-green-400 dark:focus-visible:ring-emerald-500 bg-green-50/50 dark:bg-emerald-500/10'
                     : cpfStatus === 'invalid'
-                      ? 'border-red-400 focus-visible:ring-red-400 bg-red-50/50'
+                      ? 'border-red-400 dark:border-red-500 focus-visible:ring-red-400 dark:focus-visible:ring-red-500 bg-red-50/50 dark:bg-red-500/10'
                       : ''
               }`}
             />
             {!hasCpfInitially && cpfStatus === 'valid' && (
-              <CheckCircle2 className="absolute right-3 top-3.5 w-5 h-5 text-green-500 animate-in zoom-in" />
+              <CheckCircle2 className="absolute right-3 top-3.5 w-5 h-5 text-green-500 dark:text-emerald-400 animate-in zoom-in" />
             )}
             {!hasCpfInitially && cpfStatus === 'invalid' && (
-              <AlertCircle className="absolute right-3 top-3.5 w-5 h-5 text-red-500 animate-in zoom-in" />
+              <AlertCircle className="absolute right-3 top-3.5 w-5 h-5 text-red-500 dark:text-red-400 animate-in zoom-in" />
             )}
           </div>
           {cpfMessage && !hasCpfInitially && (
-            <p className={`text-xs font-medium animate-in fade-in slide-in-from-top-1 ${cpfStatus === 'valid' ? 'text-green-600' : 'text-red-600'}`}>
+            <p className={`text-xs font-medium animate-in fade-in slide-in-from-top-1 ${cpfStatus === 'valid' ? 'text-green-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
               {cpfMessage}
             </p>
           )}
@@ -243,21 +243,21 @@ export default function PersonalDataFields({
               maxLength={10}
               className={`h-12 rounded-xl transition-colors ${
                 birthDateStatus === 'valid'
-                  ? 'border-green-400 focus-visible:ring-green-400 bg-green-50/50'
+                  ? 'border-green-400 dark:border-emerald-500 focus-visible:ring-green-400 dark:focus-visible:ring-emerald-500 bg-green-50/50 dark:bg-emerald-500/10'
                   : birthDateStatus === 'invalid'
-                    ? 'border-red-400 focus-visible:ring-red-400 bg-red-50/50'
+                    ? 'border-red-400 dark:border-red-500 focus-visible:ring-red-400 dark:focus-visible:ring-red-500 bg-red-50/50 dark:bg-red-500/10'
                     : ''
               }`}
             />
             {birthDateStatus === 'valid' && (
-              <CheckCircle2 className="absolute right-3 top-3.5 w-5 h-5 text-green-500 animate-in zoom-in" />
+              <CheckCircle2 className="absolute right-3 top-3.5 w-5 h-5 text-green-500 dark:text-emerald-400 animate-in zoom-in" />
             )}
             {birthDateStatus === 'invalid' && (
-              <AlertCircle className="absolute right-3 top-3.5 w-5 h-5 text-red-500 animate-in zoom-in" />
+              <AlertCircle className="absolute right-3 top-3.5 w-5 h-5 text-red-500 dark:text-red-400 animate-in zoom-in" />
             )}
           </div>
           {birthDateMessage && (
-            <p className={`text-xs font-medium animate-in fade-in slide-in-from-top-1 ${birthDateStatus === 'valid' ? 'text-green-600' : 'text-red-600'}`}>
+            <p className={`text-xs font-medium animate-in fade-in slide-in-from-top-1 ${birthDateStatus === 'valid' ? 'text-green-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
               {birthDateMessage}
             </p>
           )}
@@ -266,7 +266,7 @@ export default function PersonalDataFields({
 
       {/* OCUPAÇÃO */}
       <div className="space-y-3 pt-2">
-        <Label className="text-gray-700">Ocupação</Label>
+        <Label className="text-gray-700 dark:text-gray-300 transition-colors">Ocupação</Label>
         <div className="flex gap-6">
           <label className="flex items-center space-x-2 cursor-pointer group">
             <input
@@ -275,9 +275,9 @@ export default function PersonalDataFields({
               value="estudante"
               checked={occupation === 'estudante'}
               onChange={() => setOccupation('estudante')}
-              className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+              className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 dark:bg-slate-800 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors"
             />
-            <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">Estudante</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors">Estudante</span>
           </label>
 
           <label className="flex items-center space-x-2 cursor-pointer group">
@@ -287,16 +287,16 @@ export default function PersonalDataFields({
               value="profissional"
               checked={occupation === 'profissional'}
               onChange={() => setOccupation('profissional')}
-              className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+              className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 dark:bg-slate-800 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors"
             />
-            <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">Profissional</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors">Profissional</span>
           </label>
         </div>
       </div>
 
       {/* ESTUDANTE */}
       {occupation === "estudante" && (
-        <div className="space-y-4 pt-4 border-t border-gray-100 animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-border animate-in fade-in slide-in-from-top-2 duration-300 transition-colors">
           <div className="space-y-2">
             <Label>Curso</Label>
             <select
@@ -320,7 +320,7 @@ export default function PersonalDataFields({
                 value={customCourse}
                 onChange={(e) => setCustomCourse(e.target.value)}
                 placeholder="Digite o nome do seu curso"
-                className="h-12 rounded-xl"
+                className="h-12 rounded-xl transition-colors"
               />
             </div>
           )}
@@ -348,7 +348,7 @@ export default function PersonalDataFields({
                 value={customUniversity}
                 onChange={(e) => setCustomUniversity(e.target.value)}
                 placeholder="Digite o nome da instituição"
-                className="h-12 rounded-xl"
+                className="h-12 rounded-xl transition-colors"
               />
             </div>
           )}
@@ -357,7 +357,7 @@ export default function PersonalDataFields({
 
       {/* PROFISSIONAL */}
       {occupation === "profissional" && (
-        <div className="space-y-4 pt-4 border-t border-gray-100 animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-border animate-in fade-in slide-in-from-top-2 duration-300 transition-colors">
           <div className="space-y-2">
             <Label>Área de Atuação</Label>
             <select
@@ -384,7 +384,7 @@ export default function PersonalDataFields({
                 value={customArea}
                 onChange={(e) => setCustomArea(e.target.value)}
                 placeholder="Digite a sua área de atuação"
-                className="h-12 rounded-xl"
+                className="h-12 rounded-xl transition-colors"
               />
             </div>
           )}
