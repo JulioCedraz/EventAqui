@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 export default function HelpCenterPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const interactiveAreaRef = useRef<HTMLDivElement>(null);
   const faqSectionRef = useRef<HTMLElement>(null);
 
@@ -123,6 +124,10 @@ export default function HelpCenterPage() {
     }
   };
 
+  const toggleFaq = (index: number) => {
+    setOpenFaqIndex(openFaqIndex === index ? null : index);
+  };
+
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-background flex flex-col transition-colors">
       
@@ -206,25 +211,42 @@ export default function HelpCenterPage() {
 
           <div className="space-y-4">
             {filteredFaqs.length > 0 ? (
-              filteredFaqs.map((faq, index) => (
-                <details 
-                  key={index} 
-                  open={searchQuery.length > 0 || selectedCategory !== null} 
-                  className="group bg-white dark:bg-card border border-gray-200 dark:border-border rounded-2xl shadow-sm [&_summary::-webkit-details-marker]:hidden transition-colors"
-                >
-                  <summary className="flex cursor-pointer items-center justify-between gap-1.5 p-6 font-bold text-gray-900 dark:text-gray-100 transition-colors">
-                    {faq.question}
-                    <span className="shrink-0 rounded-full bg-gray-50 dark:bg-slate-800 p-1.5 text-gray-900 dark:text-gray-300 sm:p-3 group-open:-rotate-180 transition-transform duration-300">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </span>
-                  </summary>
-                  <div className="px-6 pb-6 text-gray-500 dark:text-gray-400 leading-relaxed transition-colors">
-                    {faq.answer}
+              filteredFaqs.map((faq, index) => {
+                const isForcedOpen = searchQuery.length > 0 || selectedCategory !== null;
+                const isOpen = isForcedOpen || openFaqIndex === index;
+
+                return (
+                  <div 
+                    key={index} 
+                    className="group bg-white dark:bg-card border border-gray-200 dark:border-border rounded-2xl shadow-sm transition-colors overflow-hidden"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toggleFaq(index)}
+                      className="flex w-full cursor-pointer items-center justify-between gap-3 p-6 font-bold text-gray-900 dark:text-gray-100 text-left focus:outline-none transition-colors"
+                    >
+                      {faq.question}
+                      <span className={`shrink-0 rounded-full bg-gray-50 dark:bg-slate-800 p-1.5 text-gray-900 dark:text-gray-300 sm:p-3 transition-transform duration-500 ease-in-out ${isOpen ? '-rotate-180' : ''}`}>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </span>
+                    </button>
+                    
+                    <div 
+                      className={`grid transition-all duration-500 ease-in-out ${
+                        isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                      }`}
+                    >
+                      <div className="overflow-hidden">
+                        <div className="px-6 pb-6 text-gray-500 dark:text-gray-400 leading-relaxed transition-colors">
+                          {faq.answer}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </details>
-              ))
+                );
+              })
             ) : (
               <div className="text-center py-12 bg-white dark:bg-card rounded-2xl border border-gray-100 dark:border-border shadow-sm transition-colors">
                 <Search className="w-12 h-12 text-gray-300 dark:text-slate-600 mx-auto mb-4 transition-colors" />
