@@ -116,8 +116,8 @@ export default function CheckinPage() {
 
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background transition-colors">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-500" />
       </div>
     );
   }
@@ -125,19 +125,19 @@ export default function CheckinPage() {
   if (!authorized) return null;
 
   return (
-    <main className="bg-gray-50 py-10 px-4 sm:px-6 lg:px-8 min-h-screen flex flex-col items-center">
+    <main className="bg-gray-50 dark:bg-background py-10 px-4 sm:px-6 lg:px-8 min-h-screen flex flex-col items-center transition-colors">
       <div className="w-full max-w-2xl space-y-6">
         
         {/* Navegação e Título */}
         <div className="flex flex-col gap-2">
-          <Link href="/admin" className="text-sm font-medium text-muted-foreground hover:text-blue-600 flex items-center transition-colors w-fit">
+          <Link href="/admin" className="text-sm font-medium text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 flex items-center transition-colors w-fit">
             <ArrowLeft className="w-4 h-4 mr-1" />
             Voltar ao Painel
           </Link>
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Scanner para Check-in</h1>
+          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight transition-colors">Scanner para Check-in</h1>
         </div>
 
-        <Card className="shadow-lg border-gray-100">
+        <Card className="shadow-lg border-gray-100 dark:border-border transition-colors">
           <CardHeader className="pb-4">
             <CardTitle>Validação de Ingressos</CardTitle>
             <CardDescription>Escaneie o QR Code ou digite o ID manualmente.</CardDescription>
@@ -159,8 +159,8 @@ export default function CheckinPage() {
 
             {/* Componente do Scanner */}
             {isScanning && (
-              <div className="p-4 border-2 border-blue-100 rounded-2xl bg-white animate-in zoom-in-95">
-                <div className="w-full max-w-sm mx-auto overflow-hidden rounded-xl border border-gray-100 shadow-inner">
+              <div className="p-4 border-2 border-blue-100 dark:border-blue-900/30 rounded-2xl bg-white dark:bg-slate-900/50 animate-in zoom-in-95 transition-colors">
+                <div className="w-full max-w-sm mx-auto overflow-hidden rounded-xl border border-gray-100 dark:border-slate-800 shadow-inner transition-colors">
                   <Scanner
                     onScan={(scanResult) => {
                       if (scanResult && scanResult.length > 0) {
@@ -186,10 +186,10 @@ export default function CheckinPage() {
             {!isScanning && (
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-gray-200" />
+                  <span className="w-full border-t border-gray-200 dark:border-border transition-colors" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-muted-foreground font-bold">Ou digite o ID</span>
+                  <span className="bg-white dark:bg-card px-2 text-muted-foreground font-bold transition-colors">Ou digite o ID</span>
                 </div>
               </div>
             )}
@@ -203,12 +203,12 @@ export default function CheckinPage() {
                 value={ticketId}
                 onChange={(e) => setTicketId(e.target.value)}
                 disabled={loading || isScanning}
-                className="text-center h-14 text-lg font-mono rounded-xl bg-gray-50 focus-visible:ring-blue-500"
+                className="text-center h-14 text-lg font-mono rounded-xl bg-gray-50 dark:bg-slate-900 dark:border-slate-800 focus-visible:ring-blue-500 transition-colors"
               />
               <Button
                 type="submit"
                 disabled={loading || !ticketId.trim() || isScanning}
-                className="w-full h-14 text-lg font-bold rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-70"
+                className="w-full h-14 text-lg font-bold rounded-xl bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white disabled:opacity-70 transition-colors"
               >
                 {loading ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Validando...</> : 'Validar Ingresso'}
               </Button>
@@ -218,52 +218,52 @@ export default function CheckinPage() {
 
         {/* Card Responsivo e Dinâmico do Resultado */}
         {result.status && (
-          <Card className={`overflow-hidden border-2 animate-in slide-in-from-bottom-4 shadow-xl ${
-            result.status === 'success' ? 'bg-emerald-50 border-emerald-400' : 
-            result.status === 'warning' ? 'bg-yellow-50 border-yellow-400' : 
-            'bg-red-50 border-red-400'
+          <Card className={`overflow-hidden border-2 animate-in slide-in-from-bottom-4 shadow-xl transition-colors ${
+            result.status === 'success' ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-400 dark:border-emerald-900/50' : 
+            result.status === 'warning' ? 'bg-yellow-50 dark:bg-yellow-950/20 border-yellow-400 dark:border-yellow-900/50' : 
+            'bg-red-50 dark:bg-red-950/20 border-red-400 dark:border-red-900/50'
           }`}>
             <CardContent className="p-6 sm:p-8 flex flex-col items-center text-center">
               
-              <div className="flex items-center justify-center mb-4">
-                {result.status === 'success' && <CheckCircle2 className="w-16 h-16 text-emerald-600" />}
-                {result.status === 'error' && <XCircle className="w-16 h-16 text-red-600" />}
-                {result.status === 'warning' && <AlertTriangle className="w-16 h-16 text-yellow-600" />}
+              <div className="flex items-center justify-center mb-4 transition-colors">
+                {result.status === 'success' && <CheckCircle2 className="w-16 h-16 text-emerald-600 dark:text-emerald-500" />}
+                {result.status === 'error' && <XCircle className="w-16 h-16 text-red-600 dark:text-red-500" />}
+                {result.status === 'warning' && <AlertTriangle className="w-16 h-16 text-yellow-600 dark:text-yellow-500" />}
               </div>
               
-              <h2 className={`text-2xl font-black mb-6 ${
-                result.status === 'success' ? 'text-emerald-800' : 
-                result.status === 'warning' ? 'text-yellow-800' : 
-                'text-red-800'
+              <h2 className={`text-2xl font-black mb-6 transition-colors ${
+                result.status === 'success' ? 'text-emerald-800 dark:text-emerald-400' : 
+                result.status === 'warning' ? 'text-yellow-800 dark:text-yellow-400' : 
+                'text-red-800 dark:text-red-400'
               }`}>
                 {result.message}
               </h2>
 
-              {/* Card de dados do usuário */}
+              {/* Retorno de dados do usuário */}
               {result.userData && (
-                <div className="w-full bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 text-left mt-2">
-                  <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
-                    <ShieldAlert className={`w-4 h-4 ${result.status === 'success' ? 'text-emerald-600' : 'text-gray-400'}`} />
-                    <span className={`text-xs uppercase tracking-widest font-extrabold ${result.status === 'success' ? 'text-emerald-700' : 'text-gray-500'}`}>
+                <div className="w-full bg-white dark:bg-slate-900/60 rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 dark:border-border text-left mt-2 transition-colors">
+                  <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100 dark:border-slate-800 transition-colors">
+                    <ShieldAlert className={`w-4 h-4 transition-colors ${result.status === 'success' ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`} />
+                    <span className={`text-xs uppercase tracking-widest font-extrabold transition-colors ${result.status === 'success' ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}`}>
                       Conferência de Identidade
                     </span>
                   </div>
                   
                   <div className="space-y-4">
                     <div>
-                      <p className="text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Participante</p>
-                      <p className="text-xl font-bold text-gray-900 leading-none">{result.userData.name}</p>
-                      <p className="text-sm text-gray-500 mt-1">{result.userData.email}</p>
+                      <p className="text-[10px] sm:text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1 transition-colors">Participante</p>
+                      <p className="text-xl font-bold text-gray-900 dark:text-gray-100 leading-none transition-colors">{result.userData.name}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 transition-colors">{result.userData.email}</p>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100 dark:border-slate-800 transition-colors">
                       <div>
-                        <p className="text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Ocupação</p>
-                        <p className="text-sm font-bold text-blue-600">{result.userData.occupation}</p>
+                        <p className="text-[10px] sm:text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1 transition-colors">Ocupação</p>
+                        <p className="text-sm font-bold text-blue-600 dark:text-blue-400 transition-colors">{result.userData.occupation}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Evento</p>
-                        <p className="text-sm font-bold text-gray-700 line-clamp-2">{result.userData.event}</p>
+                        <p className="text-[10px] sm:text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1 transition-colors">Evento</p>
+                        <p className="text-sm font-bold text-gray-700 dark:text-gray-300 line-clamp-2 transition-colors">{result.userData.event}</p>
                       </div>
                     </div>
                   </div>
