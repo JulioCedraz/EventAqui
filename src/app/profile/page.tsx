@@ -290,23 +290,23 @@ function ProfileContent() {
   const renderRoleBadge = () => {
     if (!role || role === 'customer') return null;
     const badges = {
-      admin: { label: 'Administrador', classes: 'bg-blue-100 text-blue-700' },
-      producer: { label: 'Produtor', classes: 'bg-purple-100 text-purple-700' },
-      agent: { label: 'Agente', classes: 'bg-emerald-100 text-emerald-700' },
+      admin: { label: 'Administrador', classes: 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400' },
+      producer: { label: 'Produtor', classes: 'bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400' },
+      agent: { label: 'Agente', classes: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' },
     };
     const config = badges[role];
-    return config ? <Badge className={`ml-3 align-middle text-sm px-3 py-0.5 border-transparent ${config.classes}`}>{config.label}</Badge> : null;
+    return config ? <Badge className={`ml-3 align-middle text-sm px-3 py-0.5 border-transparent transition-colors ${config.classes}`}>{config.label}</Badge> : null;
   };
 
   if (isLoading) return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center space-y-4">
-      <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
-      <p className="text-gray-500 font-medium">Carregando...</p>
+    <div className="min-h-screen bg-gray-50 dark:bg-background flex flex-col items-center justify-center space-y-4 transition-colors">
+      <Loader2 className="w-10 h-10 animate-spin text-blue-600 dark:text-blue-500" />
+      <p className="text-gray-500 dark:text-gray-400 font-medium transition-colors">Carregando...</p>
     </div>
   );
 
   return (
-    <main className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-gray-50 dark:bg-background py-10 px-4 sm:px-6 lg:px-8 transition-colors">
       <SmartModal dialog={dialog} onClose={() => setDialog(null)} isProcessing={isSaving} />
 
       <div className="max-w-3xl mx-auto space-y-8">
@@ -315,15 +315,15 @@ function ProfileContent() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-3">
-              {isInvite ? <Sparkles className="w-10 h-10 text-amber-500" /> : <UserCircle className="w-10 h-10 text-blue-600" />}
-              <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center flex-wrap gap-2">
+              {isInvite ? <Sparkles className="w-10 h-10 text-amber-500 dark:text-amber-400 transition-colors" /> : <UserCircle className="w-10 h-10 text-blue-600 dark:text-blue-500 transition-colors" />}
+              <h1 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight flex items-center flex-wrap gap-2 transition-colors">
                 {isInvite ? 'Concluir Cadastro' : 'Meu Perfil'}
                 {!isInvite && renderRoleBadge()}
               </h1>
             </div>
           </div>
           {!isInvite && (
-            <Button variant="ghost" onClick={() => router.back()} className="text-gray-600 hover:text-blue-600 font-bold self-start sm:self-auto">
+            <Button variant="ghost" onClick={() => router.back()} className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 font-bold self-start sm:self-auto transition-colors">
               <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
             </Button>
           )}
@@ -333,8 +333,8 @@ function ProfileContent() {
           
           {/* CONTEINER 1: DADOS PESSOAIS */}
           <div className="space-y-4">
-            <h2 className="text-xl font-bold text-gray-800 ml-1">Dados Pessoais</h2>
-            <Card className="shadow-lg border-gray-100 rounded-3xl overflow-hidden">
+            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 ml-1 transition-colors">Dados Pessoais</h2>
+            <Card className="shadow-lg border-gray-100 dark:border-border dark:bg-card rounded-3xl overflow-hidden transition-colors">
               <CardContent className="p-6 sm:p-8">
                 <PersonalDataFields
                   firstName={firstName} setFirstName={setFirstName}
@@ -361,20 +361,20 @@ function ProfileContent() {
 
           {/* CONTEINER 2: SEGURANÇA */}
           <div className="space-y-4">
-            <h2 className="text-xl font-bold text-gray-800 ml-1">Segurança e Acesso</h2>
-            <Card className="shadow-lg border-gray-100 rounded-3xl overflow-hidden min-h-45">
+            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 ml-1 transition-colors">Segurança e Acesso</h2>
+            <Card className="shadow-lg border-gray-100 dark:border-border dark:bg-card rounded-3xl overflow-hidden min-h-45 transition-colors">
               <CardContent className="p-6 sm:p-8">
                 
                 {!isSecurityUnlocked ? (
                   // CREDENCIAIS SEGURAS
                   <div key="locked" className="flex flex-col items-center justify-center space-y-5 animate-in fade-in zoom-in-95 duration-500 py-6">
-                    <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center">
-                      <LockKeyhole className="w-8 h-8 text-blue-500" />
+                    <div className="w-16 h-16 bg-blue-50 dark:bg-blue-500/10 rounded-full flex items-center justify-center transition-colors">
+                      <LockKeyhole className="w-8 h-8 text-blue-500 dark:text-blue-400 transition-colors" />
                     </div>
                     <div className="text-center space-y-1">
-                      <h3 className="font-bold text-gray-900 text-lg">Credenciais de acesso</h3>
-                      <p className="text-sm text-gray-500 max-w-sm mx-auto">
-                        Para visualizar ou alterar seu e-mail e senha, precisamos confirmar sua identidade.
+                      <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg transition-colors">Credenciais de acesso</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto transition-colors">
+                        Para visualizar ou alterar seu e-mail e palavra-passe, precisamos confirmar sua identidade.
                       </p>
                     </div>
                     
@@ -385,12 +385,12 @@ function ProfileContent() {
                           placeholder="Digite sua senha atual"
                           value={currentPassword}
                           onChange={(e) => setCurrentPassword(e.target.value)}
-                          className="h-12 rounded-xl border-gray-200 text-center text-lg tracking-wide pr-12"
+                          className="h-12 rounded-xl border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-gray-100 text-center text-lg tracking-wide pr-12 transition-colors"
                         />
                         <button
                           type="button"
                           onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none transition-colors"
                         >
                           {showCurrentPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                         </button>
@@ -400,7 +400,7 @@ function ProfileContent() {
                         type="button" 
                         onClick={handleVerifyCurrentPassword}
                         disabled={!currentPassword || isVerifyingPassword}
-                        className="w-full h-12 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white"
+                        className="w-full h-12 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white transition-colors"
                       >
                         {isVerifyingPassword ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Unlock className="w-4 h-4 mr-2"/> Desbloquear</>}
                       </Button>
@@ -409,29 +409,29 @@ function ProfileContent() {
                 ) : (
                   // CREDENCIAIS ABERTAS AO USUÁRIO
                   <div key="unlocked" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="flex items-center gap-2 mb-4 pb-4 border-b border-gray-100">
-                      <Unlock className="w-5 h-5 text-emerald-500" />
-                      <span className="font-semibold text-emerald-700 text-sm">Suas credenciais</span>
+                    <div className="flex items-center gap-2 mb-4 pb-4 border-b border-gray-100 dark:border-slate-800 transition-colors">
+                      <Unlock className="w-5 h-5 text-emerald-500 dark:text-emerald-400 transition-colors" />
+                      <span className="font-semibold text-emerald-700 dark:text-emerald-400 text-sm transition-colors">Suas credenciais</span>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="email" className="flex items-center gap-2 text-gray-700 font-semibold">
-                        <Mail className="w-4 h-4 text-gray-400" /> E-mail
+                      <Label htmlFor="email" className="flex items-center gap-2 text-gray-700 dark:text-gray-300 font-semibold transition-colors">
+                        <Mail className="w-4 h-4 text-gray-400 dark:text-gray-500" /> E-mail
                       </Label>
                       <Input
                         id="email" type="email" required
                         value={email} 
                         onChange={(e) => setEmail(e.target.value)}
                         onBlur={handleEmailBlur}
-                        className={`h-12 rounded-xl ${emailError ? 'border-red-300 focus-visible:ring-red-500' : 'border-blue-200 focus-visible:ring-blue-500'}`}
+                        className={`h-12 rounded-xl bg-white dark:bg-slate-900 dark:text-gray-100 transition-colors ${emailError ? 'border-red-300 dark:border-red-500/50 focus-visible:ring-red-500 dark:focus-visible:ring-red-400' : 'border-blue-200 dark:border-slate-700 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400'}`}
                       />
-                      {emailError && <p className="text-xs text-red-500 font-medium mt-1">{emailError}</p>}
+                      {emailError && <p className="text-xs text-red-500 dark:text-red-400 font-medium mt-1 transition-colors">{emailError}</p>}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                       <div className="space-y-2">
-                        <Label htmlFor="newPassword" className="flex items-center gap-2">
-                           <KeyRound className="w-4 h-4 text-gray-400"/>
+                        <Label htmlFor="newPassword" className="flex items-center gap-2 text-gray-700 dark:text-gray-300 transition-colors">
+                           <KeyRound className="w-4 h-4 text-gray-400 dark:text-gray-500"/>
                            {isInvite ? 'Defina sua Senha' : 'Nova Senha'}
                         </Label>
                         <div className="relative">
@@ -439,44 +439,44 @@ function ProfileContent() {
                             id="newPassword" type={showNewPassword ? "text" : "password"}
                             placeholder={isInvite ? "Mínimo 6 caracteres" : "Mínimo de 6 caracteres"}
                             value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
-                            className="h-12 rounded-xl border-gray-200 pr-12"
+                            className="h-12 rounded-xl border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-gray-100 pr-12 transition-colors"
                           />
                           <button
                             type="button"
                             onClick={() => setShowNewPassword(!showNewPassword)}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none transition-colors"
                           >
                             {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                           </button>
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
+                        <Label htmlFor="confirmPassword" className="text-gray-700 dark:text-gray-300 transition-colors">Confirmar Nova Senha</Label>
                         <div className="relative">
                           <Input
                             id="confirmPassword" type={showConfirmPassword ? "text" : "password"}
                             placeholder="Repita a nova senha"
                             value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)}
-                            className={`h-12 rounded-xl border-gray-200 pr-12 ${confirmNewPassword && newPassword !== confirmNewPassword ? 'border-red-300' : ''}`}
+                            className={`h-12 rounded-xl pr-12 bg-white dark:bg-slate-900 dark:text-gray-100 transition-colors ${confirmNewPassword && newPassword !== confirmNewPassword ? 'border-red-300 dark:border-red-500/50' : 'border-gray-200 dark:border-slate-700'}`}
                           />
                           <button
                             type="button"
                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none transition-colors"
                           >
                             {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                           </button>
                         </div>
                         {confirmNewPassword && newPassword !== confirmNewPassword && (
-                          <p className="text-xs text-red-500 font-medium mt-1">As senhas não coincidem.</p>
+                          <p className="text-xs text-red-500 dark:text-red-400 font-medium mt-1 transition-colors">As senhas não coincidem.</p>
                         )}
                       </div>
                     </div>
                     
                     {email !== originalEmail && !emailError && (
-                      <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl flex gap-3 animate-in fade-in">
-                        <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
-                        <p className="text-xs text-amber-700">
+                      <div className="p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 rounded-xl flex gap-3 animate-in fade-in transition-colors">
+                        <AlertCircle className="w-5 h-5 text-amber-500 dark:text-amber-400 shrink-0 transition-colors" />
+                        <p className="text-xs text-amber-700 dark:text-amber-400 transition-colors">
                           Ao salvar as alterações, a mudança de e-mail exigirá confirmação de segurança dupla na sua caixa de entrada.
                         </p>
                       </div>
@@ -492,7 +492,7 @@ function ProfileContent() {
             <Button
               type="button" variant="ghost"
               onClick={() => router.back()}
-              className="w-full sm:w-auto h-12 text-red-500 hover:text-red-600 hover:bg-red-50 font-bold rounded-xl"
+              className="w-full sm:w-auto h-12 text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 font-bold rounded-xl transition-colors"
             >
               <X className="w-4 h-4 mr-2" /> Descartar e Voltar
             </Button>
@@ -501,7 +501,7 @@ function ProfileContent() {
               type="submit"
               disabled={isSaving || !hasChanges}
               className={`w-full sm:w-auto h-12 px-10 font-extrabold text-white rounded-xl shadow-md transition-all ${
-                isInvite ? 'bg-amber-600 hover:bg-amber-700' : 'bg-blue-600 hover:bg-blue-700'
+                isInvite ? 'bg-amber-600 hover:bg-amber-700 dark:bg-amber-600 dark:hover:bg-amber-700' : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700'
               } disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed`}
             >
               {isSaving ? (
@@ -521,7 +521,7 @@ function ProfileContent() {
 
 export default function ProfilePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-blue-600" /></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 dark:bg-background flex items-center justify-center transition-colors"><Loader2 className="w-10 h-10 animate-spin text-blue-600 dark:text-blue-500" /></div>}>
       <ProfileContent />
     </Suspense>
   );
