@@ -86,7 +86,7 @@ export default function AdminHub() {
       btnClass: "bg-white text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/20 dark:text-emerald-400 dark:hover:bg-emerald-500/30 shadow-sm"
     },
     {
-      title: "Portaria (Scanner)",
+      title: "Check-in (Scanner)",
       description: "Valide ingressos em tempo real via QR Code.",
       icon: <QrCode className="w-6 h-6 text-purple-600 dark:text-purple-400 transition-colors" />,
       link: "/admin/checkin",
