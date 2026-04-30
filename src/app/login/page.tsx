@@ -358,7 +358,7 @@ export default function LoginPage() {
             <Button
               type="submit"
               disabled={isLoading || (!isLogin && cpfStatus === 'invalid')}
-              className="w-full py-6 rounded-xl text-base font-bold bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 shadow-md shadow-blue-600/20 dark:shadow-none transition-all active:scale-[0.98] mt-4"
+              className="w-full py-6 rounded-xl text-base text-white font-bold bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 shadow-md shadow-blue-600/20 dark:shadow-none transition-all active:scale-[0.98] mt-4"
             >
               {isLoading ? (
                 <>
