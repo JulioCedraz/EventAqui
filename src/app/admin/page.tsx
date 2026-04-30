@@ -74,7 +74,7 @@ export default function AdminHub() {
       link: "/admin/events",
       buttonText: "Gerenciar",
       color: "bg-blue-50 dark:bg-blue-950/30",
-      btnClass: "bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20"
+      btnClass: "bg-white text-blue-700 hover:bg-blue-100 dark:bg-blue-500/20 dark:text-blue-400 dark:hover:bg-blue-500/30 shadow-sm"
     },
     {
       title: "Vendas e Pedidos",
@@ -83,7 +83,7 @@ export default function AdminHub() {
       link: "/admin/orders",
       buttonText: "Visualizar",
       color: "bg-emerald-50 dark:bg-emerald-950/30",
-      btnClass: "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20"
+      btnClass: "bg-white text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/20 dark:text-emerald-400 dark:hover:bg-emerald-500/30 shadow-sm"
     },
     {
       title: "Portaria (Scanner)",
@@ -92,7 +92,7 @@ export default function AdminHub() {
       link: "/admin/checkin",
       buttonText: "Acessar",
       color: "bg-purple-50 dark:bg-purple-950/30",
-      btnClass: "bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-500/10 dark:text-purple-400 dark:hover:bg-purple-500/20"
+      btnClass: "bg-white text-purple-700 hover:bg-purple-100 dark:bg-purple-500/20 dark:text-purple-400 dark:hover:bg-purple-500/30 shadow-sm"
     },
     {
       title: "Produtores",
@@ -101,7 +101,7 @@ export default function AdminHub() {
       link: "/admin/producers",
       buttonText: "Gerenciar",
       color: "bg-indigo-50 dark:bg-indigo-950/30",
-      btnClass: "bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:hover:bg-indigo-500/20"
+      btnClass: "bg-white text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-500/20 dark:text-indigo-400 dark:hover:bg-indigo-500/30 shadow-sm"
     },
     {
       title: "Equipe de Portaria",
@@ -110,7 +110,7 @@ export default function AdminHub() {
       link: "/admin/agents",
       buttonText: "Configurar",
       color: "bg-amber-50 dark:bg-amber-950/30",
-      btnClass: "bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:hover:bg-amber-500/20"
+      btnClass: "bg-white text-amber-700 hover:bg-amber-100 dark:bg-amber-500/20 dark:text-amber-400 dark:hover:bg-amber-500/30 shadow-sm"
     }
   ];
 
@@ -128,8 +128,8 @@ export default function AdminHub() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {menuActions.map((action, index) => (
-            <Card key={index} className="border-0 dark:border dark:border-border dark:hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group overflow-hidden rounded-3xl flex flex-col bg-transparent">
-              <CardHeader className={`${action.color} pb-8 grow transition-colors`}>
+            <Card key={index} className={`border-0 dark:border dark:border-border dark:hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group overflow-hidden rounded-3xl flex flex-col ${action.color}`}>
+              <CardHeader className="pb-4 grow transition-colors">
                 <div className="w-12 h-12 bg-white dark:bg-card rounded-2xl flex items-center justify-center shadow-sm mb-4 group-hover:scale-110 transition-all">
                   {action.icon}
                 </div>
@@ -138,10 +138,10 @@ export default function AdminHub() {
                   {action.description}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="pt-6 bg-white dark:bg-card mt-auto transition-colors">
+              <CardContent className="pt-0 pb-6 mt-auto transition-colors">
                 <Link href={action.link} className="block w-full">
                   <Button 
-                    className={`w-full h-11 rounded-xl font-bold border-transparent cursor-pointer shadow-none transition-colors ${action.btnClass}`}
+                    className={`w-full h-11 rounded-xl font-bold border-transparent cursor-pointer transition-colors ${action.btnClass}`}
                   >
                     {action.buttonText}
                     <ChevronRight className="w-4 h-4 ml-2 opacity-70" />
