@@ -138,20 +138,20 @@ export default function OrdersPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'approved':
-        return <Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-100"><CheckCircle2 className="w-3 h-3 mr-1" /> Pago</Badge>;
+        return <Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20 dark:hover:bg-emerald-500/20 transition-colors"><CheckCircle2 className="w-3 h-3 mr-1" /> Pago</Badge>;
       case 'pending':
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-300"><Clock className="w-3 h-3 mr-1" /> Pendente</Badge>;
+        return <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-300 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20 transition-colors"><Clock className="w-3 h-3 mr-1" /> Pendente</Badge>;
       case 'cancelled':
-        return <Badge variant="destructive" className="bg-red-50 text-red-700 border-red-200"><XCircle className="w-3 h-3 mr-1" /> Cancelado</Badge>;
+        return <Badge variant="destructive" className="bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20 transition-colors"><XCircle className="w-3 h-3 mr-1" /> Cancelado</Badge>;
       default:
-        return <Badge variant="secondary"><AlertCircle className="w-3 h-3 mr-1" /> Desconhecido</Badge>;
+        return <Badge variant="secondary" className="transition-colors"><AlertCircle className="w-3 h-3 mr-1" /> Desconhecido</Badge>;
     }
   };
 
   if (isCheckingAuth || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background transition-colors">
+        <Loader2 className="w-10 h-10 animate-spin text-blue-600 dark:text-blue-500" />
       </div>
     );
   }
@@ -159,33 +159,33 @@ export default function OrdersPage() {
   if (!authorized) return null;
 
   return (
-    <main className="bg-gray-50 py-10 px-4 sm:px-6 lg:px-8 min-h-screen flex flex-col items-center">
+    <main className="bg-gray-50 dark:bg-background py-10 px-4 sm:px-6 lg:px-8 min-h-screen flex flex-col items-center transition-colors">
       <div className="w-full max-w-6xl space-y-8">
         
         {/* CABEÇALHO */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1 pb-1">
           <div>
-            <Link href="/admin" className="text-sm font-medium text-muted-foreground hover:text-blue-600 flex items-center transition-colors w-fit mb-2">
+            <Link href="/admin" className="text-sm font-medium text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 flex items-center transition-colors w-fit mb-2">
               <ArrowLeft className="w-4 h-4 mr-1" /> Voltar ao Painel
             </Link>
-            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Vendas e Pedidos</h1>
-            <p className="text-gray-500">Acompanhe a visão operacional das transações em tempo real.</p>
+            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight transition-colors">Vendas e Pedidos</h1>
+            <p className="text-gray-500 dark:text-gray-400 transition-colors">Acompanhe a visão operacional das transações em tempo real.</p>
           </div>
 
           {/* FILTRO DE EVENTOS */}
           <div className="relative flex items-center w-full sm:w-72">
-            <Filter className="w-4 h-4 absolute left-3 text-gray-400" />
+            <Filter className="w-4 h-4 absolute left-3 text-gray-400 dark:text-gray-500 transition-colors" />
             <select
               value={selectedEventId}
               onChange={(e) => setSelectedEventId(e.target.value)}
-              className="w-full h-11 pl-9 pr-10 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 shadow-sm appearance-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all cursor-pointer truncate"
+              className="w-full h-11 pl-9 pr-10 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold text-gray-700 dark:text-gray-300 shadow-sm appearance-none focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 focus:outline-none transition-all cursor-pointer truncate"
             >
               <option value="all">Todos os Eventos</option>
               {events.map(evt => (
                 <option key={evt.id} value={evt.id}>{evt.title}</option>
               ))}
             </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 dark:text-gray-400 transition-colors">
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
             </div>
           </div>
@@ -193,37 +193,37 @@ export default function OrdersPage() {
 
         {/* CARDS DE KPI */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-          <Card className="shadow-sm border-gray-100 rounded-2xl overflow-hidden relative">
-            <div className="absolute top-0 right-0 p-4 opacity-10"><TrendingUp className="w-24 h-24 text-emerald-600" /></div>
+          <Card className="shadow-sm border-0 dark:border dark:border-border rounded-2xl overflow-hidden relative transition-colors">
+            <div className="absolute top-0 right-0 p-4 opacity-10 dark:opacity-20 transition-opacity"><TrendingUp className="w-24 h-24 text-emerald-600 dark:text-emerald-500" /></div>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-bold text-gray-500 uppercase tracking-wider">Receita Bruta (Paga)</CardTitle>
+              <CardTitle className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors">Receita Bruta (Paga)</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-black text-emerald-600 tracking-tight">
+              <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight transition-colors">
                 R$ {kpis.revenue.toFixed(2).replace('.', ',')}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="shadow-sm border-gray-100 rounded-2xl overflow-hidden relative">
-            <div className="absolute top-0 right-0 p-4 opacity-10"><Ticket className="w-24 h-24 text-blue-600" /></div>
+          <Card className="shadow-sm border-0 dark:border dark:border-border rounded-2xl overflow-hidden relative transition-colors">
+            <div className="absolute top-0 right-0 p-4 opacity-10 dark:opacity-20 transition-opacity"><Ticket className="w-24 h-24 text-blue-600 dark:text-blue-500" /></div>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-bold text-gray-500 uppercase tracking-wider">Ingressos Vendidos</CardTitle>
+              <CardTitle className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors">Ingressos Vendidos</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-black text-blue-600 tracking-tight">
-                {kpis.sold} <span className="text-lg text-gray-400 font-medium tracking-normal">un.</span>
+              <div className="text-3xl font-black text-blue-600 dark:text-blue-400 tracking-tight transition-colors">
+                {kpis.sold} <span className="text-lg text-gray-400 dark:text-gray-500 font-medium tracking-normal transition-colors">un.</span>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="shadow-sm border-gray-100 rounded-2xl overflow-hidden relative">
-            <div className="absolute top-0 right-0 p-4 opacity-10"><Clock className="w-24 h-24 text-yellow-600" /></div>
+          <Card className="shadow-sm border-0 dark:border dark:border-border rounded-2xl overflow-hidden relative transition-colors">
+            <div className="absolute top-0 right-0 p-4 opacity-10 dark:opacity-20 transition-opacity"><Clock className="w-24 h-24 text-yellow-600 dark:text-yellow-500" /></div>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-bold text-gray-500 uppercase tracking-wider">Aguardando PIX</CardTitle>
+              <CardTitle className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors">Aguardando PIX</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-black text-yellow-600 tracking-tight">
+              <div className="text-3xl font-black text-yellow-600 dark:text-yellow-400 tracking-tight transition-colors">
                 R$ {kpis.pendingAmount.toFixed(2).replace('.', ',')}
               </div>
             </CardContent>
@@ -231,12 +231,12 @@ export default function OrdersPage() {
         </div>
 
         {/* TABELA DE PEDIDOS */}
-        <Card className="shadow-sm border-gray-100 rounded-3xl overflow-hidden">
-          <CardHeader className="bg-white border-b border-gray-100 pb-4">
-            <CardTitle className="text-lg font-bold flex items-center gap-2">
-              <Search className="w-5 h-5 text-gray-400" />
+        <Card className="shadow-sm border-0 dark:border dark:border-border rounded-3xl overflow-hidden transition-colors">
+          <CardHeader className="bg-white dark:bg-card border-b border-gray-100 dark:border-border pb-4 transition-colors">
+            <CardTitle className="text-lg font-bold flex items-center gap-2 transition-colors">
+              <Search className="w-5 h-5 text-gray-400 dark:text-gray-500" />
               Histórico de Transações
-              <Badge variant="secondary" className="bg-gray-100 text-gray-600 font-bold ml-2">
+              <Badge variant="secondary" className="bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-300 font-bold ml-2 transition-colors">
                 {filteredOrders.length}
               </Badge>
             </CardTitle>
@@ -244,30 +244,30 @@ export default function OrdersPage() {
           
           <CardContent className="p-0">
             {filteredOrders.length === 0 ? (
-              <div className="p-12 text-center text-muted-foreground flex flex-col items-center gap-3 bg-gray-50/50">
-                <Ticket className="w-12 h-12 text-gray-300" />
+              <div className="p-12 text-center text-muted-foreground flex flex-col items-center gap-3 bg-gray-50/50 dark:bg-card transition-colors">
+                <Ticket className="w-12 h-12 text-gray-300 dark:text-slate-700 transition-colors" />
                 <p>Nenhuma transação encontrada para este filtro.</p>
               </div>
             ) : (
               <>
                 {/* VERSÃO MOBILE (Cards empilhados) */}
-                <div className="md:hidden divide-y divide-gray-100">
+                <div className="md:hidden divide-y divide-gray-100 dark:divide-slate-800 transition-colors">
                   {filteredOrders.map((order) => (
-                    <div key={order.id} className="p-4 sm:p-5 bg-white space-y-3">
+                    <div key={order.id} className="p-4 sm:p-5 bg-white dark:bg-transparent space-y-3 transition-colors">
                       <div className="flex justify-between items-start">
                         <div>
-                          <p className="font-bold text-gray-900 truncate max-w-50">{order.buyer_name}</p>
-                          <p className="text-xs text-gray-500 truncate max-w-50">{order.buyer_email}</p>
+                          <p className="font-bold text-gray-900 dark:text-gray-100 truncate max-w-50 transition-colors">{order.buyer_name}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-50 transition-colors">{order.buyer_email}</p>
                         </div>
                         {getStatusBadge(order.payment_status)}
                       </div>
-                      <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 text-sm">
-                        <p className="font-semibold text-gray-700 truncate">{order.events?.title}</p>
+                      <div className="bg-gray-50 dark:bg-slate-800/50 p-3 rounded-lg border border-gray-100 dark:border-slate-700/50 text-sm transition-colors">
+                        <p className="font-semibold text-gray-700 dark:text-gray-300 truncate transition-colors">{order.events?.title}</p>
                         <div className="flex justify-between items-center mt-2">
-                          <span className="text-gray-500 text-xs">
+                          <span className="text-gray-500 dark:text-gray-400 text-xs transition-colors">
                             {new Date(order.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                           </span>
-                          <span className="font-black text-gray-900">
+                          <span className="font-black text-gray-900 dark:text-gray-100 transition-colors">
                             {order.quantity}x R$ {(order.events?.price || 0).toFixed(2).replace('.', ',')}
                           </span>
                         </div>
@@ -278,8 +278,8 @@ export default function OrdersPage() {
 
                 {/* VERSÃO DESKTOP (Tabela) */}
                 <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full text-left text-sm text-gray-600">
-                    <thead className="bg-gray-50/50 text-gray-500 text-xs uppercase font-bold border-b border-gray-100">
+                  <table className="w-full text-left text-sm text-gray-600 dark:text-gray-300">
+                    <thead className="bg-gray-50/50 dark:bg-slate-900/50 text-gray-500 dark:text-gray-400 text-xs uppercase font-bold border-b border-gray-100 dark:border-slate-800 transition-colors">
                       <tr>
                         <th className="px-6 py-4">Data</th>
                         <th className="px-6 py-4">Comprador</th>
@@ -289,23 +289,23 @@ export default function OrdersPage() {
                         <th className="px-6 py-4">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100 bg-white">
+                    <tbody className="divide-y divide-gray-100 dark:divide-slate-800 bg-white dark:bg-card transition-colors">
                       {filteredOrders.map((order) => (
-                        <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                        <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400 transition-colors">
                             {new Date(order.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} <span className="text-xs ml-1">{new Date(order.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <p className="font-bold text-gray-900">{order.buyer_name}</p>
-                            <p className="text-xs text-gray-500">{order.buyer_email}</p>
+                            <p className="font-bold text-gray-900 dark:text-gray-100 transition-colors">{order.buyer_name}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">{order.buyer_email}</p>
                           </td>
                           <td className="px-6 py-4">
-                            <p className="font-medium text-gray-700 line-clamp-1" title={order.events?.title}>{order.events?.title}</p>
+                            <p className="font-medium text-gray-700 dark:text-gray-300 line-clamp-1 transition-colors" title={order.events?.title}>{order.events?.title}</p>
                           </td>
-                          <td className="px-6 py-4 text-center font-bold text-gray-900">
+                          <td className="px-6 py-4 text-center font-bold text-gray-900 dark:text-gray-100 transition-colors">
                             {order.quantity}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap font-black text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap font-black text-gray-900 dark:text-gray-100 transition-colors">
                             R$ {((order.events?.price || 0) * (order.quantity || 1)).toFixed(2).replace('.', ',')}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">

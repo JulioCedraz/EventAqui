@@ -6,6 +6,7 @@ import Footer from '../components/Footer';
 import { Toaster } from "@/components/ui/sonner";
 import EmailConfirmationHandler from '@/components/EmailConfirmationHandler';
 import ReactivationGuard from '@/components/ReactivationGuard';
+import { ThemeProvider } from '../components/ThemeProvider';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -23,20 +24,29 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR">
-      <body className={`${inter.variable} font-sans antialiased bg-gray-50 min-h-screen flex flex-col`}>
-        <ReactivationGuard />
-        <Header />
+    <html lang="pt-BR" suppressHydrationWarning>
+      <body className={`${inter.variable} font-sans antialiased bg-background text-foreground min-h-screen flex flex-col`}>
         
-        <main className="grow flex flex-col">
-          {children}
-        </main>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <ReactivationGuard />
+          <Header />
+          
+          <main className="grow flex flex-col">
+            {children}
+          </main>
 
-        <Footer />
+          <Footer />
+          
+          <Toaster richColors position="top-right" />
+
+          <EmailConfirmationHandler />
+        </ThemeProvider>
         
-        <Toaster richColors position="top-right" />
-
-        <EmailConfirmationHandler />
       </body>
     </html>
   );

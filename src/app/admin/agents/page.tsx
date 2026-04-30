@@ -133,7 +133,7 @@ export default function ManageAgentsPage() {
       isOpen: true,
       type: 'confirm',
       title: 'Revogar Acesso',
-      message: <span>Deseja remover <b>{displayIdentifier}</b> da sua equipe de portaria?</span>,
+      message: <span>Deseja remover <b className="dark:text-gray-100">{displayIdentifier}</b> da sua equipe de portaria?</span>,
       confirmText: 'Revogar Acesso',
       onConfirm: () => executeRevoke(agent.id)
     });
@@ -175,8 +175,8 @@ export default function ManageAgentsPage() {
 
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background transition-colors">
+        <Loader2 className="w-10 h-10 animate-spin text-blue-600 dark:text-blue-500" />
       </div>
     );
   }
@@ -184,24 +184,24 @@ export default function ManageAgentsPage() {
   if (!authorized) return null;
 
   return (
-    <main className="bg-gray-50 py-10 px-4 sm:px-6 lg:px-8 grow flex flex-col items-center min-h-screen">
+    <main className="bg-gray-50 dark:bg-background py-10 px-4 sm:px-6 lg:px-8 grow flex flex-col items-center min-h-screen transition-colors">
       <SmartModal dialog={dialog} onClose={() => setDialog(null)} isProcessing={isModalProcessing} />
 
       <div className="w-full max-w-4xl space-y-8">
         <div className="pt-1 pb-1">
-          <Link href="/admin" className="text-sm font-medium text-muted-foreground hover:text-blue-600 flex items-center transition-colors w-fit mb-4">
+          <Link href="/admin" className="text-sm font-medium text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 flex items-center transition-colors w-fit mb-4">
             <ArrowLeft className="w-4 h-4 mr-1" /> Voltar ao Painel
           </Link>
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Equipe de Portaria</h1>
-          <p className="text-gray-500 mt-1">Gerencie os agentes autorizados a realizar check-in nos seus eventos.</p>
+          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight transition-colors">Equipe de Portaria</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1 transition-colors">Gerencie os agentes autorizados a realizar check-in nos seus eventos.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-1">
-            <Card className="shadow-md border-0 rounded-3xl overflow-hidden bg-white">
+            <Card className="shadow-md border-0 dark:border dark:border-border rounded-3xl overflow-hidden transition-colors">
               <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-bold flex items-center gap-2">
-                  <UserPlus className="w-5 h-5 text-amber-500" /> Novo Agente
+                <CardTitle className="text-lg font-bold flex items-center gap-2 transition-colors">
+                  <UserPlus className="w-5 h-5 text-amber-500 dark:text-amber-400" /> Novo Agente
                 </CardTitle>
                 <CardDescription>Envie um convite para um novo membro da sua equipe.</CardDescription>
               </CardHeader>
@@ -210,9 +210,9 @@ export default function ManageAgentsPage() {
                   <Input 
                     type="email" required value={newEmail} 
                     onChange={(e) => setNewEmail(e.target.value)} 
-                    placeholder="email@agente.com" className="h-12 rounded-xl"
+                    placeholder="email@agente.com" className="h-12 rounded-xl transition-colors"
                   />
-                  <Button type="submit" disabled={isAdding} className="w-full h-12 rounded-xl font-bold bg-amber-600 hover:bg-amber-700 shadow-md shadow-amber-600/20 text-white">
+                  <Button type="submit" disabled={isAdding} className="w-full h-12 rounded-xl font-bold bg-amber-600 hover:bg-amber-700 dark:bg-amber-600 dark:hover:bg-amber-700 shadow-md shadow-amber-600/20 text-white transition-colors">
                     {isAdding ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Convidar Agente'}
                   </Button>
                 </form>
@@ -221,44 +221,44 @@ export default function ManageAgentsPage() {
           </div>
 
           <div className="md:col-span-2">
-            <Card className="shadow-md border-0 rounded-3xl overflow-hidden bg-white h-full">
-              <CardHeader className="border-b border-gray-100 pb-4">
-                <CardTitle className="text-lg font-bold flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-amber-500" /> Agentes Ativos
-                  <Badge variant="secondary" className="bg-gray-100 text-gray-700 ml-2">{agents.length}</Badge>
+            <Card className="shadow-md border-0 dark:border dark:border-border rounded-3xl overflow-hidden h-full transition-colors">
+              <CardHeader className="border-b border-gray-100 dark:border-border pb-4 transition-colors">
+                <CardTitle className="text-lg font-bold flex items-center gap-2 transition-colors">
+                  <ShieldCheck className="w-5 h-5 text-amber-500 dark:text-amber-400" /> Agentes Ativos
+                  <Badge variant="secondary" className="bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 ml-2 transition-colors">{agents.length}</Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 {agents.length === 0 ? (
                   <div className="p-10 text-center text-muted-foreground flex flex-col items-center gap-3">
-                    <ShieldCheck className="w-12 h-12 text-gray-200" />
+                    <ShieldCheck className="w-12 h-12 text-gray-200 dark:text-slate-700 transition-colors" />
                     <p>Nenhum agente vinculado à sua conta.</p>
                   </div>
                 ) : (
-                  <ul className="divide-y divide-gray-100">
+                  <ul className="divide-y divide-gray-100 dark:divide-border transition-colors">
                     {agents.map((agent) => (
-                      <li key={agent.id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors">
+                      <li key={agent.id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors">
                         <div className="flex items-center gap-3 overflow-hidden">
-                          <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                          <div className="w-10 h-10 rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 transition-colors">
                             <Mail className="w-5 h-5" />
                           </div>
                           <div className="truncate flex flex-col justify-center">
-                            <p className="font-bold text-gray-900 truncate">{agent.email || 'E-mail indisponível'}</p>
+                            <p className="font-bold text-gray-900 dark:text-gray-100 truncate transition-colors">{agent.email || 'E-mail indisponível'}</p>
                             
                             {(
-                              <p className="text-sm text-gray-600 truncate mt-0.5">
+                              <p className="text-sm text-gray-600 dark:text-gray-400 truncate mt-0.5 transition-colors">
                                 {`${agent.first_name || ''} ${agent.last_name || ''}`.trim()}
                               </p>
                             )}
                             
-                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1 transition-colors">
                               <Clock className="w-3 h-3" /> Desde {agent.created_at ? new Date(agent.created_at).toLocaleDateString('pt-BR') : 'Data desconhecida'}
                             </p>
                           </div>
                         </div>
                         <Button 
                           variant="ghost" size="sm" onClick={() => handleDeleteClick(agent)}
-                          className="text-red-500 hover:text-red-600 hover:bg-red-50 font-medium shrink-0 self-center"
+                          className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-500/10 font-medium shrink-0 self-center transition-colors"
                         >
                           <Trash2 className="w-4 h-4 mr-2" /> 
                           Revogar

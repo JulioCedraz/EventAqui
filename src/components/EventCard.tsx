@@ -38,7 +38,7 @@ export default function EventCard({ id, title, description, event_date, price, i
       href={`/evento/${id}`} 
       className="group block h-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
     >
-      <Card className="h-full flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-blue-200">
+      <Card className="h-full flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-blue-200 dark:hover:border-blue-800">
         
         {/* Imagem do Evento */}
         <div className="relative w-full aspect-video bg-muted overflow-hidden">
@@ -49,7 +49,7 @@ export default function EventCard({ id, title, description, event_date, price, i
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-blue-50/50 text-blue-200">
+            <div className="w-full h-full flex items-center justify-center bg-blue-50/50 dark:bg-slate-800/50 text-blue-200 dark:text-slate-600 transition-colors">
               <ImageIcon className="w-12 h-12" />
             </div>
           )}
@@ -57,7 +57,7 @@ export default function EventCard({ id, title, description, event_date, price, i
 
         {/* Cabeçalho do Card (Título) */}
         <CardHeader className="p-4 sm:p-5 pb-3">
-          <CardTitle className="text-lg font-bold leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors">
+          <CardTitle className="text-lg font-bold leading-tight line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {title}
           </CardTitle>
         </CardHeader>
@@ -65,7 +65,7 @@ export default function EventCard({ id, title, description, event_date, price, i
         {/* Corpo do Card (Data e Descrição) */}
         <CardContent className="p-4 sm:p-5 pt-0 flex flex-col grow gap-3">
           <div className="flex items-center text-sm font-medium text-muted-foreground">
-            <CalendarDays className="w-4 h-4 mr-2 shrink-0 text-gray-400" />
+            <CalendarDays className="w-4 h-4 mr-2 shrink-0 text-gray-400 dark:text-gray-500 transition-colors" />
             <span>{dateDisplay}</span>
           </div>
 
@@ -79,8 +79,9 @@ export default function EventCard({ id, title, description, event_date, price, i
         {/* Rodapé do Card (Preço) */}
         <CardFooter className="p-4 sm:p-5 pt-0 mt-auto">
           <div className="flex items-center font-extrabold text-lg">
-            <Ticket className={`w-5 h-5 mr-2 ${isFree ? 'text-green-500' : 'text-blue-600'}`} />
-            <span className={isFree ? "text-green-600" : "text-foreground"}>
+            <Ticket className={`w-5 h-5 mr-2 transition-colors ${isFree ? 'text-green-500 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'}`} />
+            
+            <span className={`transition-colors ${isFree ? "text-green-600 dark:text-emerald-400" : "text-foreground"}`}>
               {formattedPrice}
             </span>
           </div>

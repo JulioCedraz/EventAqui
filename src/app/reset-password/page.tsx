@@ -56,16 +56,16 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      <Card className="w-full max-w-md mx-auto shadow-xl shadow-blue-900/5 rounded-3xl border-gray-100 animate-in fade-in zoom-in-95 slide-in-from-bottom-8 duration-500 ease-out">
+    <main className="min-h-screen bg-gray-50 dark:bg-background flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden transition-colors">
+      <Card className="w-full max-w-md mx-auto shadow-xl shadow-blue-900/5 dark:shadow-none rounded-3xl border-gray-100 dark:border-border dark:bg-card animate-in fade-in zoom-in-95 slide-in-from-bottom-8 duration-500 ease-out transition-colors">
         <CardHeader className="text-center pb-6 flex flex-col items-center">
-          <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center shrink-0 mb-4">
-            <KeyRound className="w-7 h-7 text-blue-600" />
+          <div className="w-14 h-14 rounded-full bg-blue-100 dark:bg-blue-500/10 flex items-center justify-center shrink-0 mb-4 transition-colors">
+            <KeyRound className="w-7 h-7 text-blue-600 dark:text-blue-400 transition-colors" />
           </div>
-          <CardTitle className="text-3xl font-extrabold text-gray-900 tracking-tight">
+          <CardTitle className="text-3xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight transition-colors">
             Criar nova senha
           </CardTitle>
-          <CardDescription className="text-base mt-2">
+          <CardDescription className="text-base mt-2 dark:text-gray-400 transition-colors">
             Digite a sua nova senha abaixo. Ela será atualizada imediatamente.
           </CardDescription>
         </CardHeader>
@@ -84,12 +84,12 @@ export default function ResetPasswordPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   minLength={6}
                   placeholder="Mínimo de 6 caracteres"
-                  className="py-6 rounded-xl pr-12"
+                  className="py-6 rounded-xl pr-12 dark:bg-slate-900 dark:border-slate-700 dark:text-gray-100 transition-colors"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 focus:outline-none transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
@@ -107,12 +107,12 @@ export default function ResetPasswordPage() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   minLength={6}
                   placeholder="Repita a nova senha"
-                  className="py-6 rounded-xl pr-12"
+                  className="py-6 rounded-xl pr-12 dark:bg-slate-900 dark:border-slate-700 dark:text-gray-100 transition-colors"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 focus:outline-none transition-colors"
                 >
                   {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
@@ -122,7 +122,7 @@ export default function ResetPasswordPage() {
             <Button
               type="submit"
               disabled={isLoading || !password || !confirmPassword}
-              className="w-full py-6 rounded-xl text-base font-bold bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 transition-all active:scale-[0.98] mt-4"
+              className="w-full py-6 rounded-xl text-base font-bold bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 shadow-md shadow-blue-600/20 dark:shadow-none transition-all active:scale-[0.98] mt-4"
             >
               {isLoading ? (
                 <>
