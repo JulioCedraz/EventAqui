@@ -316,7 +316,7 @@ export default function EventDetails() {
       {showConfirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 dark:bg-black/80 backdrop-blur-sm animate-in fade-in duration-200 transition-colors">
           <Card className="max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden rounded-3xl border-0 dark:bg-card transition-colors">
-            <CardHeader className="bg-gray-50 dark:bg-slate-900/50 border-b border-gray-100 dark:border-slate-800/50 pb-6 text-center transition-colors">
+            <CardHeader className="bg-transparent border-b border-gray-100 dark:border-slate-800/50 pb-6 text-center transition-colors">
               <CardTitle className="text-2xl font-extrabold text-gray-900 dark:text-gray-100 transition-colors">Resumo do Pedido</CardTitle>
             </CardHeader>
             
