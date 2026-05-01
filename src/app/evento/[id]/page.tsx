@@ -29,6 +29,7 @@ export default function EventDetails() {
   const [buying, setBuying] = useState(false);
   const [quantity, setQuantity] = useState<number | string>(1);
   const [pendingTicket, setPendingTicket] = useState<any | null>(null);
+  const [hasApprovedTicket, setHasApprovedTicket] = useState(false);
   const [pixData, setPixData] = useState<{ qr_code: string; qr_code_base64: string } | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [copiedPix, setCopiedPix] = useState(false);
@@ -58,20 +59,28 @@ export default function EventDetails() {
 
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        const { data: pendingData } = await supabase
+        const { data: userTickets } = await supabase
           .from('tickets')
           .select('*')
           .eq('event_id', id)
           .eq('buyer_email', session.user.email)
-          .eq('payment_status', 'pending')
-          .maybeSingle(); 
+          .in('payment_status', ['approved', 'pending']);
         
-        if (pendingData) {
-          if (pendingData.expires_at && new Date(pendingData.expires_at) < new Date()) {
-            await supabase.from('tickets').update({ payment_status: 'cancelled' }).eq('id', pendingData.id);
-            setPendingTicket(null);
-          } else {
-            setPendingTicket(pendingData);
+        if (userTickets && userTickets.length > 0) {
+          const approved = userTickets.find(t => t.payment_status === 'approved');
+          const pending = userTickets.find(t => t.payment_status === 'pending');
+
+          if (approved) {
+            setHasApprovedTicket(true);
+          }
+          
+          if (pending) {
+            if (pending.expires_at && new Date(pending.expires_at) < new Date()) {
+              await supabase.from('tickets').update({ payment_status: 'cancelled' }).eq('id', pending.id);
+              setPendingTicket(null);
+            } else {
+              setPendingTicket(pending);
+            }
           }
         }
       }
@@ -134,16 +143,16 @@ export default function EventDetails() {
         return; 
       }
 
-      const validQuantity = Number(quantity) || 1;
+      const validQuantity = isFree ? 1 : (Number(quantity) || 1);
       const totalPrice = event!.price * validQuantity;
 
       const buyerName = session.user.user_metadata?.first_name 
         ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name || ''}`.trim()
         : (session.user.user_metadata?.full_name || 'Usuário');
 
-      // ==============================================================
+      // ==========================================================
       // FLUXO DE INGRESSO GRATUITO
-      // ==============================================================
+      // ==========================================================
       if (isFree || totalPrice === 0) {
         const newFreeTicket = {
           event_id: event!.id,
@@ -168,9 +177,9 @@ export default function EventDetails() {
         return;
       }
 
-      // ==============================================================
+      // ==========================================================
       // FLUXO NORMAL: EVENTOS PAGOS VIA MERCADO PAGO (PIX)
-      // ==============================================================
+      // ==========================================================
       const expirationDate = new Date();
       expirationDate.setMinutes(expirationDate.getMinutes() + 30);
       const isoExpiration = expirationDate.toISOString();
@@ -325,7 +334,7 @@ export default function EventDetails() {
                 <div className="flex justify-between items-center text-gray-600 dark:text-gray-400 transition-colors">
                   <span className="font-medium flex items-center gap-2">
                     <Ticket className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-                    Ingresso ({quantity}x)
+                    Ingresso ({isFreeEvent ? 1 : quantity}x)
                   </span>
                   <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
                     {isFreeEvent ? 'Gratuito' : `R$ ${event.price.toFixed(2).replace('.', ',')} / cada`}
@@ -527,6 +536,25 @@ export default function EventDetails() {
                   </div>
                 </CardContent>
               </Card>
+            ) : isFreeEvent && hasApprovedTicket ? (
+              <Card className="bg-emerald-50/80 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/50 shadow-sm animate-in fade-in transition-colors">
+                <CardContent className="p-8 text-center flex flex-col items-center">
+                  <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-500/10 rounded-full flex items-center justify-center mb-4 transition-colors">
+                    <CheckCircle2 className="w-7 h-7 text-emerald-600 dark:text-emerald-500 transition-colors" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-emerald-900 dark:text-emerald-400 mb-3 transition-colors">Vaga Garantida!</h3>
+                  <p className="text-emerald-800 dark:text-emerald-500 font-medium mb-8 max-w-lg transition-colors">
+                    Você já possui um ingresso para este evento. Em eventos gratuitos, permitimos apenas a emissão de um ingresso por pessoa.
+                  </p>
+                  
+                  <Button 
+                    onClick={() => router.push('/tickets')}
+                    className="w-full max-w-md h-12 bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 font-bold rounded-xl shadow-sm transition-colors"
+                  >
+                    Ver Meu Ingresso
+                  </Button>
+                </CardContent>
+              </Card>
             ) : isSoldOut ? (
               <Card className="bg-gray-50 dark:bg-slate-900/50 border-gray-200 dark:border-slate-800 shadow-none transition-colors">
                 <CardContent className="p-10 text-center flex flex-col items-center">
@@ -546,54 +574,61 @@ export default function EventDetails() {
                   </Badge>
                 )}
 
-                <div className="flex flex-col md:flex-row items-center justify-between p-6 border border-gray-200 dark:border-slate-800/50 rounded-2xl bg-white dark:bg-slate-900/50 shadow-sm gap-6 transition-colors">
-                  <span className="font-bold text-gray-700 dark:text-gray-300 text-lg transition-colors">Quantidade de Ingressos:</span>
+                {!isFreeEvent ? (
+                  <div className="flex flex-col md:flex-row items-center justify-between p-6 border border-gray-200 dark:border-slate-800/50 rounded-2xl bg-white dark:bg-slate-900/50 shadow-sm gap-6 transition-colors">
+                    <span className="font-bold text-gray-700 dark:text-gray-300 text-lg transition-colors">Quantidade de Ingressos:</span>
 
-                  <div className="flex items-center gap-5">
-                    <Button 
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setQuantity(q => Math.max(1, Number(q) - 1))}
-                      className="w-12 h-12 rounded-full border-gray-300 dark:border-slate-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
-                    >
-                      <Minus className="w-5 h-5" />
-                    </Button>
-                    
-                    <Input
-                      type="number"
-                      value={quantity}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '') {
-                          setQuantity('');
-                        } else {
-                          const num = parseInt(val, 10);
-                          if (!isNaN(num)) {
-                            setQuantity(Math.min(maxSelectable, num));
+                    <div className="flex items-center gap-5">
+                      <Button 
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setQuantity(q => Math.max(1, Number(q) - 1))}
+                        className="w-12 h-12 rounded-full border-gray-300 dark:border-slate-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+                      >
+                        <Minus className="w-5 h-5" />
+                      </Button>
+                      
+                      <Input
+                        type="number"
+                        value={quantity}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '') {
+                            setQuantity('');
+                          } else {
+                            const num = parseInt(val, 10);
+                            if (!isNaN(num)) {
+                              setQuantity(Math.min(maxSelectable, num));
+                            }
                           }
-                        }
-                      }}
-                      onBlur={() => {
-                        let num = Number(quantity);
-                        if (quantity === '' || num < 1) {
-                          setQuantity(1);
-                        } else if (num > maxSelectable) {
-                          setQuantity(maxSelectable);
-                        }
-                      }}
-                      className="w-16 h-12 text-2xl font-black text-gray-900 dark:text-gray-100 text-center bg-transparent border-none focus-visible:ring-0 p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors"
-                    />
+                        }}
+                        onBlur={() => {
+                          let num = Number(quantity);
+                          if (quantity === '' || num < 1) {
+                            setQuantity(1);
+                          } else if (num > maxSelectable) {
+                            setQuantity(maxSelectable);
+                          }
+                        }}
+                        className="w-16 h-12 text-2xl font-black text-gray-900 dark:text-gray-100 text-center bg-transparent border-none focus-visible:ring-0 p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors"
+                      />
 
-                    <Button 
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setQuantity(q => Math.min(maxSelectable, Number(q) + 1))} 
-                      className="w-12 h-12 rounded-full border-gray-300 dark:border-slate-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
-                    >
-                      <Plus className="w-5 h-5" />
-                    </Button>
+                      <Button 
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setQuantity(q => Math.min(maxSelectable, Number(q) + 1))} 
+                        className="w-12 h-12 rounded-full border-gray-300 dark:border-slate-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+                      >
+                        <Plus className="w-5 h-5" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex flex-col md:flex-row items-center justify-between p-6 border border-gray-200 dark:border-slate-800/50 rounded-2xl bg-white dark:bg-slate-900/50 shadow-sm gap-6 transition-colors">
+                    <span className="font-bold text-gray-700 dark:text-gray-300 text-lg transition-colors">Quantidade de Ingressos:</span>
+                    <span className="text-2xl font-black text-gray-900 dark:text-gray-100 transition-colors">1</span>
+                  </div>
+                )}
 
                 <div className={`flex flex-col md:flex-row justify-between items-center p-6 rounded-2xl border gap-2 transition-colors ${
                   isFreeEvent 
