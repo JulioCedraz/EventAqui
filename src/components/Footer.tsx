@@ -1,14 +1,23 @@
+"use client";
+
 import Link from "next/link";
-import { Ticket } from "lucide-react";
+import { Ticket, ArrowUp } from "lucide-react";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
 
   return (
     <footer className="bg-white dark:bg-background border-t border-gray-200 dark:border-border py-10 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 mb-10">
           
           {/* Coluna 1: Marca e Sobre */}
           <div className="space-y-4 text-center md:text-left">
@@ -88,6 +97,19 @@ export default function Footer() {
             </ul>
           </div>
 
+        </div>
+
+        {/* Botão Topo da Página (Design Elegante) */}
+        <div className="flex justify-center mb-10">
+          <button
+            onClick={scrollToTop}
+            className="group flex items-center gap-3 p-1.5 pr-6 rounded-full bg-white dark:bg-card border border-gray-200/80 dark:border-slate-800 hover:border-blue-100 dark:hover:border-slate-700 shadow-xs hover:shadow-md dark:hover:shadow-[0_0_15px_rgba(255,255,255,0.03)] text-sm font-medium text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-gray-200 transition-all duration-300 active:scale-95 cursor-pointer"
+          >
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 dark:bg-background group-hover:bg-blue-50 dark:group-hover:bg-slate-800 transition-colors">
+              <ArrowUp className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform duration-300" />
+            </div>
+            Voltar ao topo
+          </button>
         </div>
 
         {/* Linha de Copyright, Assinatura e Pagamentos */}
