@@ -8,20 +8,38 @@ DROP TABLE IF EXISTS public.profiles CASCADE;
 CREATE TABLE public.profiles (
     id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email text NOT NULL,
+    
+    -- Campos Pessoa Física (PF)
     first_name text,
     last_name text,
-    full_name text GENERATED ALWAYS AS (trim(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) STORED,
     cpf text,
-    occupation text,
-    role text CHECK (role IN ('admin', 'producer', 'agent', 'customer')),
-    producer_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
     birth_date date,
+    occupation text,
     university text,
     course text,
     area text,
     specialty text,
-    status text DEFAULT 'active', 
-    deletion_scheduled_at timestamp with time zone, 
+
+    -- Campos Pessoa Jurídica (PJ)
+    profile_type text CHECK (profile_type IN ('PF', 'PJ')) DEFAULT 'PF',
+    cnpj text UNIQUE,
+    company_name text,
+    trading_name text,
+
+    -- Coluna Gerada Dinamicamente (Se PJ pega Nome Fantasia/Razão Social, se PF pega Nome + Sobrenome)
+    full_name text GENERATED ALWAYS AS (
+        COALESCE(
+            NULLIF(trading_name, ''), 
+            NULLIF(company_name, ''), 
+            trim(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))
+        )
+    ) STORED,
+
+    -- Campos de Sistema
+    role text CHECK (role IN ('admin', 'producer', 'agent', 'customer')),
+    producer_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
+    status text DEFAULT 'active',
+    deletion_scheduled_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now())
 );
 
