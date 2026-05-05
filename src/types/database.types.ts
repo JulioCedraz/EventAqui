@@ -68,6 +68,10 @@ export type Database = {
           cnpj: string | null;
           company_name: string | null;
           trading_name: string | null;
+          mp_access_token: string | null;
+          mp_refresh_token: string | null;
+          mp_user_id: string | null;
+          mp_public_key: string | null;
         };
         Insert: {
           id: string;
@@ -89,6 +93,10 @@ export type Database = {
           cnpj?: string | null;
           company_name?: string | null;
           trading_name?: string | null;
+          mp_access_token?: string | null;
+          mp_refresh_token?: string | null;
+          mp_user_id?: string | null;
+          mp_public_key?: string | null;
         };
         Update: {
           id?: string;
@@ -110,6 +118,10 @@ export type Database = {
           cnpj?: string | null;
           company_name?: string | null;
           trading_name?: string | null;
+          mp_access_token?: string | null;
+          mp_refresh_token?: string | null;
+          mp_user_id?: string | null;
+          mp_public_key?: string | null;
         };
         Relationships: [
           {
