@@ -1,13 +1,19 @@
-// src\app\api\payment\route.ts
+// src/app/api/payment/route.ts
 
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY! 
+);
 
 export async function POST(request: Request) {
   try {
-    const { title, price, email, ticketId, expires_at } = await request.json();
+    const { title, price, email, ticketId, expires_at, producerId } = await request.json();
 
-    if (!title || price === undefined || !email || !ticketId) {
+    if (!title || price === undefined || !email || !ticketId || !producerId) {
       return NextResponse.json({ erro: 'Dados incompletos' }, { status: 400 });
     }
 
@@ -30,24 +36,46 @@ export async function POST(request: Request) {
     }
 
     // =========================================
+    // BUSCA O TOKEN DO PRODUTOR NO BANCO
+    // =========================================
+    const { data: producer, error: dbError } = await supabaseAdmin
+      .from('profiles')
+      .select('mp_access_token')
+      .eq('id', producerId)
+      .single();
+
+    if (dbError || !producer?.mp_access_token) {
+      return NextResponse.json({ 
+        erro: 'O organizador deste evento ainda não configurou o recebimento.' 
+      }, { status: 400 });
+    }
+
+    // =========================================
+    // CÁLCULO DA TAXA DA PLATAFORMA (SPLIT)
+    // =========================================
+    const PLATFORM_FEE_PERCENTAGE = 0.10;
+    const applicationFee = Number((Number(price) * PLATFORM_FEE_PERCENTAGE).toFixed(2));
+
+    // =========================================
     // INTEGRAÇÃO MERCADO PAGO (Eventos Pagos)
     // =========================================
     const idempotencyKey = crypto.randomUUID();
 
     const paymentData = {
       transaction_amount: Number(price),
+      application_fee: applicationFee,
       description: title,
       payment_method_id: 'pix',
       payer: { email: email },
       date_of_expiration: expires_at,
       external_reference: ticketId,
-      notification_url: 'https://eventaqui.vercel.app/api/webhook'
+      notification_url: `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhook`
     };
 
     const response = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`,
+        'Authorization': `Bearer ${producer.mp_access_token}`,
         'X-Idempotency-Key': idempotencyKey,
         'Content-Type': 'application/json'
       },
