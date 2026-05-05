@@ -489,7 +489,6 @@ export default function PersonalDataFields({
               required 
               value={companyName} 
               onChange={(e) => setCompanyName(e.target.value)} 
-              placeholder="Ex: EventAqui Tecnologia LTDA"
               className="h-12 rounded-xl transition-colors"
             />
           </div>
