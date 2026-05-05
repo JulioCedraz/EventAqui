@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -13,7 +13,7 @@ import {
   ChevronRight, ShieldCheck, Briefcase 
 } from "lucide-react";
 
-export default function AdminHub() {
+function AdminHubContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -178,5 +178,17 @@ export default function AdminHub() {
 
       </div>
     </main>
+  );
+}
+
+export default function AdminHub() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background">
+        <Loader2 className="w-10 h-10 animate-spin text-blue-600 dark:text-blue-500" />
+      </div>
+    }>
+      <AdminHubContent />
+    </Suspense>
   );
 }
