@@ -64,6 +64,10 @@ export type Database = {
           created_at: string | number | Date | null;
           status: string | null;
           deletion_scheduled_at: string | null;
+          profile_type: 'PF' | 'PJ' | null;
+          cnpj: string | null;
+          company_name: string | null;
+          trading_name: string | null;
         };
         Insert: {
           id: string;
@@ -81,6 +85,10 @@ export type Database = {
           specialty?: string | null;
           status?: string | null;
           deletion_scheduled_at?: string | null;
+          profile_type?: 'PF' | 'PJ' | null;
+          cnpj?: string | null;
+          company_name?: string | null;
+          trading_name?: string | null;
         };
         Update: {
           id?: string;
@@ -98,6 +106,10 @@ export type Database = {
           specialty?: string | null;
           status?: string | null;
           deletion_scheduled_at?: string | null;
+          profile_type?: 'PF' | 'PJ' | null;
+          cnpj?: string | null;
+          company_name?: string | null;
+          trading_name?: string | null;
         };
         Relationships: [
           {
