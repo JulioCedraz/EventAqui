@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
-import PersonalDataFields, { validateCPF, UNIVERSITIES_LIST, COURSES_LIST } from '../../components/PersonalDataFields';
+import PersonalDataFields, { validateCPF, validateCNPJ, UNIVERSITIES_LIST, COURSES_LIST } from '../../components/PersonalDataFields';
 import PrivacySettings from '../../components/PrivacySettings';
 import SmartModal, { DialogConfig } from '../../components/SmartModal';
 import { Card, CardContent } from "@/components/ui/card";
@@ -45,7 +45,11 @@ function ProfileContent() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   
-  // Estados de Dados Pessoais
+  // Estados do Tipo de Perfil
+  const [profileType, setProfileType] = useState<'PF' | 'PJ'>('PF');
+  const [role, setRole] = useState<'admin' | 'producer' | 'agent' | 'customer' | null>(null);
+
+  // Estados de Dados Pessoais (PF)
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [cpf, setCpf] = useState('');
@@ -63,7 +67,12 @@ function ProfileContent() {
   const [area, setArea] = useState("");
   const [customArea, setCustomArea] = useState("");
   const [specialty, setSpecialty] = useState("");
-  const [role, setRole] = useState<'admin' | 'producer' | 'agent' | 'customer' | null>(null);
+
+  // Estados de Dados Empresariais (PJ)
+  const [companyName, setCompanyName] = useState("");
+  const [tradingName, setTradingName] = useState("");
+  const [cnpj, setCnpj] = useState("");
+  const [cnpjStatus, setCnpjStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -91,6 +100,10 @@ function ProfileContent() {
       }
       
       if (profileData) {
+        setProfileType(profileData.profile_type || 'PF');
+        setRole(profileData.role || 'customer');
+
+        // Setup PF Data
         setFirstName(profileData.first_name || '');
         setLastName(profileData.last_name || '');
         let formattedBirthDate = '';
@@ -99,13 +112,11 @@ function ProfileContent() {
           formattedBirthDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : '';
         }
         setBirthDate(formattedBirthDate);
-        setRole(profileData.role || 'customer');
         setCpf(profileData.cpf || '');
         setHasCpfInitially(!!profileData.cpf);
         if (profileData.occupation === 'profissional' || profileData.occupation === 'estudante') {
           setOccupation(profileData.occupation);
         }
-        
         if (profileData.university) {
           if (UNIVERSITIES_LIST.includes(profileData.university)) setUniversity(profileData.university);
           else { setUniversity("Outra"); setCustomUniversity(profileData.university); }
@@ -120,8 +131,14 @@ function ProfileContent() {
         }
         setSpecialty(profileData.specialty || '');
 
+        // Setup PJ Data
+        setCompanyName(profileData.company_name || '');
+        setTradingName(profileData.trading_name || '');
+        setCnpj(profileData.cnpj || '');
+
         setInitialData({
           email: userEmail,
+          profileType: profileData.profile_type || 'PF',
           firstName: profileData.first_name || '',
           lastName: profileData.last_name || '',
           cpf: profileData.cpf || '',
@@ -130,7 +147,10 @@ function ProfileContent() {
           university: profileData.university || '',
           course: profileData.course || '',
           area: profileData.area || '',
-          specialty: profileData.specialty || ''
+          specialty: profileData.specialty || '',
+          companyName: profileData.company_name || '',
+          tradingName: profileData.trading_name || '',
+          cnpj: profileData.cnpj || ''
         });
       }
       setIsLoading(false);
@@ -143,6 +163,7 @@ function ProfileContent() {
     
     const fieldChanges = 
       email !== initialData.email ||
+      profileType !== initialData.profileType ||
       firstName !== initialData.firstName ||
       lastName !== initialData.lastName ||
       (cpf !== initialData.cpf && !hasCpfInitially) ||
@@ -151,12 +172,15 @@ function ProfileContent() {
       specialty !== initialData.specialty ||
       (university === "Outra" ? customUniversity : university) !== initialData.university ||
       (course === "Outro" ? customCourse : course) !== initialData.course ||
-      (area === "Outra" ? customArea : area) !== initialData.area;
+      (area === "Outra" ? customArea : area) !== initialData.area ||
+      companyName !== initialData.companyName ||
+      tradingName !== initialData.tradingName ||
+      cnpj !== initialData.cnpj;
 
     const securityChanges = newPassword !== '' || confirmNewPassword !== '';
 
     return (fieldChanges || securityChanges) && !emailError;
-  }, [email, firstName, lastName, cpf, birthDate, occupation, university, customUniversity, course, customCourse, area, customArea, specialty, newPassword, confirmNewPassword, initialData, hasCpfInitially, emailError]);
+  }, [email, profileType, firstName, lastName, cpf, birthDate, occupation, university, customUniversity, course, customCourse, area, customArea, specialty, companyName, tradingName, cnpj, newPassword, confirmNewPassword, initialData, hasCpfInitially, emailError]);
 
   const handleVerifyCurrentPassword = async () => {
     if (!currentPassword) {
@@ -207,10 +231,18 @@ function ProfileContent() {
       }
     }
 
-    if (!hasCpfInitially && cpf && !validateCPF(cpf)) {
-      setCpfStatus('invalid');
-      toast.error('O CPF informado é inválido.');
-      return;
+    if (profileType === 'PF') {
+      if (!hasCpfInitially && cpf && !validateCPF(cpf)) {
+        setCpfStatus('invalid');
+        toast.error('O CPF informado é inválido.');
+        return;
+      }
+    } else {
+      if (cnpj && !validateCNPJ(cnpj)) {
+        setCnpjStatus('invalid');
+        toast.error('O CNPJ informado é inválido.');
+        return;
+      }
     }
 
     if (email !== originalEmail && !emailError) {
@@ -238,8 +270,11 @@ function ProfileContent() {
       
       if (email !== originalEmail) authUpdates.email = email;
       if (newPassword) authUpdates.password = newPassword;
-      if (firstName || lastName) {
+      
+      if (profileType === 'PF' && (firstName || lastName)) {
         authUpdates.data = { full_name: `${firstName} ${lastName}`.trim() };
+      } else if (profileType === 'PJ' && (companyName || tradingName)) {
+        authUpdates.data = { full_name: (tradingName || companyName).trim() };
       }
 
       if (Object.keys(authUpdates).length > 0) {
@@ -251,6 +286,7 @@ function ProfileContent() {
         const isoBirthDate = birthDate ? birthDate.split('/').reverse().join('-') : null;
         
         const profileUpdates: any = {
+          profile_type: profileType,
           first_name: firstName || null,
           last_name: lastName || null,
           cpf: cpf || null,
@@ -260,6 +296,9 @@ function ProfileContent() {
           course: occupation === "estudante" ? (course === "Outro" ? customCourse : course) : null,
           area: occupation === "profissional" ? (area === "Outra" ? customArea : area) : null,
           specialty: occupation === "profissional" && area === "Medicina" ? specialty : null,
+          company_name: companyName || null,
+          trading_name: tradingName || null,
+          cnpj: cnpj || null,
         };
 
         const { error: profileUpdateError } = await supabase.from('profiles').update(profileUpdates).eq('id', userId);
@@ -278,7 +317,18 @@ function ProfileContent() {
       
       setNewPassword('');
       setConfirmNewPassword('');
-      setInitialData(prev => ({ ...prev, firstName, lastName, cpf, birthDate, occupation }));
+      setInitialData((prev: any) => ({ 
+        ...prev, 
+        profileType, 
+        firstName, 
+        lastName, 
+        cpf, 
+        birthDate, 
+        occupation,
+        companyName,
+        tradingName,
+        cnpj
+      }));
 
     } catch (err: any) {
       toast.error(err.message || 'Erro ao salvar dados.', { id: toastId });
@@ -331,12 +381,41 @@ function ProfileContent() {
 
         <form onSubmit={handleUpdateProfile} className="space-y-8">
           
-          {/* CONTEINER 1: DADOS PESSOAIS */}
+          {/* CONTEINER 1: DADOS PESSOAIS / EMPRESARIAIS */}
           <div className="space-y-4">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 ml-1 transition-colors">Dados Pessoais</h2>
+            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 ml-1 transition-colors">Meus Dados</h2>
             <Card className="shadow-lg border-gray-100 dark:border-border dark:bg-card rounded-3xl overflow-hidden transition-colors">
-              <CardContent className="p-6 sm:p-8">
+              <CardContent className="p-6 sm:p-8 space-y-6">
+
+                <div className="flex bg-gray-100 dark:bg-slate-900/50 p-1 rounded-xl border border-gray-200 dark:border-slate-800 transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => setProfileType('PF')}
+                    className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${
+                      profileType === 'PF' 
+                        ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' 
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    Pessoa Física
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProfileType('PJ')}
+                    className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${
+                      profileType === 'PJ' 
+                        ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' 
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    Empresa (CNPJ)
+                  </button>
+                </div>
+
                 <PersonalDataFields
+                  profileType={profileType}
+                  
+                  // PF
                   firstName={firstName} setFirstName={setFirstName}
                   lastName={lastName} setLastName={setLastName}
                   cpf={cpf} setCpf={setCpf}
@@ -354,6 +433,12 @@ function ProfileContent() {
                   area={area} setArea={setArea}
                   customArea={customArea} setCustomArea={setCustomArea}
                   specialty={specialty} setSpecialty={setSpecialty}
+
+                  // PJ
+                  companyName={companyName} setCompanyName={setCompanyName}
+                  tradingName={tradingName} setTradingName={setTradingName}
+                  cnpj={cnpj} setCnpj={setCnpj}
+                  cnpjStatus={cnpjStatus} setCnpjStatus={setCnpjStatus}
                 />
               </CardContent>
             </Card>
