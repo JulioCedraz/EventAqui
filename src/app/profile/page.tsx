@@ -387,31 +387,6 @@ function ProfileContent() {
             <Card className="shadow-lg border-gray-100 dark:border-border dark:bg-card rounded-3xl overflow-hidden transition-colors">
               <CardContent className="p-6 sm:p-8 space-y-6">
 
-                <div className="flex bg-gray-100 dark:bg-slate-900/50 p-1 rounded-xl border border-gray-200 dark:border-slate-800 transition-colors">
-                  <button
-                    type="button"
-                    onClick={() => setProfileType('PF')}
-                    className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${
-                      profileType === 'PF' 
-                        ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' 
-                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                    }`}
-                  >
-                    Pessoa Física
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setProfileType('PJ')}
-                    className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${
-                      profileType === 'PJ' 
-                        ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' 
-                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                    }`}
-                  >
-                    Empresa (CNPJ)
-                  </button>
-                </div>
-
                 <PersonalDataFields
                   profileType={profileType}
                   
