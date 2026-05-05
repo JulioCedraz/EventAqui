@@ -209,7 +209,8 @@ export default function EventDetails() {
           price: totalPrice,
           email: session.user.email,
           ticketId: createdTicket.id,
-          expires_at: isoExpiration
+          expires_at: isoExpiration,
+          producerId: event!.producer_id
         })
       });
 
