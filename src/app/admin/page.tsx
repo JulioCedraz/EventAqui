@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import MercadoPagoConnect from '../../components/MercadoPagoConnect';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -14,9 +15,27 @@ import {
 
 export default function AdminHub() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [authorized, setAuthorized] = useState(false);
   const [userName, setUserName] = useState('');
+  // Estados do Mercado Pago
+  const [userId, setUserId] = useState('');
+  const [isAlreadyConnected, setIsAlreadyConnected] = useState(false);
+
+  useEffect(() => {
+    const success = searchParams.get('success');
+    const error = searchParams.get('error');
+
+    if (success === 'mp_connected') {
+      toast.success('Conta do Mercado Pago vinculada com sucesso! Você já pode receber PIX.', { duration: 5000 });
+
+      router.replace('/admin');
+    } else if (error === 'mp_auth_failed' || error === 'missing_mp_params') {
+      toast.error('Não foi possível conectar a conta. Por favor, tente novamente.', { duration: 5000 });
+      router.replace('/admin');
+    }
+  }, [searchParams, router]);
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -27,14 +46,16 @@ export default function AdminHub() {
         return;
       }
 
-      const userId = session.user.id;
+      const uid = session.user.id;
       const userEmail = session.user.email;
+      setUserId(uid);
+
       const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role, first_name')
-        .eq('id', userId)
+        .select('role, first_name, mp_user_id')
+        .eq('id', uid)
         .single();
         
       const role = profile?.role || 'customer';
@@ -48,6 +69,7 @@ export default function AdminHub() {
       } else {
         setAuthorized(true);
         setUserName(firstName);
+        setIsAlreadyConnected(!!profile?.mp_user_id);
       }
       
       setIsCheckingAuth(false);
@@ -126,7 +148,9 @@ export default function AdminHub() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <MercadoPagoConnect userId={userId} isAlreadyConnected={isAlreadyConnected} />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4 border-t border-gray-200 dark:border-slate-800">
           {menuActions.map((action, index) => (
             <Card key={index} className={`border-0 dark:border dark:border-border dark:hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group overflow-hidden rounded-3xl flex flex-col ${action.color}`}>
               <CardHeader className="pb-4 grow transition-colors">
