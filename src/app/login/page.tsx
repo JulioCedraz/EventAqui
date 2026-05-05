@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
-import PersonalDataFields, { validateCPF, validateBirthDate } from "../../components/PersonalDataFields";
+import PersonalDataFields, { validateCPF, validateBirthDate, validateCNPJ } from "../../components/PersonalDataFields";
 import SmartModal, { DialogConfig } from "../../components/SmartModal";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,12 +24,15 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [role, setRole] = useState("customer");
+  const [profileType, setProfileType] = useState<'PF' | 'PJ'>('PF');
+  
+  // Estados PF
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [cpf, setCpf] = useState("");
   const [cpfStatus, setCpfStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
   const [cpfMessage, setCpfMessage] = useState('');
-  const [role, setRole] = useState("customer");
   const [birthDate, setBirthDate] = useState("");
   const [birthDateStatus, setBirthDateStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
   const [birthDateMessage, setBirthDateMessage] = useState('');
@@ -41,6 +44,12 @@ export default function LoginPage() {
   const [area, setArea] = useState("");
   const [customArea, setCustomArea] = useState("");
   const [specialty, setSpecialty] = useState("");
+
+  // Estados PJ
+  const [companyName, setCompanyName] = useState("");
+  const [tradingName, setTradingName] = useState("");
+  const [cnpj, setCnpj] = useState("");
+  const [cnpjStatus, setCnpjStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
 
   const [dialog, setDialog] = useState<DialogConfig | null>(null);
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
@@ -143,28 +152,35 @@ export default function LoginPage() {
           router.push("/tickets");
         }
       } else {
-        if (cpf && !validateCPF(cpf)) {
-          setCpfStatus('invalid');
-          setCpfMessage('Corrija o CPF antes de criar a conta.');
-          throw new Error("CPF inválido. Verifique os números digitados.");
+        
+        if (profileType === 'PF') {
+          if (cpf && !validateCPF(cpf)) {
+            setCpfStatus('invalid');
+            setCpfMessage('Corrija o CPF antes de criar a conta.');
+            throw new Error("CPF inválido. Verifique os números digitados.");
+          }
+
+          if (!birthDate || !validateBirthDate(birthDate)) {
+            setBirthDateStatus('invalid');
+            setBirthDateMessage('Data inválida.');
+            throw new Error("Corrija a sua data de nascimento antes de prosseguir.");
+          }
+        } else {
+          // Validação PJ
+          if (cnpj && !validateCNPJ(cnpj)) {
+            setCnpjStatus('invalid');
+            throw new Error("CNPJ inválido. Verifique os números digitados.");
+          }
         }
 
-        if (!birthDate || !validateBirthDate(birthDate)) {
-          setBirthDateStatus('invalid');
-          setBirthDateMessage('Data inválida.');
-          throw new Error("Corrija a sua data de nascimento antes de prosseguir.");
-        }
-
-        const isoBirthDate = birthDate.split('/').reverse().join('-');
+        const isoBirthDate = birthDate ? birthDate.split('/').reverse().join('-') : null;
         const finalUniversity = university === "Outra" ? customUniversity : university;
         const finalArea = area === "Outra" ? customArea : area;
         const finalCourse = course === "Outro" ? customCourse : course;
 
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
+        const userMetaData = profileType === 'PF' 
+          ? {
+              profile_type: 'PF',
               first_name: firstName,
               last_name: lastName,
               full_name: `${firstName} ${lastName}`,
@@ -176,7 +192,21 @@ export default function LoginPage() {
               course: occupation === "estudante" ? finalCourse : null,
               area: occupation === "profissional" ? finalArea : null,
               specialty: occupation === "profissional" && finalArea === "Medicina" ? specialty : null,
-            },
+            }
+          : {
+              profile_type: 'PJ',
+              company_name: companyName,
+              trading_name: tradingName,
+              full_name: tradingName || companyName,
+              cnpj: cnpj,
+              role: role, 
+            };
+
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: userMetaData,
           },
         });
 
@@ -294,14 +324,42 @@ export default function LoginPage() {
             </div>
 
             {!isLogin && (
-              <div className="animate-in fade-in slide-in-from-top-4 duration-500 delay-100 fill-mode-both">
+              <div className="animate-in fade-in slide-in-from-top-4 duration-500 delay-100 fill-mode-both space-y-6">
+                
+                <div className="flex bg-gray-100 dark:bg-slate-900/50 p-1 rounded-xl border border-gray-200 dark:border-slate-800 transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => setProfileType('PF')}
+                    className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${
+                      profileType === 'PF' 
+                        ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' 
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    Pessoa Física
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProfileType('PJ')}
+                    className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${
+                      profileType === 'PJ' 
+                        ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' 
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    Empresa (CNPJ)
+                  </button>
+                </div>
+
                 <PersonalDataFields
+                  profileType={profileType}
+                  
+                  // Props PF
                   firstName={firstName} setFirstName={setFirstName}
                   lastName={lastName} setLastName={setLastName}
                   cpf={cpf} setCpf={setCpf}
                   cpfStatus={cpfStatus} setCpfStatus={setCpfStatus}
                   cpfMessage={cpfMessage} setCpfMessage={setCpfMessage}
-
                   birthDate={birthDate} setBirthDate={setBirthDate}
                   birthDateStatus={birthDateStatus} setBirthDateStatus={setBirthDateStatus}
                   birthDateMessage={birthDateMessage} setBirthDateMessage={setBirthDateMessage}
@@ -313,6 +371,12 @@ export default function LoginPage() {
                   area={area} setArea={setArea}
                   customArea={customArea} setCustomArea={setCustomArea}
                   specialty={specialty} setSpecialty={setSpecialty}
+                  
+                  // Props PJ
+                  companyName={companyName} setCompanyName={setCompanyName}
+                  tradingName={tradingName} setTradingName={setTradingName}
+                  cnpj={cnpj} setCnpj={setCnpj}
+                  cnpjStatus={cnpjStatus} setCnpjStatus={setCnpjStatus}
                 />
               </div>
             )}
@@ -357,7 +421,7 @@ export default function LoginPage() {
 
             <Button
               type="submit"
-              disabled={isLoading || (!isLogin && cpfStatus === 'invalid')}
+              disabled={isLoading || (!isLogin && (profileType === 'PF' ? cpfStatus === 'invalid' : cnpjStatus === 'invalid'))}
               className="w-full py-6 rounded-xl text-base text-white font-bold bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 shadow-md shadow-blue-600/20 dark:shadow-none transition-all active:scale-[0.98] mt-4"
             >
               {isLoading ? (
