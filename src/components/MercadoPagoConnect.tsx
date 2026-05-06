@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Wallet, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Wallet, CheckCircle2, ChevronRight, Loader2 } from 'lucide-react';
 
 interface MercadoPagoConnectProps {
   userId: string;
@@ -24,42 +24,42 @@ export default function MercadoPagoConnect({ userId, isAlreadyConnected }: Merca
     window.location.href = authUrl;
   };
 
+  const cardColor = isAlreadyConnected 
+    ? "bg-emerald-50 dark:bg-emerald-950/30" 
+    : "bg-sky-50 dark:bg-sky-950/30 ring-2 ring-sky-400 dark:ring-sky-500";
+
+  const btnClass = isAlreadyConnected
+    ? "bg-white text-emerald-700 cursor-default shadow-none dark:bg-emerald-500/20 dark:text-emerald-400"
+    : "bg-sky-600 text-white hover:bg-sky-700 shadow-md dark:bg-sky-600 dark:hover:bg-sky-700";
+
   return (
-    <Card className="shadow-lg border-gray-100 dark:border-border dark:bg-card rounded-3xl overflow-hidden transition-colors">
-      <CardHeader className="pb-4">
-        <div className="flex items-center gap-3">
-          <div className={`p-3 rounded-full ${isAlreadyConnected ? 'bg-green-100 text-green-600 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400'}`}>
-            <Wallet className="w-6 h-6" />
-          </div>
-          <div>
-            <CardTitle className="text-xl">Recebimentos e PIX</CardTitle>
-            <CardDescription>
-              {isAlreadyConnected 
-                ? 'Sua conta bancária está vinculada e pronta para receber as vendas.' 
-                : 'Conecte sua conta do Mercado Pago para receber o dinheiro das vendas em tempo real.'}
-            </CardDescription>
-          </div>
+    <Card className={`border-0 dark:border dark:border-border dark:hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group overflow-hidden rounded-3xl flex flex-col ${cardColor}`}>
+      <CardHeader className="pb-4 grow transition-colors">
+        <div className="w-12 h-12 bg-white dark:bg-card rounded-2xl flex items-center justify-center shadow-sm mb-4 group-hover:scale-110 transition-all">
+          <Wallet className={`w-6 h-6 transition-colors ${isAlreadyConnected ? 'text-emerald-600 dark:text-emerald-400' : 'text-sky-600 dark:text-sky-400'}`} />
         </div>
+        <CardTitle className="text-xl font-bold dark:text-gray-100 transition-colors">Conta Bancária (PIX)</CardTitle>
+        <CardDescription className="text-gray-600 dark:text-gray-300 font-medium leading-tight transition-colors">
+          {isAlreadyConnected 
+            ? "Sua conta do Mercado Pago está vinculada." 
+            : "Vincule sua conta para receber as vendas via PIX."}
+        </CardDescription>
       </CardHeader>
 
-      <CardContent>
-        {isAlreadyConnected ? (
-          <div className="flex items-center gap-2 p-4 bg-green-50 dark:bg-emerald-500/10 border border-green-200 dark:border-emerald-500/20 rounded-xl">
-            <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-emerald-400" />
-            <span className="font-semibold text-green-700 dark:text-emerald-400 text-sm">
-              Conta do Mercado Pago conectada com sucesso!
-            </span>
-          </div>
-        ) : (
-          <Button 
-            onClick={handleConnect} 
-            disabled={isLoading}
-            className="w-full sm:w-auto h-12 bg-[#009EE3] hover:bg-[#0088C3] text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
-          >
-            {isLoading ? 'Redirecionando...' : 'Conectar com Mercado Pago'}
-            {!isLoading && <ArrowRight className="w-4 h-4" />}
-          </Button>
-        )}
+      <CardContent className="pt-0 pb-6 mt-auto transition-colors">
+        <Button 
+          onClick={isAlreadyConnected ? undefined : handleConnect}
+          disabled={isAlreadyConnected || isLoading}
+          className={`w-full h-11 rounded-xl font-bold border-transparent transition-colors ${btnClass}`}
+        >
+          {isAlreadyConnected ? (
+            <span className="flex items-center justify-center gap-2">Conta Conectada <CheckCircle2 className="w-4 h-4" /></span>
+          ) : isLoading ? (
+            <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Conectando...</span>
+          ) : (
+            <span className="flex items-center justify-center gap-2">Conectar Conta <ChevronRight className="w-4 h-4 opacity-70" /></span>
+          )}
+        </Button>
       </CardContent>
     </Card>
   );
