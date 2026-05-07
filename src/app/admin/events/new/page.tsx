@@ -1,4 +1,4 @@
-// src\app\admin\events\new\page.tsx
+// src/app/admin/events/new/page.tsx
 
 'use client';
 
@@ -146,6 +146,17 @@ function EventForm() {
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
+
+    // =========================================
+    // REGRA DE NEGÓCIO: PREÇO MÍNIMO
+    // =========================================
+    if (!isFree) {
+      const numericPrice = parseFloat(price);
+      if (isNaN(numericPrice) || numericPrice < 10) {
+        toast.error('O valor do ingresso pago deve ser de no mínimo R$ 10,00. Para eventos gratuitos, marque a opção "Gratuito".');
+        return;
+      }
+    }
 
     if (imageError) {
       toast.error('Corrija o erro da imagem antes de salvar.');
@@ -420,7 +431,6 @@ function EventForm() {
   );
 }
 
-// Wrapper do Suspense exigido pelo Next.js para páginas que usam useSearchParams
 export default function NewEventPage() {
   return (
     <Suspense fallback={
