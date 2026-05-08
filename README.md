@@ -19,11 +19,15 @@ O **EventAqui** é um sistema web completo e responsivo desenhado para promover 
 
 ### Para o Produtor de Eventos
 * **Hub Administrativo:** Dashboard centralizado com atalhos rápidos e interface fluida.
+* **Contas Corporativas (PJ):** Suporte nativo para cadastro de empresas (CNPJ, Razão Social e Nome Fantasia), priorizando dinamicamente a exibição do nome corporativo em toda a plataforma.
+* **Recebimentos Diretos (Conta Bancária):** Conexão OAuth 2.0 segura com o Mercado Pago. O produtor vincula a própria conta para receber o valor das vendas instantaneamente via PIX.
 * **Dashboard de Vendas:** Acompanhamento financeiro avançado com KPIs de receita bruta, quantidade de ingressos vendidos e valores aguardando PIX, além de filtros dinâmicos por evento e tabela responsiva de transações.
 * **Gestão de Eventos (CRUD):** Áreas isoladas e dedicadas para listagem, criação e edição de eventos, com suporte a upload de imagens de capa.
-* **Gestão de Equipe (Agentes):** Recrutamento de agentes de portaria com disparo de e-mail integrado e gestão de acessos independente. O agente tem acesso  ao leitor de QR Code integrado para validar os ingressos na entrada do evento e evitar fraudes/duplicidades.
+* **Gestão de Equipe (Agentes):** Recrutamento de agentes de portaria com disparo de e-mail integrado e gestão de acessos independente. O agente tem acesso ao leitor de QR Code integrado para validar os ingressos na entrada do evento e evitar fraudes/duplicidades.
 
 ### Engine e Integrações
+* **Marketplace e Split de Pagamentos:** Motor financeiro integrado à API de Pagamentos do Mercado Pago (Checkout Transparente). A plataforma retém automaticamente a sua taxa de serviço no momento do pagamento, enviando o valor líquido direto para a conta conectada do produtor, mitigando riscos de inadimplência e bitributação.
+* **Regras de Negócio e Yield:** Validação estrita de valores para proteger a margem de lucro da plataforma. Eventos são categorizados obrigatoriamente como "Gratuitos" ou devem possuir um valor mínimo de R$ 10,00, bloqueando transações irrisórias e prevenindo erros de formatação no gateway.
 * **Onboarding Inteligente:** Usuários convidados recebem e-mails mágicos e são redirecionados automaticamente para a conclusão de perfil e definição de senha.
 * **Sistema "Uber" de Portaria (Conta Unificada):** O produtor de eventos pode recrutar os seus próprios agentes de portaria enviando um e-mail personalizado diretamente da plataforma. A pessoa convidada cria sua conta apenas uma vez no EventAqui e já terá acesso ao leitor de QR code para validação dos ingressos vendidos pelo produtor contratante. Qualquer outro produtor pode contratá-lo simplesmente digitando seu e-mail no painel. O sistema reconhece o agente de portaria instantaneamente e faz a ponte entre eles nos bastidores, liberando o acesso aos novos eventos sem exigir que o porteiro crie outro cadastro.
 * **Baixa Automática (Webhook):** Comunicação direta e validada com o Mercado Pago para aprovar ingressos automaticamente assim que o PIX é pago.
@@ -43,7 +47,7 @@ O **EventAqui** é um sistema web completo e responsivo desenhado para promover 
 * **Interface e Estilização:** [Tailwind CSS](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/) (Componentes de UI acessíveis e customizáveis)
 * **Ícones e Feedbacks:** [Lucide React](https://lucide.dev/) (Ícones) e [Sonner](https://sonner.emilkowal.ski/) (Toasts de notificação)
 * **BaaS (Banco de Dados, Auth e Storage):** [Supabase](https://supabase.com/)
-* **Gateway de Pagamento:** [API do Mercado Pago](https://www.mercadopago.com.br/developers)
+* **Gateway de Pagamento:** [API do Mercado Pago](https://www.mercadopago.com.br/developers) (Split OAuth 2.0)
 
 ---
 
