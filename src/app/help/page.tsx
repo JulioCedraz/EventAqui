@@ -271,7 +271,7 @@ export default function HelpCenterPage() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a 
-              href="mailto:suporte.eventaqui@gmail.com" 
+              href="mailto:eventaqui@gmail.com" 
               className="inline-flex items-center justify-center px-6 py-3.5 border border-transparent text-base font-bold rounded-xl shadow-sm text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 transition-colors w-full sm:w-auto"
             >
               <Mail className="w-5 h-5 mr-2" />
