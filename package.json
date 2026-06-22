@@ -38,5 +38,8 @@
     "supabase": "^2.81.2",
     "tailwindcss": "^4.2.1",
     "typescript": "^5.9.3"
+  },
+  "allowScripts": {
+    "sharp@0.34.5": true
   }
 }
