@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
-import PersonalDataFields, { validateCPF, validateBirthDate, validateCNPJ } from "../../components/PersonalDataFields";
+import Link from "next/link";
 import SmartModal, { DialogConfig } from "../../components/SmartModal";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,54 +14,18 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 export default function LoginPage() {
   const router = useRouter();
 
-  const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
-  const [emailFieldError, setEmailFieldError] = useState("");
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState("customer");
-  const [profileType, setProfileType] = useState<'PF' | 'PJ'>('PF');
   
-  // Estados PF
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [cpf, setCpf] = useState("");
-  const [cpfStatus, setCpfStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
-  const [cpfMessage, setCpfMessage] = useState('');
-  const [birthDate, setBirthDate] = useState("");
-  const [birthDateStatus, setBirthDateStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
-  const [birthDateMessage, setBirthDateMessage] = useState('');
-  const [occupation, setOccupation] = useState<"estudante" | "profissional">("estudante");
-  const [university, setUniversity] = useState("");
-  const [customUniversity, setCustomUniversity] = useState("");
-  const [course, setCourse] = useState(""); 
-  const [customCourse, setCustomCourse] = useState("");
-  const [area, setArea] = useState("");
-  const [customArea, setCustomArea] = useState("");
-  const [specialty, setSpecialty] = useState("");
-
-  // Estados PJ
-  const [companyName, setCompanyName] = useState("");
-  const [tradingName, setTradingName] = useState("");
-  const [cnpj, setCnpj] = useState("");
-  const [cnpjStatus, setCnpjStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
-
   const [dialog, setDialog] = useState<DialogConfig | null>(null);
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
   const [isModalProcessing, setIsModalProcessing] = useState(false);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const urlRole = params.get('role');
-    if (urlRole && ['admin', 'producer', 'agent'].includes(urlRole)) {
-      setRole(urlRole);
-    }
-  }, []);
 
   const handlePasswordRecovery = () => {
     if (!email) {
@@ -123,103 +87,31 @@ export default function LoginPage() {
     setIsLoading(true);
     setErrorMsg("");
     setSuccessMsg("");
-    setEmailFieldError("");
     setNeedsConfirmation(false);
 
     try {
-      if (isLogin) {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-        if (signInError) {
-          if (signInError.message.includes("Email not confirmed")) {
-            setNeedsConfirmation(true);
-            throw new Error("Precisa confirmar seu e-mail antes de entrar. Verifique sua caixa de entrada ou Spam!");
-          }
-          throw new Error("E-mail ou senha incorretos.");
+      if (signInError) {
+        if (signInError.message.includes("Email not confirmed")) {
+          setNeedsConfirmation(true);
+          throw new Error("Precisa confirmar seu e-mail antes de entrar. Verifique sua caixa de entrada ou Spam!");
         }
+        throw new Error("E-mail ou senha incorretos.");
+      }
 
-        const { data: { session } } = await supabase.auth.getSession();
-        const userEmail = session?.user?.email;
+      const { data: { session } } = await supabase.auth.getSession();
+      const userEmail = session?.user?.email;
 
-        const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(",").map((adminEmail) => adminEmail.trim()) || [];
+      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(",").map((adminEmail) => adminEmail.trim()) || [];
 
-        if (userEmail && admins.includes(userEmail)) {
-          router.push("/admin");
-        } else {
-          router.push("/tickets");
-        }
+      if (userEmail && admins.includes(userEmail)) {
+        router.push("/admin");
       } else {
-        
-        if (profileType === 'PF') {
-          if (cpf && !validateCPF(cpf)) {
-            setCpfStatus('invalid');
-            setCpfMessage('Corrija o CPF antes de criar a conta.');
-            throw new Error("CPF inválido. Verifique os números digitados.");
-          }
-
-          if (!birthDate || !validateBirthDate(birthDate)) {
-            setBirthDateStatus('invalid');
-            setBirthDateMessage('Data inválida.');
-            throw new Error("Corrija a sua data de nascimento antes de prosseguir.");
-          }
-        } else {
-          // Validação PJ
-          if (cnpj && !validateCNPJ(cnpj)) {
-            setCnpjStatus('invalid');
-            throw new Error("CNPJ inválido. Verifique os números digitados.");
-          }
-        }
-
-        const isoBirthDate = birthDate ? birthDate.split('/').reverse().join('-') : null;
-        const finalUniversity = university === "Outra" ? customUniversity : university;
-        const finalArea = area === "Outra" ? customArea : area;
-        const finalCourse = course === "Outro" ? customCourse : course;
-
-        const userMetaData = profileType === 'PF' 
-          ? {
-              profile_type: 'PF',
-              first_name: firstName,
-              last_name: lastName,
-              full_name: `${firstName} ${lastName}`,
-              cpf: cpf,
-              occupation: occupation,
-              role: role,
-              birth_date: isoBirthDate,
-              university: occupation === "estudante" ? finalUniversity : null,
-              course: occupation === "estudante" ? finalCourse : null,
-              area: occupation === "profissional" ? finalArea : null,
-              specialty: occupation === "profissional" && finalArea === "Medicina" ? specialty : null,
-            }
-          : {
-              profile_type: 'PJ',
-              company_name: companyName,
-              trading_name: tradingName,
-              full_name: tradingName || companyName,
-              cnpj: cnpj,
-              role: role, 
-            };
-
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: userMetaData,
-          },
-        });
-
-        if (signUpError) throw signUpError;
-
-        if (signUpData.user && signUpData.user.identities && signUpData.user.identities.length === 0) {
-          setEmailFieldError("Este e-mail já está cadastrado.");
-          return;
-        }
-
-        setSuccessMsg("Quase lá! Enviamos um link de confirmação para o seu e-mail. Clique nele para ativar a conta.");
-        setIsLogin(true);
-        setPassword("");
+        router.push("/tickets");
       }
     } catch (err: any) {
       setErrorMsg(err.message);
@@ -255,13 +147,13 @@ export default function LoginPage() {
         isProcessing={isModalProcessing} 
       />
 
-      <Card key={isLogin ? "card-login" : "card-signup"} className="w-full max-w-md mx-auto shadow-xl shadow-blue-900/5 dark:shadow-none rounded-3xl border-gray-100 dark:border-border dark:bg-card animate-in fade-in zoom-in-95 slide-in-from-bottom-8 duration-500 ease-out transition-colors">
+      <Card className="w-full max-w-md mx-auto shadow-xl shadow-blue-900/5 dark:shadow-none rounded-3xl border-gray-100 dark:border-border dark:bg-card animate-in fade-in zoom-in-95 slide-in-from-bottom-8 duration-500 ease-out transition-colors">
         <CardHeader className="text-center pb-6">
           <CardTitle className="text-3xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight transition-colors">
-            {isLogin ? "Acesse sua conta" : "Crie a sua conta"}
+            Acesse sua conta
           </CardTitle>
           <CardDescription className="text-base mt-2 dark:text-gray-400 transition-colors">
-            {isLogin ? "Insira as suas credenciais para continuar." : "Preencha os dados abaixo para se cadastrar."}
+            Insira as suas credenciais para continuar.
           </CardDescription>
         </CardHeader>
 
@@ -297,103 +189,23 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
-                  setEmailFieldError("");
                   setErrorMsg("");
                 }}
-                className={`py-6 rounded-xl transition-colors ${
-                  emailFieldError ? "border-red-400 focus-visible:ring-red-400 bg-red-50/50 dark:border-red-500/50 dark:bg-red-500/10" : ""
-                }`}
+                className="py-6 rounded-xl transition-colors"
               />
-              {emailFieldError && (
-                <div className="flex flex-col gap-1 mt-1">
-                  <p className="text-xs font-medium text-red-600 dark:text-red-400 animate-in fade-in slide-in-from-top-1 transition-colors">
-                    {emailFieldError}
-                  </p>
-                  {!isLogin && (
-                    <Button 
-                      variant="link" 
-                      type="button" 
-                      className="h-auto p-0 text-xs text-blue-600 dark:text-blue-400 self-start transition-colors"
-                      onClick={() => { setIsLogin(true); setEmailFieldError(""); }}
-                    >
-                      Deseja fazer login?
-                    </Button>
-                  )}
-                </div>
-              )}
             </div>
-
-            {!isLogin && (
-              <div className="animate-in fade-in slide-in-from-top-4 duration-500 delay-100 fill-mode-both space-y-6">
-                
-                <div className="flex bg-gray-100 dark:bg-slate-900/50 p-1 rounded-xl border border-gray-200 dark:border-slate-800 transition-colors">
-                  <button
-                    type="button"
-                    onClick={() => setProfileType('PF')}
-                    className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${
-                      profileType === 'PF' 
-                        ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' 
-                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                    }`}
-                  >
-                    Pessoa Física
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setProfileType('PJ')}
-                    className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${
-                      profileType === 'PJ' 
-                        ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' 
-                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                    }`}
-                  >
-                    Empresa (CNPJ)
-                  </button>
-                </div>
-
-                <PersonalDataFields
-                  profileType={profileType}
-                  
-                  // Props PF
-                  firstName={firstName} setFirstName={setFirstName}
-                  lastName={lastName} setLastName={setLastName}
-                  cpf={cpf} setCpf={setCpf}
-                  cpfStatus={cpfStatus} setCpfStatus={setCpfStatus}
-                  cpfMessage={cpfMessage} setCpfMessage={setCpfMessage}
-                  birthDate={birthDate} setBirthDate={setBirthDate}
-                  birthDateStatus={birthDateStatus} setBirthDateStatus={setBirthDateStatus}
-                  birthDateMessage={birthDateMessage} setBirthDateMessage={setBirthDateMessage}
-                  occupation={occupation} setOccupation={setOccupation}
-                  course={course} setCourse={setCourse}
-                  customCourse={customCourse} setCustomCourse={setCustomCourse}
-                  university={university} setUniversity={setUniversity}
-                  customUniversity={customUniversity} setCustomUniversity={setCustomUniversity}
-                  area={area} setArea={setArea}
-                  customArea={customArea} setCustomArea={setCustomArea}
-                  specialty={specialty} setSpecialty={setSpecialty}
-                  
-                  // Props PJ
-                  companyName={companyName} setCompanyName={setCompanyName}
-                  tradingName={tradingName} setTradingName={setTradingName}
-                  cnpj={cnpj} setCnpj={setCnpj}
-                  cnpjStatus={cnpjStatus} setCnpjStatus={setCnpjStatus}
-                />
-              </div>
-            )}
 
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <Label htmlFor="password">Senha</Label>
-                {isLogin && (
-                  <Button
-                    variant="link"
-                    type="button"
-                    onClick={handlePasswordRecovery}
-                    className="h-auto p-0 text-xs font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                  >
-                    Esqueci minha senha
-                  </Button>
-                )}
+                <Button
+                  variant="link"
+                  type="button"
+                  onClick={handlePasswordRecovery}
+                  className="h-auto p-0 text-xs font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                >
+                  Esqueci minha senha
+                </Button>
               </div>
               <div className="relative">
                 <Input
@@ -421,7 +233,7 @@ export default function LoginPage() {
 
             <Button
               type="submit"
-              disabled={isLoading || (!isLogin && (profileType === 'PF' ? cpfStatus === 'invalid' : cnpjStatus === 'invalid'))}
+              disabled={isLoading}
               className="w-full py-6 rounded-xl text-base text-white font-bold bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 shadow-md shadow-blue-600/20 dark:shadow-none transition-all active:scale-[0.98] mt-4"
             >
               {isLoading ? (
@@ -429,26 +241,21 @@ export default function LoginPage() {
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   Processando...
                 </>
-              ) : isLogin ? "Entrar" : "Criar Conta"}
+              ) : "Entrar"}
             </Button>
           </form>
         </CardContent>
 
         <CardFooter className="flex justify-center border-t border-gray-100 dark:border-border pt-6 transition-colors">
-          <Button
-            variant="ghost"
-            type="button"
-            onClick={() => {
-              setIsLogin(!isLogin);
-              setErrorMsg("");
-              setSuccessMsg("");
-              setEmailFieldError("");
-              setNeedsConfirmation(false);
-            }}
-            className="text-sm font-medium text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors"
-          >
-            {isLogin ? "Ainda não tem conta? Cadastre-se" : "Já tem uma conta? Fazer login"}
-          </Button>
+          <Link href="/novo-cadastro" className="w-full text-center">
+            <Button
+              variant="ghost"
+              type="button"
+              className="w-full text-sm font-medium text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors"
+            >
+              Ainda não tem conta? Cadastre-se
+            </Button>
+          </Link>
         </CardFooter>
       </Card>
     </main>
