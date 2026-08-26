@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 
 export async function GET(request: Request) {
-
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
   const userId = searchParams.get('state');
+
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eventaqui.vercel.app';
   const redirectUri = `${baseUrl}/api/auth/mercadopago/callback`;
 
@@ -33,10 +33,15 @@ export async function GET(request: Request) {
 
     if (!mpResponse.ok) {
       console.error('Erro na resposta do Mercado Pago:', data);
-      return NextResponse.redirect(new URL('/profile?error=mp_auth_failed', request.url));
+      return NextResponse.redirect(new URL('/admin?error=mp_auth_failed', request.url));
     }
 
-    const { error: dbError } = await supabase
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    const { error: dbError } = await supabaseAdmin
       .from('profiles')
       .update({
         mp_access_token: data.access_token,
@@ -49,7 +54,6 @@ export async function GET(request: Request) {
     if (dbError) throw dbError;
 
     return NextResponse.redirect(new URL('/admin?success=mp_connected', request.url));
-
   } catch (error) {
     console.error('Erro interno na integração MP:', error);
     return NextResponse.redirect(new URL('/admin?error=internal_server_error', request.url));
