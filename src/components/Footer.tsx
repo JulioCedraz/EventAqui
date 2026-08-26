@@ -16,12 +16,14 @@ export default function Footer() {
   return (
     <footer className="bg-white dark:bg-background border-t border-gray-200 dark:border-border py-10 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 mb-10">
           
           {/* Coluna 1: Marca e Sobre */}
           <div className="space-y-4 text-center md:text-left">
-            <Link href="/" className="flex items-center justify-center md:justify-start gap-2 w-fit mx-auto md:mx-0">
+            <Link
+              href="/"
+              className="flex items-center justify-center md:justify-start gap-2 w-fit mx-auto md:mx-0"
+            >
               <div className="bg-blue-600 dark:bg-blue-600 p-2 rounded-xl transition-colors">
                 <Ticket className="w-6 h-6 text-white" />
               </div>
@@ -37,7 +39,9 @@ export default function Footer() {
 
           {/* Coluna 2: Navegação Rápida */}
           <div className="text-center md:text-left">
-            <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-4 transition-colors">Plataforma</h3>
+            <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-4 transition-colors">
+              Plataforma
+            </h3>
             <ul className="space-y-3">
               <li>
                 <Link
@@ -45,6 +49,14 @@ export default function Footer() {
                   className="text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                 >
                   Explorar Eventos
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/help"
+                  className="text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                >
+                  Central de Ajuda
                 </Link>
               </li>
               <li>
@@ -57,10 +69,10 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/help"
+                  href="/para-produtores"
                   className="text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                 >
-                  Central de Ajuda
+                  Seja um Produtor
                 </Link>
               </li>
             </ul>
@@ -68,7 +80,9 @@ export default function Footer() {
 
           {/* Coluna 3: Links Legais */}
           <div className="text-center md:text-left">
-            <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-4 transition-colors">Legal</h3>
+            <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-4 transition-colors">
+              Legal
+            </h3>
             <ul className="space-y-3">
               <li>
                 <Link
@@ -96,10 +110,8 @@ export default function Footer() {
               </li>
             </ul>
           </div>
-
         </div>
 
-        {/* Botão Topo da Página (Design Elegante) */}
         <div className="flex justify-center mb-10">
           <button
             onClick={scrollToTop}
@@ -112,7 +124,6 @@ export default function Footer() {
           </button>
         </div>
 
-        {/* Linha de Copyright, Assinatura e Pagamentos */}
         <div className="pt-8 border-t border-gray-200 dark:border-border flex flex-col md:flex-row justify-between items-center gap-6 md:gap-4 transition-colors">
           <div className="text-xs text-gray-500 dark:text-gray-400 text-center md:text-left space-y-1 transition-colors">
             <p>© {currentYear} EventAqui. Todos os direitos reservados.</p>
@@ -129,14 +140,12 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* Selos de Confiança e Pagamento */}
           <div className="flex flex-col items-center md:items-end gap-2">
             <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest transition-colors">
               Transações Protegidas Por
             </span>
             <div className="flex items-center gap-3">
-              
-              {/* Logo Oficial do Mercado Pago - Dinâmico conforme tema */}
+
               <div className="h-8 flex items-center">
                 {/* SVG Original: Visível apenas no Light Mode */}
                 <img
@@ -144,7 +153,6 @@ export default function Footer() {
                   alt="Mercado Pago"
                   className="h-14 w-auto opacity-90 hover:opacity-100 transition-opacity block dark:hidden"
                 />
-                
                 {/* PNG Branco: Visível apenas no Dark Mode */}
                 <img
                   src="/mercado-pago-dark.png"
@@ -153,7 +161,6 @@ export default function Footer() {
                 />
               </div>
 
-              {/* Logo Oficial do PIX */}
               <div className="h-8 flex items-center">
                 <img
                   src="/pix.svg"
@@ -164,7 +171,6 @@ export default function Footer() {
             </div>
           </div>
         </div>
-        
       </div>
     </footer>
   );
