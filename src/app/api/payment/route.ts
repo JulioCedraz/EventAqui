@@ -53,23 +53,23 @@ export async function POST(request: Request) {
     // =========================================
     // CÁLCULO DA TAXA DA PLATAFORMA (SPLIT)
     // =========================================
-    const PLATFORM_FEE_PERCENTAGE = 0.10;
-    const applicationFee = Number((Number(price) * PLATFORM_FEE_PERCENTAGE).toFixed(2));
+    // const PLATFORM_FEE_PERCENTAGE = 0.10;
+    // const applicationFee = Number((Number(price) * PLATFORM_FEE_PERCENTAGE).toFixed(2));
 
     // =========================================
     // INTEGRAÇÃO MERCADO PAGO (Eventos Pagos)
     // =========================================
     const idempotencyKey = crypto.randomUUID();
-
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eventaqui.vercel.app';
     const paymentData = {
       transaction_amount: Number(price),
-      application_fee: applicationFee,
+      // application_fee: applicationFee,
       description: title,
       payment_method_id: 'pix',
       payer: { email: email },
       date_of_expiration: expires_at,
       external_reference: ticketId,
-      notification_url: `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhook`
+      notification_url: `${baseUrl}/api/webhook`
     };
 
     const response = await fetch('https://api.mercadopago.com/v1/payments', {
