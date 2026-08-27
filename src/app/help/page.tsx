@@ -36,22 +36,22 @@ export default function HelpCenterPage() {
     {
       categories: ['comprador'],
       question: "Como faço para acessar o meu ingresso?",
-      answer: "Assim que o seu pagamento via PIX for aprovado, o ingresso será enviado para o seu e-mail de cadastro. Você também pode acessá-lo a qualquer momento fazendo login na plataforma e clicando em 'Meus Ingressos'."
+      answer: "Assim que o seu pagamento for aprovado, você pode acessá-lo a qualquer momento fazendo login na plataforma e clicando em 'Meus Ingressos'."
     },
     {
       categories: ['pagamentos', 'comprador'],
       question: "O pagamento via PIX demora quanto tempo para aprovar?",
-      answer: "A aprovação do PIX é instantânea! Geralmente, em menos de 10 segundos após o pagamento no seu banco, o sistema já libera o seu ingresso automaticamente."
+      answer: "A aprovação do PIX é instantânea! Geralmente, em menos de 10 segundos após o pagamento no seu banco, o sistema já libera o seu ingresso."
     },
     {
       categories: ['produtor', 'pagamentos'],
       question: "Sou produtor, como recebo o dinheiro das vendas?",
-      answer: "Os valores das vendas processadas via PIX são creditados diretamente na sua conta do Mercado Pago vinculada à plataforma, de acordo com as taxas e prazos acordados no Termo de Uso."
+      answer: "Os valores das vendas processadas via PIX são creditados diretamente na sua conta do Mercado Pago que você vinculará à sua conta desta plataforma. A taxa padrão do Mercado Pago para vendas via Pix com QR code dinâmico é de 0,99% (aproximadamente 1%) por transação, o dinheiro é disponibilizado na hora já com o desconto da taxa."
     },
     {
       categories: ['pagamentos', 'comprador', 'seguranca'],
       question: "Posso cancelar minha compra e pedir reembolso?",
-      answer: "Sim. De acordo com o Código de Defesa do Consumidor, você tem até 7 dias corridos após a compra para solicitar o cancelamento, desde que seja feito até 48 horas antes do início do evento."
+      answer: "Sim. A solicitação deve ser feita diretamente ao responsável pelo evento com antecedência mínima de dois dias antes do evento."
     },
     {
       categories: ['produtor'],
@@ -70,6 +70,11 @@ export default function HelpCenterPage() {
     },
     {
       categories: ['seguranca', 'comprador'],
+      question: "Comprei ingresso de terceiros (cambistas), vocês garantem a entrada?",
+      answer: "Não. O EventAqui não se responsabiliza por ingressos comprados fora da nossa plataforma oficial. Ingressos falsificados ou duplicados por terceiros serão bloqueados automaticamente pelo nosso validador na portaria."
+    },
+    {
+      categories: ['seguranca', 'comprador'],
       question: "Posso excluir minha conta se eu ainda tiver ingressos para eventos futuros?",
       answer: "Se você possuir ingressos válidos para eventos que ainda não aconteceram, o sistema emitirá um alerta ao tentar excluir a conta. Será necessário confirmar explicitamente que você está abrindo mão desses ingressos ou solicitar o estorno antes de agendar a exclusão."
     },
@@ -78,16 +83,7 @@ export default function HelpCenterPage() {
       question: "Sou produtor de eventos. Posso excluir minha conta a qualquer momento?",
       answer: "Para garantir a segurança dos compradores, o sistema bloqueia automaticamente a exclusão de contas de produtores com eventos ativos ou futuros. É necessário realizar o evento, processar estornos e encerrar pendências financeiras antes da exclusão."
     },
-    {
-      categories: ['seguranca', 'comprador'],
-      question: "Comprei ingresso de terceiros (cambistas), vocês garantem a entrada?",
-      answer: "Não. O EventAqui não se responsabiliza por ingressos comprados fora da nossa plataforma oficial. Ingressos falsificados ou duplicados por terceiros serão bloqueados automaticamente pelo nosso validador na portaria."
-    },
-    {
-      categories: ['seguranca', 'comprador'],
-      question: "Quem tem direito à meia-entrada?",
-      answer: "O benefício da meia-entrada é garantido por lei para estudantes, idosos, PCDs e jovens de baixa renda, mediante apresentação de documento comprobatório válido na portaria do evento. As regras específicas podem variar conforme a legislação local ou determinação do produtor."
-    }
+
   ];
 
   const filteredFaqs = faqs.filter(faq => {
