@@ -201,7 +201,7 @@ export default function ProducersLandingPage() {
 
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-200 border border-blue-200 text-blue-700 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-400 text-sm font-bold tracking-wide animate-in fade-in slide-in-from-bottom-4 duration-700 transition-colors">
               <HeartHandshake className="w-4 h-4 fill-blue-600/50 dark:fill-blue-400/50" />
-              <span>Plataforma 100% gratuita para organizadores locais</span>
+              <span>Plataforma gratuita com foco em eventos acadêmicos.</span>
             </div>
             <br />
             <div className="inline-flex items-center gap-8">
@@ -231,7 +231,7 @@ export default function ProducersLandingPage() {
             <p className="text-xl text-gray-600 dark:text-gray-400 font-medium leading-relaxed max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 transition-colors">
               Um sistema focado em redução máxima de custos operacionais.
               Tenha total controle de acesso ao seu evento usando o nosso validador de ingressos via QR Code.
-              Os pagamentos vão diretamente para sua conta bancária do Mercado Pago, sem taxas.
+              Os pagamentos vão diretamente para sua conta bancária do Mercado Pago.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6 animate-in fade-in slide-in-from-bottom-10 duration-700 delay-300">
@@ -278,7 +278,7 @@ export default function ProducersLandingPage() {
               Integração Financeira
               </h3>
               <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-medium text-sm transition-colors">
-                Vincule sua conta do Mercado Pago no painel do evento para receber pela venda de seus ingressos. Os ingressos são vendidos via PIX e você recebe imediatamente. Sem taxas.
+                Vincule sua conta do Mercado Pago através de seu painel administrativo para receber pela venda de seus ingressos. Os ingressos são vendidos via PIX e você recebe imediatamente. Taxa de 1% por cada pagamento aprovado.
               </p>
             </div>
 
@@ -290,7 +290,7 @@ export default function ProducersLandingPage() {
                 Portaria Colaborativa
               </h3>
               <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-medium text-sm transition-colors">
-                Chega de nomes no papel. Digite o e-mail dos seus amigos e eles ganham acesso seguro ao Scanner de QR Code para validar ingressos usando a câmera do próprio celular.
+                Sem papelada. Em seu painel administrativo, você autoriza seus amigos e eles ganham acesso seguro ao Scanner de QR Code para validar os seus ingressos usando a câmera do próprio celular dentro da plataforma.
               </p>
             </div>
 
@@ -320,7 +320,7 @@ export default function ProducersLandingPage() {
               Dúvidas Frequentes
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400 font-medium transition-colors">
-              Ficou com alguma dúvida sobre o funcionamento do projeto? As respostas estão aqui.
+              Ficou com alguma dúvida sobre o funcionamento da plataforma? Veja algumas respostas aqui.
             </p>
           </div>
 
@@ -331,7 +331,27 @@ export default function ProducersLandingPage() {
                 <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform duration-300 group-open:-rotate-180" />
               </summary>
               <div className="px-6 pb-6 text-gray-600 dark:text-gray-400 font-medium leading-relaxed transition-colors border-t border-gray-100 dark:border-border pt-4 mt-2 mx-6">
-                Não. A EventAqui é uma iniciativa para suporte em eventos estudantis e não é cobrada nenhuma taxa de serviço pelo uso do sistema. 
+                Não. A EventAqui é uma iniciativa gratuita para suporte em eventos estudantis e não é cobrada nenhuma taxa de serviço pelo uso do sistema. 
+              </div>
+            </details>
+
+            <details className="group bg-white dark:bg-card border border-gray-200 dark:border-border rounded-2xl overflow-hidden transition-colors [&_summary::-webkit-details-marker]:hidden">
+              <summary className="flex items-center justify-between cursor-pointer p-6 font-bold text-gray-900 dark:text-gray-100 text-lg outline-none transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                É obrigatório ter uma conta no Mercado Pago?
+                <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform duration-300 group-open:-rotate-180" />
+              </summary>
+              <div className="px-6 pb-6 text-gray-600 dark:text-gray-400 font-medium leading-relaxed transition-colors border-t border-gray-100 dark:border-border pt-4 mt-2 mx-6">
+                Para você receber valores, sim. A infraestrutura de pagamentos desta plataforma foi arquitetada para o uso da API de Checkout do Mercado Pago.
+              </div>
+            </details>
+
+            <details className="group bg-white dark:bg-card border border-gray-200 dark:border-border rounded-2xl overflow-hidden transition-colors [&_summary::-webkit-details-marker]:hidden">
+              <summary className="flex items-center justify-between cursor-pointer p-6 font-bold text-gray-900 dark:text-gray-100 text-lg outline-none transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                O Mercado Pago cobra alguma taxa?
+                <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform duration-300 group-open:-rotate-180" />
+              </summary>
+              <div className="px-6 pb-6 text-gray-600 dark:text-gray-400 font-medium leading-relaxed transition-colors border-t border-gray-100 dark:border-border pt-4 mt-2 mx-6">
+                Sim. A taxa padrão de processamento do próprio Mercado Pago para Pix com QR code dinâmico é de 0,99% (aproximadamente 1%) por transação.
               </div>
             </details>
 
@@ -341,7 +361,7 @@ export default function ProducersLandingPage() {
                 <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform duration-300 group-open:-rotate-180" />
               </summary>
               <div className="px-6 pb-6 text-gray-600 dark:text-gray-400 font-medium leading-relaxed transition-colors border-t border-gray-100 dark:border-border pt-4 mt-2 mx-6">
-                De forma direta e instantânea. Nossa arquitetura conecta a sua conta pessoal ou empresarial do Mercado Pago ao evento. Quando um cliente realiza o PIX, o valor é creditado imediatamente no seu saldo. A responsabilidade é inteiramente sua. O dinheiro nunca fica retido conosco.
+                De forma direta e instantânea. Nossa arquitetura conecta a sua conta pessoal do Mercado Pago à sua conta da EventAqui e vincula a todos os eventos organizados por você. Quando um cliente realiza o PIX, o valor é creditado imediatamente no seu saldo. Lembrando que haverá desconto de 1% do valor pela taxa de transação do Mercado Pago. A responsabilidade é inteiramente sua. A EventAqui não retém nenhum valor.
               </div>
             </details>
 
@@ -351,27 +371,7 @@ export default function ProducersLandingPage() {
                 <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform duration-300 group-open:-rotate-180" />
               </summary>
               <div className="px-6 pb-6 text-gray-600 dark:text-gray-400 font-medium leading-relaxed transition-colors border-t border-gray-100 dark:border-border pt-4 mt-2 mx-6">
-                No painel administrativo, clique em "Equipe de Portaria", informe o e-mail da(s) pessoa(s) em que você quer designar como seu agente de portaria, depois clique em "Convidar Agente" para enviar um convite de cadastro já com acesso ao leitor de QR Code habilitado para validar os seus ingressos. Com o próprio celular, o agente acessa o Scanner de Check-in. Leu o QR Code do cliente, a catraca virtual fica verde. É rápido, antifraude e não deixa formar filas.
-              </div>
-            </details>
-
-            <details className="group bg-white dark:bg-card border border-gray-200 dark:border-border rounded-2xl overflow-hidden transition-colors [&_summary::-webkit-details-marker]:hidden">
-              <summary className="flex items-center justify-between cursor-pointer p-6 font-bold text-gray-900 dark:text-gray-100 text-lg outline-none transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                É obrigatório ter uma conta do Mercado Pago?
-                <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform duration-300 group-open:-rotate-180" />
-              </summary>
-              <div className="px-6 pb-6 text-gray-600 dark:text-gray-400 font-medium leading-relaxed transition-colors border-t border-gray-100 dark:border-border pt-4 mt-2 mx-6">
-                Sim. A infraestrutura de pagamentos aqui é via Mercado Pago, e no momento não há outra forma. Você pode usar uma conta de Pessoa Física ou de Pessoa Jurídica. 
-              </div>
-            </details>
-
-            <details className="group bg-white dark:bg-card border border-gray-200 dark:border-border rounded-2xl overflow-hidden transition-colors [&_summary::-webkit-details-marker]:hidden">
-              <summary className="flex items-center justify-between cursor-pointer p-6 font-bold text-gray-900 dark:text-gray-100 text-lg outline-none transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                O Mercado Pago não cobra nenhuma taxa mesmo?
-                <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform duration-300 group-open:-rotate-180" />
-              </summary>
-              <div className="px-6 pb-6 text-gray-600 dark:text-gray-400 font-medium leading-relaxed transition-colors border-t border-gray-100 dark:border-border pt-4 mt-2 mx-6">
-                Nas vendas feitas por pix você recebe os valores integralmente, não há taxa de transação ou qualquer outra no Mercado Pago. Somente para contas empresariais (Pessoa Jurídica) com faturamento acima de R$ 15.000 (quinze mil reais) por mês, incide uma taxa de 0,49% por cada transação.
+                No painel administrativo, clique em "Equipe de Portaria", informe o e-mail da pessoa que você quer designar como seu agente de portaria, depois clique em "Convidar Agente" para habilitar aquele e-mail com o acesso ao leitor de QR Code de validação dos ingressos. Com o próprio celular, o agente acessa o Scanner de Check-in, lê o QR Code da pessoa, a catraca virtual fica verde. É rápido e antifraude.
               </div>
             </details>
 
@@ -395,7 +395,7 @@ export default function ProducersLandingPage() {
           </h2>
           <p className="text-xl text-blue-100 dark:text-blue-200 font-medium mb-10">
             Cadastre-se gratuitamente e solicite o seu acesso como produtor enviando um e-mail para{" "}
-            <span className="font-black">eventaqui@gmail.com</span>.
+            <span className="font-black">eventaqui@gmail.com</span> se identificando e apresentando o seu evento.
           </p>
           <Button asChild className="h-16 px-10 text-lg bg-white text-blue-600 hover:bg-gray-100 font-black rounded-2xl transition-transform hover:scale-105 shadow-xl min-w-62.5">
             <Link href="/novo-cadastro">
