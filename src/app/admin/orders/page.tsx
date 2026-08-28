@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
   Loader2, ArrowLeft, TrendingUp, Ticket, Clock, 
-  Search, Filter, CheckCircle2, XCircle, AlertCircle
+  Search, Filter, CheckCircle2, XCircle, AlertCircle 
 } from "lucide-react";
 
 type Order = {
@@ -20,10 +20,19 @@ type Order = {
   payment_status: string;
   quantity: number;
   event_id: string;
+  user_id: string | null;
   events: {
     title: string;
     price: number;
   };
+  profiles?: {
+    cpf: string | null;
+    phone: string | null;
+    university: string | null;
+    course: string | null;
+    semester: string | null;
+    enrollment_number: string | null;
+  } | null;
 };
 
 type EventSummary = {
@@ -33,14 +42,16 @@ type EventSummary = {
 
 export default function OrdersPage() {
   const router = useRouter();
-  
+
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
   
   const [orders, setOrders] = useState<Order[]>([]);
   const [events, setEvents] = useState<EventSummary[]>([]);
+  
   const [selectedEventId, setSelectedEventId] = useState<string>('all');
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
 
   useEffect(() => {
     const checkAuthAndFetchData = async () => {
@@ -51,7 +62,7 @@ export default function OrdersPage() {
       if (!session || !userEmail || !currentUserId) {
         router.push('/');
         return;
-      } 
+      }
       
       const { data: profile } = await supabase
         .from('profiles')
@@ -75,7 +86,7 @@ export default function OrdersPage() {
       let query = supabase
         .from('tickets')
         .select(`
-          id, created_at, buyer_name, buyer_email, payment_status, quantity, event_id,
+          id, created_at, buyer_name, buyer_email, payment_status, quantity, event_id, user_id,
           events!inner ( title, price, producer_id )
         `)
         .order('created_at', { ascending: false });
@@ -88,7 +99,31 @@ export default function OrdersPage() {
       const { data: ticketsData, error: ticketsError } = await query;
 
       if (!ticketsError && ticketsData) {
-        setOrders(ticketsData as unknown as Order[]);
+        // 1. Extrair os user_ids únicos para buscar os perfis complementares
+        const userIds = Array.from(new Set(ticketsData.map((t: any) => t.user_id).filter(Boolean)));
+        
+        // 2. Buscar os dados acadêmicos e de contato na tabela profiles
+        let profilesMap: Record<string, any> = {};
+        if (userIds.length > 0) {
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('id, cpf, phone, university, course, semester, enrollment_number')
+            .in('id', userIds);
+            
+          if (profilesData) {
+            profilesData.forEach(p => {
+              profilesMap[p.id] = p;
+            });
+          }
+        }
+
+        // 3. Mesclar as informações
+        const enrichedOrders = ticketsData.map((t: any) => ({
+          ...t,
+          profiles: t.user_id ? profilesMap[t.user_id] : null
+        }));
+
+        setOrders(enrichedOrders as unknown as Order[]);
         
         // Extrair eventos únicos para popular o filtro (Select)
         const uniqueEventsMap = new Map<string, string>();
@@ -109,13 +144,16 @@ export default function OrdersPage() {
     checkAuthAndFetchData();
   }, [router]);
 
-  // Filtra os pedidos com base no evento selecionado no dropdown
+  // Filtra os pedidos com base no evento e no status selecionados
   const filteredOrders = useMemo(() => {
-    if (selectedEventId === 'all') return orders;
-    return orders.filter(order => order.event_id === selectedEventId);
-  }, [orders, selectedEventId]);
+    return orders.filter(order => {
+      const matchEvent = selectedEventId === 'all' || order.event_id === selectedEventId;
+      const matchStatus = selectedStatus === 'all' || order.payment_status === selectedStatus;
+      return matchEvent && matchStatus;
+    });
+  }, [orders, selectedEventId, selectedStatus]);
 
-  // Calcula os KPIs dinamicamente com base no filtro
+  // Calcula os KPIs dinamicamente com base nos filtros
   const kpis = useMemo(() => {
     let revenue = 0;
     let sold = 0;
@@ -160,10 +198,10 @@ export default function OrdersPage() {
 
   return (
     <main className="bg-gray-50 dark:bg-background py-10 px-4 sm:px-6 lg:px-8 min-h-screen flex flex-col items-center transition-colors">
-      <div className="w-full max-w-6xl space-y-8">
+      <div className="w-full max-w-7xl space-y-8">
         
-        {/* CABEÇALHO */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1 pb-1">
+        {/* CABEÇALHO E FILTROS */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-1 pb-1">
           <div>
             <Link href="/admin" className="text-sm font-medium text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 flex items-center transition-colors w-fit mb-2">
               <ArrowLeft className="w-4 h-4 mr-1" /> Voltar ao Painel
@@ -172,21 +210,41 @@ export default function OrdersPage() {
             <p className="text-gray-500 dark:text-gray-400 transition-colors">Acompanhe a visão operacional das transações em tempo real.</p>
           </div>
 
-          {/* FILTRO DE EVENTOS */}
-          <div className="relative flex items-center w-full sm:w-72">
-            <Filter className="w-4 h-4 absolute left-3 text-gray-400 dark:text-gray-500 transition-colors" />
-            <select
-              value={selectedEventId}
-              onChange={(e) => setSelectedEventId(e.target.value)}
-              className="w-full h-11 pl-9 pr-10 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold text-gray-700 dark:text-gray-300 shadow-sm appearance-none focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 focus:outline-none transition-all cursor-pointer truncate"
-            >
-              <option value="all">Todos os Eventos</option>
-              {events.map(evt => (
-                <option key={evt.id} value={evt.id}>{evt.title}</option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 dark:text-gray-400 transition-colors">
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+          <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto mt-2 lg:mt-0">
+            {/* FILTRO DE EVENTOS */}
+            <div className="relative flex items-center w-full sm:w-64 lg:w-72">
+              <Filter className="w-4 h-4 absolute left-3 text-gray-400 dark:text-gray-500 transition-colors" />
+              <select
+                value={selectedEventId}
+                onChange={(e) => setSelectedEventId(e.target.value)}
+                className="w-full h-11 pl-9 pr-10 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold text-gray-700 dark:text-gray-300 shadow-sm appearance-none focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 focus:outline-none transition-all cursor-pointer truncate"
+              >
+                <option value="all">Todos os Eventos</option>
+                {events.map(evt => (
+                  <option key={evt.id} value={evt.id}>{evt.title}</option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 dark:text-gray-400 transition-colors">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+              </div>
+            </div>
+
+            {/* FILTRO DE STATUS */}
+            <div className="relative flex items-center w-full sm:w-48">
+              <Filter className="w-4 h-4 absolute left-3 text-gray-400 dark:text-gray-500 transition-colors" />
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="w-full h-11 pl-9 pr-10 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold text-gray-700 dark:text-gray-300 shadow-sm appearance-none focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 focus:outline-none transition-all cursor-pointer truncate"
+              >
+                <option value="all">Todos os Status</option>
+                <option value="approved">Pagos</option>
+                <option value="pending">Pendentes</option>
+                <option value="cancelled">Cancelados</option>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 dark:text-gray-400 transition-colors">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+              </div>
             </div>
           </div>
         </div>
@@ -251,7 +309,7 @@ export default function OrdersPage() {
             ) : (
               <>
                 {/* VERSÃO MOBILE (Cards empilhados) */}
-                <div className="md:hidden divide-y divide-gray-100 dark:divide-slate-800 transition-colors">
+                <div className="xl:hidden divide-y-4 divide-gray-100 dark:divide-slate-800 transition-colors">
                   {filteredOrders.map((order) => (
                     <div key={order.id} className="p-4 sm:p-5 bg-white dark:bg-transparent space-y-3 transition-colors">
                       <div className="flex justify-between items-start">
@@ -261,9 +319,18 @@ export default function OrdersPage() {
                         </div>
                         {getStatusBadge(order.payment_status)}
                       </div>
+                      
                       <div className="bg-gray-50 dark:bg-slate-800/50 p-3 rounded-lg border border-gray-100 dark:border-slate-700/50 text-sm transition-colors">
                         <p className="font-semibold text-gray-700 dark:text-gray-300 truncate transition-colors">{order.events?.title}</p>
-                        <div className="flex justify-between items-center mt-2">
+                        
+                        <div className="mt-2 pt-2 border-t border-gray-200 dark:border-slate-700/50 space-y-1">
+                          <p className="text-xs text-gray-600 dark:text-gray-400"><span className="font-semibold">CPF:</span> {order.profiles?.cpf || 'N/A'} <span className="mx-1">|</span> <span className="font-semibold">Tel:</span> {order.profiles?.phone || 'N/A'}</p>
+                          {order.profiles?.university && (
+                            <p className="text-xs text-gray-600 dark:text-gray-400"><span className="font-semibold">Acadêmico:</span> {order.profiles.university} - {order.profiles.course} ({order.profiles.semester}) <br/> Matrícula: {order.profiles.enrollment_number}</p>
+                          )}
+                        </div>
+
+                        <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-200 dark:border-slate-700/50">
                           <span className="text-gray-500 dark:text-gray-400 text-xs transition-colors">
                             {new Date(order.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                           </span>
@@ -276,39 +343,60 @@ export default function OrdersPage() {
                   ))}
                 </div>
 
-                {/* VERSÃO DESKTOP (Tabela) */}
-                <div className="hidden md:block overflow-x-auto">
+                {/* VERSÃO DESKTOP (Tabela Completa) */}
+                <div className="hidden xl:block overflow-x-auto">
                   <table className="w-full text-left text-sm text-gray-600 dark:text-gray-300">
                     <thead className="bg-gray-50/50 dark:bg-slate-900/50 text-gray-500 dark:text-gray-400 text-xs uppercase font-bold border-b border-gray-100 dark:border-slate-800 transition-colors">
                       <tr>
-                        <th className="px-6 py-4">Data</th>
-                        <th className="px-6 py-4">Comprador</th>
-                        <th className="px-6 py-4">Evento</th>
-                        <th className="px-6 py-4 text-center">Qtd</th>
-                        <th className="px-6 py-4">Valor Total</th>
-                        <th className="px-6 py-4">Status</th>
+                        <th className="px-5 py-4">Data</th>
+                        <th className="px-5 py-4">Comprador</th>
+                        <th className="px-5 py-4">CPF/Contato</th>
+                        <th className="px-5 py-4">Acadêmico</th>
+                        <th className="px-5 py-4">Evento</th>
+                        <th className="px-5 py-4 text-center">Qtd</th>
+                        <th className="px-5 py-4">Total</th>
+                        <th className="px-5 py-4">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-slate-800 bg-white dark:bg-card transition-colors">
+                    <tbody className="divide-y-2 divide-gray-100 dark:divide-slate-800 bg-white dark:bg-card transition-colors">
                       {filteredOrders.map((order) => (
                         <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400 transition-colors">
-                            {new Date(order.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} <span className="text-xs ml-1">{new Date(order.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                          <td className="px-5 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400 transition-colors">
+                            {new Date(order.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} <br/>
+                            <span className="text-xs">{new Date(order.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-5 py-4 whitespace-nowrap">
                             <p className="font-bold text-gray-900 dark:text-gray-100 transition-colors">{order.buyer_name}</p>
                             <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">{order.buyer_email}</p>
                           </td>
-                          <td className="px-6 py-4">
-                            <p className="font-medium text-gray-700 dark:text-gray-300 line-clamp-1 transition-colors" title={order.events?.title}>{order.events?.title}</p>
+                          <td className="px-5 py-4 whitespace-nowrap">
+                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">{order.profiles?.cpf || 'N/A'}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">{order.profiles?.phone || 'N/A'}</p>
                           </td>
-                          <td className="px-6 py-4 text-center font-bold text-gray-900 dark:text-gray-100 transition-colors">
+                          <td className="px-5 py-4 whitespace-nowrap">
+                            {order.profiles?.university ? (
+                              <>
+                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 line-clamp-1 max-w-50" title={`${order.profiles.university} - ${order.profiles.course}`}>
+                                  {order.profiles.university} - {order.profiles.course}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  {order.profiles.semester} • Mat: {order.profiles.enrollment_number}
+                                </p>
+                              </>
+                            ) : (
+                              <span className="text-xs text-gray-400 dark:text-gray-500">N/A</span>
+                            )}
+                          </td>
+                          <td className="px-5 py-4">
+                            <p className="font-medium text-gray-700 dark:text-gray-300 line-clamp-2 max-w-50 transition-colors" title={order.events?.title}>{order.events?.title}</p>
+                          </td>
+                          <td className="px-5 py-4 text-center font-bold text-gray-900 dark:text-gray-100 transition-colors">
                             {order.quantity}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap font-black text-gray-900 dark:text-gray-100 transition-colors">
+                          <td className="px-5 py-4 whitespace-nowrap font-black text-gray-900 dark:text-gray-100 transition-colors">
                             R$ {((order.events?.price || 0) * (order.quantity || 1)).toFixed(2).replace('.', ',')}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-5 py-4 whitespace-nowrap">
                             {getStatusBadge(order.payment_status)}
                           </td>
                         </tr>
@@ -320,7 +408,6 @@ export default function OrdersPage() {
             )}
           </CardContent>
         </Card>
-
       </div>
     </main>
   );
