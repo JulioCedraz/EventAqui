@@ -14,11 +14,11 @@ CREATE TABLE public.profiles (
     last_name text,
     cpf text,
     birth_date date,
-    occupation text,
+    phone text,
     university text,
     course text,
-    area text,
-    specialty text,
+    semester text,
+    enrollment_number text;
 
     -- Campos Pessoa Jurídica (PJ)
     profile_type text CHECK (profile_type IN ('PF', 'PJ')) DEFAULT 'PF',
