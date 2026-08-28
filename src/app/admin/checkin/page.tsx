@@ -16,24 +16,34 @@ import {
 
 export default function CheckinPage() {
   const router = useRouter();
-  
+
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [authorized, setAuthorized] = useState(false);
+
   const [ticketId, setTicketId] = useState('');
   const [loading, setLoading] = useState(false);
-  
   const [result, setResult] = useState<{ 
     status: 'success' | 'error' | 'warning' | null, 
     message: string,
-    userData?: { name: string, email: string, occupation: string, event: string }
+    userData?: { 
+      name: string, 
+      email: string, 
+      cpf: string,
+      university: string,
+      course: string,
+      semester: string,
+      enrollment_number: string,
+      event: string 
+    }
   }>({ status: null, message: '' });
-  
+
   const [isScanning, setIsScanning] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const checkAccess = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      
       if (!session) {
         router.push('/');
         return;
@@ -48,6 +58,7 @@ export default function CheckinPage() {
       const role = profile?.role || 'customer';
       const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(e => e.trim()) || [];
       const isAdmin = admins.includes(session.user.email || '') || role === 'admin';
+      
       const hasAccess = isAdmin || role === 'producer' || role === 'agent';
 
       if (!hasAccess) {
@@ -56,8 +67,10 @@ export default function CheckinPage() {
       } else {
         setAuthorized(true);
       }
+      
       setIsCheckingAuth(false);
     };
+
     checkAccess();
   }, [router]);
 
@@ -254,12 +267,14 @@ export default function CheckinPage() {
                       <p className="text-[10px] sm:text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1 transition-colors">Participante</p>
                       <p className="text-xl font-bold text-gray-900 dark:text-gray-100 leading-none transition-colors">{result.userData.name}</p>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 transition-colors">{result.userData.email}</p>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-300 mt-1 transition-colors">CPF: {result.userData.cpf}</p>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100 dark:border-slate-800 transition-colors">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-100 dark:border-slate-800 transition-colors">
                       <div>
-                        <p className="text-[10px] sm:text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1 transition-colors">Ocupação</p>
-                        <p className="text-sm font-bold text-blue-600 dark:text-blue-400 transition-colors">{result.userData.occupation}</p>
+                        <p className="text-[10px] sm:text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1 transition-colors">Acadêmico</p>
+                        <p className="text-sm font-bold text-blue-600 dark:text-blue-400 transition-colors line-clamp-1">{result.userData.university} - {result.userData.course}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 transition-colors">{result.userData.semester} • Mat: {result.userData.enrollment_number}</p>
                       </div>
                       <div>
                         <p className="text-[10px] sm:text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1 transition-colors">Evento</p>

@@ -28,6 +28,7 @@ export async function POST(request: Request) {
     );
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
+
     if (authError || !user) {
       return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
     }
@@ -59,9 +60,20 @@ export async function POST(request: Request) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('occupation')
+      .select('cpf, university, course, semester, enrollment_number')
       .eq('id', ticket.user_id)
       .single();
+
+    const userDataObj = {
+      name: ticket.buyer_name,
+      email: ticket.buyer_email,
+      cpf: profile?.cpf || 'Não informado',
+      university: profile?.university || 'Não informada',
+      course: profile?.course || 'Não informado',
+      semester: profile?.semester || 'N/A',
+      enrollment_number: profile?.enrollment_number || 'N/A',
+      event: (ticket.events as any)?.title
+    };
 
     if (ticket.payment_status !== 'approved') {
       return NextResponse.json({ error: `Ingresso não pago (Status: ${ticket.payment_status})` }, { status: 400 });
@@ -70,12 +82,7 @@ export async function POST(request: Request) {
     if (ticket.is_used) {
       return NextResponse.json({ 
         error: 'Este ingresso já foi usado!',
-        userData: {
-          name: ticket.buyer_name,
-          email: ticket.buyer_email,
-          occupation: profile?.occupation || 'Não informada',
-          event: (ticket.events as any)?.title
-        }
+        userData: userDataObj
       }, { status: 400 });
     }
 
@@ -89,24 +96,14 @@ export async function POST(request: Request) {
     if (updateError || !updatedRow) {
       return NextResponse.json({ 
         error: 'Você não é o produtor ou agente autorizado deste evento.',
-        userData: {
-          name: ticket.buyer_name,
-          email: ticket.buyer_email,
-          occupation: profile?.occupation || 'Não informada',
-          event: (ticket.events as any)?.title
-        }
+        userData: userDataObj
       }, { status: 403 });
     }
 
     return NextResponse.json({ 
       success: true, 
       message: 'Entrada autorizada!',
-      userData: {
-        name: ticket.buyer_name,
-        email: ticket.buyer_email,
-        occupation: profile?.occupation || 'Não informada',
-        event: (ticket.events as any)?.title
-      }
+      userData: userDataObj
     });
 
   } catch (err: any) {
