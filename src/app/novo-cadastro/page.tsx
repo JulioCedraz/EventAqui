@@ -3,48 +3,56 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import Link from "next/link";
-import PersonalDataFields, { validateCPF, validateBirthDate, validateCNPJ } from "../../components/PersonalDataFields";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
+import PersonalDataFields, { 
+  basePersonalDataSchema, 
+  refinePersonalData 
+} from "../../components/PersonalDataFields";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 
+// ==========================================
+// 1. EXTENSÃO DO SCHEMA BASE PARA O CADASTRO
+// ==========================================
+const signupSchema = basePersonalDataSchema.extend({
+  email: z.string().email("Formato de e-mail inválido"),
+  password: z.string().min(6, "A senha deve ter no mínimo 6 caracteres")
+}).superRefine(refinePersonalData);
+
+type SignupFormValues = z.infer<typeof signupSchema>;
+
 export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
-  const [emailFieldError, setEmailFieldError] = useState("");
-  
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState("customer");
-  const [profileType, setProfileType] = useState<'PF' | 'PJ'>('PF');
-  
-  // Estados PF
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [cpf, setCpf] = useState("");
-  const [cpfStatus, setCpfStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
-  const [cpfMessage, setCpfMessage] = useState('');
-  const [birthDate, setBirthDate] = useState("");
-  const [birthDateStatus, setBirthDateStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
-  const [birthDateMessage, setBirthDateMessage] = useState('');
-  const [occupation, setOccupation] = useState<"estudante" | "profissional">("estudante");
-  const [university, setUniversity] = useState("");
-  const [customUniversity, setCustomUniversity] = useState("");
-  const [course, setCourse] = useState(""); 
-  const [customCourse, setCustomCourse] = useState("");
-  const [area, setArea] = useState("");
-  const [customArea, setCustomArea] = useState("");
-  const [specialty, setSpecialty] = useState("");
 
-  // Estados PJ
-  const [companyName, setCompanyName] = useState("");
-  const [tradingName, setTradingName] = useState("");
-  const [cnpj, setCnpj] = useState("");
-  const [cnpjStatus, setCnpjStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
+  // ==========================================
+  // 2. CONFIGURAÇÃO DO REACT HOOK FORM
+  // ==========================================
+  const form = useForm<SignupFormValues>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      profileType: 'PF',
+      email: '',
+      password: '',
+      // Inicialização para evitar avisos de uncontrolled input
+      firstName: '', lastName: '', cpf: '', birthDate: '', phone: '',
+      semester: '', enrollmentNumber: '', university: '', customUniversity: '',
+      course: '', customCourse: '', companyName: '', tradingName: '', cnpj: ''
+    },
+    mode: "onBlur"
+  });
+
+  const profileType = form.watch('profileType');
+  const { errors } = form.formState;
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -54,66 +62,46 @@ export default function SignupPage() {
     }
   }, []);
 
-  const handleSubmit = async (e: React.SyntheticEvent) => {
-    e.preventDefault();
+  // ==========================================
+  // 3. FUNÇÃO DE SUBMISSÃO (SÓ EXECUTA SE VÁLIDO)
+  // ==========================================
+  const onSubmit = async (data: SignupFormValues) => {
     setIsLoading(true);
     setErrorMsg("");
     setSuccessMsg("");
-    setEmailFieldError("");
 
     try {
-      if (profileType === 'PF') {
-        if (cpf && !validateCPF(cpf)) {
-          setCpfStatus('invalid');
-          setCpfMessage('Corrija o CPF antes de criar a conta.');
-          throw new Error("CPF inválido. Verifique os números digitados.");
-        }
+      const isoBirthDate = data.birthDate ? data.birthDate.split('/').reverse().join('-') : null;
+      const finalUniversity = data.university === "Outra" ? data.customUniversity : data.university;
+      const finalCourse = data.course === "Outro" ? data.customCourse : data.course;
 
-        if (!birthDate || !validateBirthDate(birthDate)) {
-          setBirthDateStatus('invalid');
-          setBirthDateMessage('Data inválida.');
-          throw new Error("Corrija a sua data de nascimento antes de prosseguir.");
-        }
-      } else {
-        // Validação PJ
-        if (cnpj && !validateCNPJ(cnpj)) {
-          setCnpjStatus('invalid');
-          throw new Error("CNPJ inválido. Verifique os números digitados.");
-        }
-      }
-
-      const isoBirthDate = birthDate ? birthDate.split('/').reverse().join('-') : null;
-      const finalUniversity = university === "Outra" ? customUniversity : university;
-      const finalArea = area === "Outra" ? customArea : area;
-      const finalCourse = course === "Outro" ? customCourse : course;
-
-      const userMetaData = profileType === 'PF' 
+      const userMetaData = data.profileType === 'PF' 
         ? {
             profile_type: 'PF',
-            first_name: firstName,
-            last_name: lastName,
-            full_name: `${firstName} ${lastName}`,
-            cpf: cpf,
-            occupation: occupation,
+            first_name: data.firstName,
+            last_name: data.lastName,
+            full_name: `${data.firstName} ${data.lastName}`,
+            cpf: data.cpf,
             role: role,
             birth_date: isoBirthDate,
-            university: occupation === "estudante" ? finalUniversity : null,
-            course: occupation === "estudante" ? finalCourse : null,
-            area: occupation === "profissional" ? finalArea : null,
-            specialty: occupation === "profissional" && finalArea === "Medicina" ? specialty : null,
+            phone: data.phone,
+            semester: data.semester,
+            enrollment_number: data.enrollmentNumber,
+            university: finalUniversity,
+            course: finalCourse,
           }
         : {
             profile_type: 'PJ',
-            company_name: companyName,
-            trading_name: tradingName,
-            full_name: tradingName || companyName,
-            cnpj: cnpj,
+            company_name: data.companyName,
+            trading_name: data.tradingName,
+            full_name: data.tradingName || data.companyName,
+            cnpj: data.cnpj,
             role: role, 
           };
 
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
+        email: data.email,
+        password: data.password,
         options: {
           data: userMetaData,
         },
@@ -122,12 +110,12 @@ export default function SignupPage() {
       if (signUpError) throw signUpError;
 
       if (signUpData.user && signUpData.user.identities && signUpData.user.identities.length === 0) {
-        setEmailFieldError("Este e-mail já está cadastrado.");
+        form.setError("email", { type: "manual", message: "Este e-mail já está cadastrado." });
         return;
       }
 
       setSuccessMsg("Quase lá! Enviamos um link de confirmação para o seu e-mail. Clique nele para ativar a conta.");
-      setPassword("");
+      form.setValue("password", "");
     } catch (err: any) {
       setErrorMsg(err.message);
     } finally {
@@ -148,7 +136,7 @@ export default function SignupPage() {
         </CardHeader>
 
         <CardContent>
-          <form className="space-y-5" onSubmit={handleSubmit}>
+          <form className="space-y-5" onSubmit={form.handleSubmit(onSubmit)}>
             {errorMsg && (
               <div className="bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 text-sm p-3 rounded-xl text-center font-medium animate-in fade-in slide-in-from-top-2 transition-colors">
                 {errorMsg}
@@ -160,45 +148,47 @@ export default function SignupPage() {
               </div>
             )}
 
+            {/* E-MAIL */}
             <div className="space-y-2 relative">
               <Label htmlFor="email">E-mail</Label>
               <Input
                 id="email"
                 type="email"
-                required
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setEmailFieldError("");
-                  setErrorMsg("");
-                }}
+                {...form.register("email")}
                 className={`py-6 rounded-xl transition-colors ${
-                  emailFieldError ? "border-red-400 focus-visible:ring-red-400 bg-red-50/50 dark:border-red-500/50 dark:bg-red-500/10" : ""
+                  errors.email ? "border-red-400 focus-visible:ring-red-400 bg-red-50/50 dark:border-red-500/50 dark:bg-red-500/10" : ""
                 }`}
               />
-              {emailFieldError && (
+              {errors.email && (
                 <div className="flex flex-col gap-1 mt-1">
                   <p className="text-xs font-medium text-red-600 dark:text-red-400 animate-in fade-in slide-in-from-top-1 transition-colors">
-                    {emailFieldError}
+                    {String(errors.email.message)}
                   </p>
-                  <Link href="/login" className="self-start mt-1">
-                    <Button 
-                      variant="link" 
-                      type="button" 
-                      className="h-auto p-0 text-xs text-blue-600 dark:text-blue-400 transition-colors"
-                    >
-                      Deseja fazer login?
-                    </Button>
-                  </Link>
+                  {String(errors.email.message).includes("cadastrado") && (
+                    <Link href="/login" className="self-start mt-1">
+                      <Button 
+                        variant="link" 
+                        type="button" 
+                        className="h-auto p-0 text-xs text-blue-600 dark:text-blue-400 transition-colors"
+                      >
+                        Deseja fazer login?
+                      </Button>
+                    </Link>
+                  )}
                 </div>
               )}
             </div>
 
             <div className="animate-in fade-in slide-in-from-top-4 duration-500 delay-100 fill-mode-both space-y-6">
+              
+              {/* TOGGLE PF/PJ */}
               <div className="flex bg-gray-100 dark:bg-slate-900/50 p-1 rounded-xl border border-gray-200 dark:border-slate-800 transition-colors">
                 <button
                   type="button"
-                  onClick={() => setProfileType('PF')}
+                  onClick={() => {
+                    form.setValue('profileType', 'PF');
+                    form.clearErrors();
+                  }}
                   className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${
                     profileType === 'PF' 
                       ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' 
@@ -209,7 +199,10 @@ export default function SignupPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setProfileType('PJ')}
+                  onClick={() => {
+                    form.setValue('profileType', 'PJ');
+                    form.clearErrors();
+                  }}
                   className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${
                     profileType === 'PJ' 
                       ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' 
@@ -220,46 +213,21 @@ export default function SignupPage() {
                 </button>
               </div>
 
-              <PersonalDataFields
-                profileType={profileType}
-                
-                // Props PF
-                firstName={firstName} setFirstName={setFirstName}
-                lastName={lastName} setLastName={setLastName}
-                cpf={cpf} setCpf={setCpf}
-                cpfStatus={cpfStatus} setCpfStatus={setCpfStatus}
-                cpfMessage={cpfMessage} setCpfMessage={setCpfMessage}
-                birthDate={birthDate} setBirthDate={setBirthDate}
-                birthDateStatus={birthDateStatus} setBirthDateStatus={setBirthDateStatus}
-                birthDateMessage={birthDateMessage} setBirthDateMessage={setBirthDateMessage}
-                occupation={occupation} setOccupation={setOccupation}
-                course={course} setCourse={setCourse}
-                customCourse={customCourse} setCustomCourse={setCustomCourse}
-                university={university} setUniversity={setUniversity}
-                customUniversity={customUniversity} setCustomUniversity={setCustomUniversity}
-                area={area} setArea={setArea}
-                customArea={customArea} setCustomArea={setCustomArea}
-                specialty={specialty} setSpecialty={setSpecialty}
-                
-                // Props PJ
-                companyName={companyName} setCompanyName={setCompanyName}
-                tradingName={tradingName} setTradingName={setTradingName}
-                cnpj={cnpj} setCnpj={setCnpj}
-                cnpjStatus={cnpjStatus} setCnpjStatus={setCnpjStatus}
-              />
+              <PersonalDataFields form={form} />
+
             </div>
 
+            {/* SENHA */}
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  minLength={6}
-                  className="py-6 rounded-xl pr-12 transition-colors"
+                  {...form.register("password")}
+                  className={`py-6 rounded-xl pr-12 transition-colors ${
+                    errors.password ? "border-red-400 focus-visible:ring-red-400 bg-red-50/50 dark:border-red-500/50 dark:bg-red-500/10" : ""
+                  }`}
                 />
                 <button
                   type="button"
@@ -273,11 +241,16 @@ export default function SignupPage() {
                   )}
                 </button>
               </div>
+              {errors.password && (
+                <p className="text-xs font-medium text-red-600 dark:text-red-400 mt-1 animate-in fade-in slide-in-from-top-1">
+                  {String(errors.password.message)}
+                </p>
+              )}
             </div>
 
             <Button
               type="submit"
-              disabled={isLoading || (profileType === 'PF' ? cpfStatus === 'invalid' : cnpjStatus === 'invalid')}
+              disabled={isLoading}
               className="w-full py-6 rounded-xl text-base text-white font-bold bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 shadow-md shadow-blue-600/20 dark:shadow-none transition-all active:scale-[0.98] mt-4"
             >
               {isLoading ? (
