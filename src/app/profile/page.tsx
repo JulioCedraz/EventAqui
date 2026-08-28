@@ -1,9 +1,18 @@
 'use client';
 
-import { useState, useEffect, Suspense, useMemo } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
-import PersonalDataFields, { validateCPF, validateCNPJ, UNIVERSITIES_LIST, COURSES_LIST } from '../../components/PersonalDataFields';
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
+import PersonalDataFields, { 
+  basePersonalDataSchema, 
+  refinePersonalData, 
+  UNIVERSITIES_LIST, 
+  COURSES_LIST 
+} from '../../components/PersonalDataFields';
 import PrivacySettings from '../../components/PrivacySettings';
 import SmartModal, { DialogConfig } from '../../components/SmartModal';
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,7 +21,33 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, ArrowLeft, UserCircle, Save, Mail, Sparkles, AlertCircle, X, LockKeyhole, KeyRound, Unlock, Eye, EyeOff } from "lucide-react";
+import { 
+  Loader2, ArrowLeft, UserCircle, Save, Mail, 
+  Sparkles, AlertCircle, X, LockKeyhole, KeyRound, 
+  Unlock, Eye, EyeOff 
+} from "lucide-react";
+
+// ==========================================
+// 1. EXTENSÃO DO SCHEMA BASE PARA O PERFIL
+// ==========================================
+const profileSchema = basePersonalDataSchema.extend({
+  email: z.string().email("Formato de e-mail inválido"),
+  newPassword: z.string().optional(),
+  confirmNewPassword: z.string().optional()
+}).superRefine((data, ctx) => {
+  // Validações bases (CPF, CNPJ, Telefone, etc)
+  refinePersonalData(data, ctx);
+  
+  // Validações de alteração de senha
+  if (data.newPassword && data.newPassword.length < 6) {
+    ctx.addIssue({ path: ['newPassword'], message: "A nova senha deve ter no mínimo 6 caracteres", code: z.ZodIssueCode.custom });
+  }
+  if (data.newPassword !== data.confirmNewPassword) {
+    ctx.addIssue({ path: ['confirmNewPassword'], message: "As senhas não coincidem", code: z.ZodIssueCode.custom });
+  }
+});
+
+type ProfileFormValues = z.infer<typeof profileSchema>;
 
 function ProfileContent() {
   const router = useRouter();
@@ -22,70 +57,50 @@ function ProfileContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  
-  const [initialData, setInitialData] = useState<any>(null);
   const [dialog, setDialog] = useState<DialogConfig | null>(null);
   
-  // Estados de Segurança
+  // Estados de Segurança 
   const [isSecurityUnlocked, setIsSecurityUnlocked] = useState(isInvite);
   const [isVerifyingPassword, setIsVerifyingPassword] = useState(false);
   
-  // Estados de Visibilidade de Senha
+  // Estados Visuais e Auxiliares
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
-  // Estados de Email
   const [originalEmail, setOriginalEmail] = useState('');
-  const [email, setEmail] = useState('');
-  const [emailError, setEmailError] = useState('');
-  
-  // Estados de Senha
   const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState('');
-  
-  // Estados do Tipo de Perfil
-  const [profileType, setProfileType] = useState<'PF' | 'PJ'>('PF');
+  const [hasCpfInitially, setHasCpfInitially] = useState(false);
   const [role, setRole] = useState<'admin' | 'producer' | 'agent' | 'customer' | null>(null);
 
-  // Estados de Dados Pessoais (PF)
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [cpf, setCpf] = useState('');
-  const [hasCpfInitially, setHasCpfInitially] = useState(false);
-  const [cpfStatus, setCpfStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
-  const [cpfMessage, setCpfMessage] = useState('');
-  const [birthDate, setBirthDate] = useState('');
-  const [birthDateStatus, setBirthDateStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
-  const [birthDateMessage, setBirthDateMessage] = useState('');
-  const [occupation, setOccupation] = useState<'profissional' | 'estudante'>('estudante');
-  const [university, setUniversity] = useState("");
-  const [customUniversity, setCustomUniversity] = useState("");
-  const [course, setCourse] = useState("");
-  const [customCourse, setCustomCourse] = useState("");
-  const [area, setArea] = useState("");
-  const [customArea, setCustomArea] = useState("");
-  const [specialty, setSpecialty] = useState("");
+  // ==========================================
+  // 2. CONFIGURAÇÃO DO REACT HOOK FORM
+  // ==========================================
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileSchema),
+    mode: "onBlur",
+    defaultValues: {
+      profileType: 'PF', email: '', newPassword: '', confirmNewPassword: '',
+      firstName: '', lastName: '', cpf: '', birthDate: '', phone: '',
+      semester: '', enrollmentNumber: '', university: '', customUniversity: '',
+      course: '', customCourse: '', companyName: '', tradingName: '', cnpj: ''
+    }
+  });
 
-  // Estados de Dados Empresariais (PJ)
-  const [companyName, setCompanyName] = useState("");
-  const [tradingName, setTradingName] = useState("");
-  const [cnpj, setCnpj] = useState("");
-  const [cnpjStatus, setCnpjStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
+  const { errors, isDirty } = form.formState;
+  const currentEmailValue = form.watch("email");
+  const profileType = form.watch("profileType");
 
   useEffect(() => {
     const loadProfile = async () => {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
-
+      
       if (authError || !user) {
         router.push('/login');
         return;
       }
-
+      
       setUserId(user.id);
       const userEmail = user.email || '';
-      setEmail(userEmail);
       setOriginalEmail(userEmail);
 
       const { data: profileData, error: profileError } = await supabase
@@ -93,101 +108,67 @@ function ProfileContent() {
         .select('*')
         .eq('id', user.id)
         .single();
-      
+        
       if (profileError && profileError.code !== 'PGRST116') {
-        console.error('Erro ao carregar o perfil:', profileError.message);
         toast.error('Erro ao sincronizar os dados do perfil.');
       }
-      
+        
       if (profileData) {
-        setProfileType(profileData.profile_type || 'PF');
         setRole(profileData.role || 'customer');
+        setHasCpfInitially(!!profileData.cpf);
 
-        // Setup PF Data
-        setFirstName(profileData.first_name || '');
-        setLastName(profileData.last_name || '');
         let formattedBirthDate = '';
         if (profileData.birth_date) {
           const parts = profileData.birth_date.split('-');
           formattedBirthDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : '';
         }
-        setBirthDate(formattedBirthDate);
-        setCpf(profileData.cpf || '');
-        setHasCpfInitially(!!profileData.cpf);
-        if (profileData.occupation === 'profissional' || profileData.occupation === 'estudante') {
-          setOccupation(profileData.occupation);
-        }
-        if (profileData.university) {
-          if (UNIVERSITIES_LIST.includes(profileData.university)) setUniversity(profileData.university);
-          else { setUniversity("Outra"); setCustomUniversity(profileData.university); }
-        }
-        if (profileData.course) {
-          if (COURSES_LIST.includes(profileData.course)) setCourse(profileData.course);
-          else { setCourse("Outro"); setCustomCourse(profileData.course); }
-        }
-        if (profileData.area) {
-          if (COURSES_LIST.includes(profileData.area)) setArea(profileData.area);
-          else { setArea("Outra"); setCustomArea(profileData.area); }
-        }
-        setSpecialty(profileData.specialty || '');
 
-        // Setup PJ Data
-        setCompanyName(profileData.company_name || '');
-        setTradingName(profileData.trading_name || '');
-        setCnpj(profileData.cnpj || '');
+        let univValue = profileData.university || '';
+        let customUnivValue = '';
+        if (univValue && !UNIVERSITIES_LIST.includes(univValue)) {
+          customUnivValue = univValue;
+          univValue = 'Outra';
+        }
 
-        setInitialData({
-          email: userEmail,
+        let courseValue = profileData.course || '';
+        let customCourseValue = '';
+        if (courseValue && !COURSES_LIST.includes(courseValue)) {
+          customCourseValue = courseValue;
+          courseValue = 'Outro';
+        }
+
+        form.reset({
           profileType: profileData.profile_type || 'PF',
+          email: userEmail,
           firstName: profileData.first_name || '',
           lastName: profileData.last_name || '',
           cpf: profileData.cpf || '',
           birthDate: formattedBirthDate,
-          occupation: profileData.occupation || 'estudante',
-          university: profileData.university || '',
-          course: profileData.course || '',
-          area: profileData.area || '',
-          specialty: profileData.specialty || '',
+          phone: profileData.phone || '',
+          semester: profileData.semester || '',
+          enrollmentNumber: profileData.enrollment_number || '',
+          university: univValue,
+          customUniversity: customUnivValue,
+          course: courseValue,
+          customCourse: customCourseValue,
           companyName: profileData.company_name || '',
           tradingName: profileData.trading_name || '',
-          cnpj: profileData.cnpj || ''
+          cnpj: profileData.cnpj || '',
+          newPassword: '',
+          confirmNewPassword: ''
         });
       }
       setIsLoading(false);
     };
+
     loadProfile();
-  }, [router]);
-
-  const hasChanges = useMemo(() => {
-    if (!initialData) return false;
-    
-    const fieldChanges = 
-      email !== initialData.email ||
-      profileType !== initialData.profileType ||
-      firstName !== initialData.firstName ||
-      lastName !== initialData.lastName ||
-      (cpf !== initialData.cpf && !hasCpfInitially) ||
-      birthDate !== initialData.birthDate ||
-      occupation !== initialData.occupation ||
-      specialty !== initialData.specialty ||
-      (university === "Outra" ? customUniversity : university) !== initialData.university ||
-      (course === "Outro" ? customCourse : course) !== initialData.course ||
-      (area === "Outra" ? customArea : area) !== initialData.area ||
-      companyName !== initialData.companyName ||
-      tradingName !== initialData.tradingName ||
-      cnpj !== initialData.cnpj;
-
-    const securityChanges = newPassword !== '' || confirmNewPassword !== '';
-
-    return (fieldChanges || securityChanges) && !emailError;
-  }, [email, profileType, firstName, lastName, cpf, birthDate, occupation, university, customUniversity, course, customCourse, area, customArea, specialty, companyName, tradingName, cnpj, newPassword, confirmNewPassword, initialData, hasCpfInitially, emailError]);
+  }, [router, form]);
 
   const handleVerifyCurrentPassword = async () => {
     if (!currentPassword) {
       toast.error('Informe a senha atual para prosseguir.');
       return;
     }
-
     setIsVerifyingPassword(true);
     const { error } = await supabase.auth.signInWithPassword({
       email: originalEmail,
@@ -203,64 +184,31 @@ function ProfileContent() {
     }
   };
 
-  const handleEmailBlur = () => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setEmailError('Formato de e-mail inválido.');
-    } else {
-      setEmailError('');
-    }
-  };
-
-  const handleUpdateProfile = async (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    
-    if (isInvite && !newPassword) {
+  // ==========================================
+  // 3. EXECUÇÃO DA ATUALIZAÇÃO (SÓ RODA SE VÁLIDO)
+  // ==========================================
+  const handleUpdateProfile = form.handleSubmit((data: ProfileFormValues) => {
+    if (isInvite && !data.newPassword) {
       toast.error('Por favor, defina uma senha para concluir o seu cadastro.');
       return;
     }
 
-    if (newPassword) {
-      if (newPassword.length < 6) {
-        toast.error('A nova senha deve ter no mínimo 6 caracteres.');
-        return;
-      }
-      if (newPassword !== confirmNewPassword) {
-        toast.error('A nova senha e a confirmação não coincidem.');
-        return;
-      }
-    }
-
-    if (profileType === 'PF') {
-      if (!hasCpfInitially && cpf && !validateCPF(cpf)) {
-        setCpfStatus('invalid');
-        toast.error('O CPF informado é inválido.');
-        return;
-      }
-    } else {
-      if (cnpj && !validateCNPJ(cnpj)) {
-        setCnpjStatus('invalid');
-        toast.error('O CNPJ informado é inválido.');
-        return;
-      }
-    }
-
-    if (email !== originalEmail && !emailError) {
+    if (data.email !== originalEmail) {
       setDialog({
         isOpen: true,
         type: 'confirm',
         title: 'Confirmação em Duas Etapas',
-        message: `Você solicitou a alteração para o e-mail: **${email}**.\n\nPara a sua segurança, será enviado um link de verificação para o e-mail antigo e outro para o novo. O seu e-mail não será alterado até que você clique em ambos os links.\n\nDeseja continuar?`,
+        message: `Você solicitou a alteração para o e-mail: **${data.email}**.\n\nPara a sua segurança, será enviado um link de verificação para o e-mail antigo e outro para o novo. O seu e-mail não será alterado até que você clique em ambos os links.\n\nDeseja continuar?`,
         confirmText: 'Confirmar Envio',
-        onConfirm: () => executeProfileUpdate(),
+        onConfirm: () => executeProfileUpdate(data),
       });
       return;
     }
 
-    await executeProfileUpdate();
-  };
+    executeProfileUpdate(data);
+  });
 
-  const executeProfileUpdate = async () => {
+  const executeProfileUpdate = async (data: ProfileFormValues) => {
     setIsSaving(true);
     setDialog(null);
     const toastId = toast.loading(isInvite ? 'Concluindo seu cadastro...' : 'Processando alterações...');
@@ -268,13 +216,13 @@ function ProfileContent() {
     try {
       const authUpdates: any = {};
       
-      if (email !== originalEmail) authUpdates.email = email;
-      if (newPassword) authUpdates.password = newPassword;
+      if (data.email !== originalEmail) authUpdates.email = data.email;
+      if (data.newPassword) authUpdates.password = data.newPassword;
       
-      if (profileType === 'PF' && (firstName || lastName)) {
-        authUpdates.data = { full_name: `${firstName} ${lastName}`.trim() };
-      } else if (profileType === 'PJ' && (companyName || tradingName)) {
-        authUpdates.data = { full_name: (tradingName || companyName).trim() };
+      if (data.profileType === 'PF' && (data.firstName || data.lastName)) {
+        authUpdates.data = { full_name: `${data.firstName} ${data.lastName}`.trim() };
+      } else if (data.profileType === 'PJ' && (data.companyName || data.tradingName)) {
+        authUpdates.data = { full_name: (data.tradingName || data.companyName).trim() };
       }
 
       if (Object.keys(authUpdates).length > 0) {
@@ -283,29 +231,31 @@ function ProfileContent() {
       }
 
       if (userId) {
-        const isoBirthDate = birthDate ? birthDate.split('/').reverse().join('-') : null;
+        const isoBirthDate = data.birthDate ? data.birthDate.split('/').reverse().join('-') : null;
+        const finalUniversity = data.university === "Outra" ? data.customUniversity : data.university;
+        const finalCourse = data.course === "Outro" ? data.customCourse : data.course;
         
         const profileUpdates: any = {
-          profile_type: profileType,
-          first_name: firstName || null,
-          last_name: lastName || null,
-          cpf: cpf || null,
-          occupation: occupation || null,
+          profile_type: data.profileType,
+          first_name: data.firstName || null,
+          last_name: data.lastName || null,
+          cpf: data.cpf || null,
           birth_date: isoBirthDate,
-          university: occupation === "estudante" ? (university === "Outra" ? customUniversity : university) : null,
-          course: occupation === "estudante" ? (course === "Outro" ? customCourse : course) : null,
-          area: occupation === "profissional" ? (area === "Outra" ? customArea : area) : null,
-          specialty: occupation === "profissional" && area === "Medicina" ? specialty : null,
-          company_name: companyName || null,
-          trading_name: tradingName || null,
-          cnpj: cnpj || null,
+          phone: data.phone || null,
+          semester: data.semester || null,
+          enrollment_number: data.enrollmentNumber || null,
+          university: finalUniversity || null,
+          course: finalCourse || null,
+          company_name: data.companyName || null,
+          trading_name: data.tradingName || null,
+          cnpj: data.cnpj || null,
         };
 
         const { error: profileUpdateError } = await supabase.from('profiles').update(profileUpdates).eq('id', userId);
         if (profileUpdateError) throw profileUpdateError;
       }
 
-      if (email !== originalEmail) {
+      if (data.email !== originalEmail) {
         toast.success('Alterações salvas! Verifique as caixas de entrada dos seus e-mails para confirmar a alteração.', { id: toastId, duration: 6000 });
       } else {
         toast.success(isInvite ? 'Cadastro concluído!' : 'Perfil atualizado com sucesso!', { id: toastId });
@@ -315,20 +265,9 @@ function ProfileContent() {
         router.push('/');
       }
       
-      setNewPassword('');
-      setConfirmNewPassword('');
-      setInitialData((prev: any) => ({ 
-        ...prev, 
-        profileType, 
-        firstName, 
-        lastName, 
-        cpf, 
-        birthDate, 
-        occupation,
-        companyName,
-        tradingName,
-        cnpj
-      }));
+      // Reseta o form com os novos dados para atualizar o estado isDirty para false
+      form.reset({ ...data, newPassword: '', confirmNewPassword: '' });
+      if (data.email !== originalEmail) setOriginalEmail(data.email);
 
     } catch (err: any) {
       toast.error(err.message || 'Erro ao salvar dados.', { id: toastId });
@@ -386,35 +325,34 @@ function ProfileContent() {
             <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 ml-1 transition-colors">Meus Dados</h2>
             <Card className="shadow-lg border-gray-100 dark:border-border dark:bg-card rounded-3xl overflow-hidden transition-colors">
               <CardContent className="p-6 sm:p-8 space-y-6">
+                
+                {/* TOGGLE PF/PJ */}
+                <div className="flex bg-gray-100 dark:bg-slate-900/50 p-1 rounded-xl border border-gray-200 dark:border-slate-800 transition-colors mb-6">
+                  <button
+                    type="button"
+                    onClick={() => form.setValue('profileType', 'PF', { shouldDirty: true, shouldValidate: true })}
+                    className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${
+                      profileType === 'PF' 
+                        ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' 
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    Pessoa Física
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => form.setValue('profileType', 'PJ', { shouldDirty: true, shouldValidate: true })}
+                    className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${
+                      profileType === 'PJ' 
+                        ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' 
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    Empresa (CNPJ)
+                  </button>
+                </div>
 
-                <PersonalDataFields
-                  profileType={profileType}
-                  
-                  // PF
-                  firstName={firstName} setFirstName={setFirstName}
-                  lastName={lastName} setLastName={setLastName}
-                  cpf={cpf} setCpf={setCpf}
-                  hasCpfInitially={hasCpfInitially}
-                  cpfStatus={cpfStatus} setCpfStatus={setCpfStatus}
-                  cpfMessage={cpfMessage} setCpfMessage={setCpfMessage}
-                  birthDate={birthDate} setBirthDate={setBirthDate}
-                  birthDateStatus={birthDateStatus} setBirthDateStatus={setBirthDateStatus}
-                  birthDateMessage={birthDateMessage} setBirthDateMessage={setBirthDateMessage}
-                  occupation={occupation} setOccupation={setOccupation}
-                  course={course} setCourse={setCourse}
-                  customCourse={customCourse} setCustomCourse={setCustomCourse}
-                  university={university} setUniversity={setUniversity}
-                  customUniversity={customUniversity} setCustomUniversity={setCustomUniversity}
-                  area={area} setArea={setArea}
-                  customArea={customArea} setCustomArea={setCustomArea}
-                  specialty={specialty} setSpecialty={setSpecialty}
-
-                  // PJ
-                  companyName={companyName} setCompanyName={setCompanyName}
-                  tradingName={tradingName} setTradingName={setTradingName}
-                  cnpj={cnpj} setCnpj={setCnpj}
-                  cnpjStatus={cnpjStatus} setCnpjStatus={setCnpjStatus}
-                />
+                <PersonalDataFields form={form} hasCpfInitially={hasCpfInitially} />
               </CardContent>
             </Card>
           </div>
@@ -455,7 +393,6 @@ function ProfileContent() {
                           {showCurrentPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                         </button>
                       </div>
-
                       <Button 
                         type="button" 
                         onClick={handleVerifyCurrentPassword}
@@ -479,27 +416,25 @@ function ProfileContent() {
                         <Mail className="w-4 h-4 text-gray-400 dark:text-gray-500" /> E-mail
                       </Label>
                       <Input
-                        id="email" type="email" required
-                        value={email} 
-                        onChange={(e) => setEmail(e.target.value)}
-                        onBlur={handleEmailBlur}
-                        className={`h-12 rounded-xl bg-white dark:bg-slate-900 dark:text-gray-100 transition-colors ${emailError ? 'border-red-300 dark:border-red-500/50 focus-visible:ring-red-500 dark:focus-visible:ring-red-400' : 'border-blue-200 dark:border-slate-700 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400'}`}
+                        id="email" type="email"
+                        {...form.register("email")}
+                        className={`h-12 rounded-xl bg-white dark:bg-slate-900 dark:text-gray-100 transition-colors ${errors.email ? 'border-red-300 dark:border-red-500/50 focus-visible:ring-red-500 dark:focus-visible:ring-red-400' : 'border-blue-200 dark:border-slate-700 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400'}`}
                       />
-                      {emailError && <p className="text-xs text-red-500 dark:text-red-400 font-medium mt-1 transition-colors">{emailError}</p>}
+                      {errors.email && <p className="text-xs text-red-500 dark:text-red-400 font-medium mt-1 transition-colors">{String(errors.email.message)}</p>}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                       <div className="space-y-2">
                         <Label htmlFor="newPassword" className="flex items-center gap-2 text-gray-700 dark:text-gray-300 transition-colors">
-                           <KeyRound className="w-4 h-4 text-gray-400 dark:text-gray-500"/>
+                           <KeyRound className="w-4 h-4 text-gray-400 dark:text-gray-500"/> 
                            {isInvite ? 'Defina sua Senha' : 'Nova Senha'}
                         </Label>
                         <div className="relative">
                           <Input
                             id="newPassword" type={showNewPassword ? "text" : "password"}
                             placeholder={isInvite ? "Mínimo 6 caracteres" : "Mínimo de 6 caracteres"}
-                            value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
-                            className="h-12 rounded-xl border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-gray-100 pr-12 transition-colors"
+                            {...form.register("newPassword")}
+                            className={`h-12 rounded-xl pr-12 bg-white dark:bg-slate-900 dark:text-gray-100 transition-colors ${errors.newPassword ? 'border-red-300 dark:border-red-500/50 focus-visible:ring-red-500' : 'border-gray-200 dark:border-slate-700'}`}
                           />
                           <button
                             type="button"
@@ -509,15 +444,17 @@ function ProfileContent() {
                             {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                           </button>
                         </div>
+                        {errors.newPassword && <p className="text-xs text-red-500 dark:text-red-400 font-medium mt-1 transition-colors">{String(errors.newPassword.message)}</p>}
                       </div>
+                      
                       <div className="space-y-2">
                         <Label htmlFor="confirmPassword" className="text-gray-700 dark:text-gray-300 transition-colors">Confirmar Nova Senha</Label>
                         <div className="relative">
                           <Input
                             id="confirmPassword" type={showConfirmPassword ? "text" : "password"}
                             placeholder="Repita a nova senha"
-                            value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)}
-                            className={`h-12 rounded-xl pr-12 bg-white dark:bg-slate-900 dark:text-gray-100 transition-colors ${confirmNewPassword && newPassword !== confirmNewPassword ? 'border-red-300 dark:border-red-500/50' : 'border-gray-200 dark:border-slate-700'}`}
+                            {...form.register("confirmNewPassword")}
+                            className={`h-12 rounded-xl pr-12 bg-white dark:bg-slate-900 dark:text-gray-100 transition-colors ${errors.confirmNewPassword ? 'border-red-300 dark:border-red-500/50 focus-visible:ring-red-500' : 'border-gray-200 dark:border-slate-700'}`}
                           />
                           <button
                             type="button"
@@ -527,13 +464,11 @@ function ProfileContent() {
                             {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                           </button>
                         </div>
-                        {confirmNewPassword && newPassword !== confirmNewPassword && (
-                          <p className="text-xs text-red-500 dark:text-red-400 font-medium mt-1 transition-colors">As senhas não coincidem.</p>
-                        )}
+                        {errors.confirmNewPassword && <p className="text-xs text-red-500 dark:text-red-400 font-medium mt-1 transition-colors">{String(errors.confirmNewPassword.message)}</p>}
                       </div>
                     </div>
                     
-                    {email !== originalEmail && !emailError && (
+                    {currentEmailValue !== originalEmail && !errors.email && (
                       <div className="p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 rounded-xl flex gap-3 animate-in fade-in transition-colors">
                         <AlertCircle className="w-5 h-5 text-amber-500 dark:text-amber-400 shrink-0 transition-colors" />
                         <p className="text-xs text-amber-700 dark:text-amber-400 transition-colors">
@@ -551,15 +486,19 @@ function ProfileContent() {
           <div className="pt-4 flex flex-col-reverse sm:flex-row items-center justify-end gap-3">
             <Button
               type="button" variant="ghost"
-              onClick={() => router.back()}
-              className="w-full sm:w-auto h-12 text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 font-bold rounded-xl transition-colors"
+              onClick={() => {
+                form.reset();
+                if (currentEmailValue !== originalEmail) form.setValue('email', originalEmail);
+              }}
+              disabled={!isDirty || isSaving}
+              className="w-full sm:w-auto h-12 text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 font-bold rounded-xl transition-colors disabled:opacity-50"
             >
-              <X className="w-4 h-4 mr-2" /> Descartar e Voltar
+              <X className="w-4 h-4 mr-2" /> Descartar
             </Button>
 
             <Button
               type="submit"
-              disabled={isSaving || !hasChanges}
+              disabled={isSaving || !isDirty}
               className={`w-full sm:w-auto h-12 px-10 font-extrabold text-white rounded-xl shadow-md transition-all ${
                 isInvite ? 'bg-amber-600 hover:bg-amber-700 dark:bg-amber-600 dark:hover:bg-amber-700' : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700'
               } disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed`}
