@@ -415,11 +415,11 @@ export default function EventDetails() {
           
           {/* CAPA DO EVENTO */}
           {event.image_url ? (
-            <div className="w-full h-64 md:h-100 relative bg-muted">
+            <div className="w-full relative bg-muted">
               <img 
                 src={event.image_url} 
                 alt={`Capa do evento ${event.title}`} 
-                className="w-full h-full object-cover"
+                className="w-full h-auto block"
               />
               <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
             </div>
