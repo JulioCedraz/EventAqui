@@ -27,6 +27,7 @@ export default function ProducersLandingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -47,6 +48,41 @@ export default function ProducersLandingPage() {
       authListener.subscription.unsubscribe();
     };
   }, []);
+
+  const toggleFaq = (index: number) => {
+    setOpenFaqIndex(openFaqIndex === index ? null : index);
+  };
+
+  const faqs = [
+    {
+      question: "A plataforma cobra alguma taxa sobre os ingressos?",
+      answer: "Não. A EventAqui é uma iniciativa gratuita para suporte em eventos estudantis e não é cobrada nenhuma taxa de serviço pelo uso do sistema."
+    },
+    {
+      question: "É obrigatório ter uma conta no Mercado Pago?",
+      answer: "Para você receber valores, sim. A infraestrutura de pagamentos desta plataforma foi arquitetada para o uso da API de Checkout do Mercado Pago."
+    },
+    {
+      question: "O Mercado Pago cobra alguma taxa?",
+      answer: "Sim. A taxa padrão de processamento do próprio Mercado Pago para Pix com QR code dinâmico é de 0,99% (aproximadamente 1%) por transação."
+    },
+    {
+      question: "Como eu recebo o dinheiro das minhas vendas?",
+      answer: "De forma direta e instantânea. Nossa arquitetura conecta a sua conta pessoal do Mercado Pago à sua conta da EventAqui e vincula a todos os eventos organizados por você. Quando um cliente realiza o PIX, o valor é creditado imediatamente no seu saldo. Lembrando que haverá desconto de 1% do valor pela taxa de transação do Mercado Pago. A responsabilidade é inteiramente sua. A EventAqui não retém nenhum valor."
+    },
+    {
+      question: "Como minha equipe valida a entrada das pessoas no evento?",
+      answer: "No painel administrativo, clique em 'Equipe de Portaria', informe o e-mail da pessoa que você quer designar como seu agente de portaria, depois clique em 'Convidar Agente' para habilitar aquele e-mail com o acesso ao leitor de QR Code de validação dos ingressos. Com o próprio celular, o agente acessa o Scanner de Check-in, lê o QR Code da pessoa, a catraca virtual fica verde. É rápido e antifraude."
+    },
+    {
+      question: "Como faço para liberar meu acesso como produtor/organizador?",
+      answer: (
+        <>
+          Para manter a integridade da plataforma e evitar fraudes, novos produtores não são ativados automaticamente. Crie a sua conta de usuário e, em seguida, envie um e-mail para <span className="font-black">eventaqui@gmail.com</span> se identificando e com as informações do seu evento para solicitar o acesso às ferramentas de criação.
+        </>
+      )
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-background text-gray-900 dark:text-gray-100 font-sans transition-colors duration-300">
@@ -195,13 +231,13 @@ export default function ProducersLandingPage() {
             <h1 className="text-5xl lg:text-7xl font-black tracking-tighter leading-[1.05] text-gray-900 dark:text-white animate-in fade-in slide-in-from-bottom-6 duration-700 delay-100 transition-colors">
               Promova, divulgue e gerencie <br className="hidden md:block" />
               <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-600 to-cyan-500 dark:from-blue-400 dark:to-cyan-400">
-                os eventos de sua faculdade.
+                os eventos de sua faculdade!
               </span>
             </h1>
 
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-200 border border-blue-200 text-blue-700 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-400 text-sm font-bold tracking-wide animate-in fade-in slide-in-from-bottom-4 duration-700 transition-colors">
               <HeartHandshake className="w-4 h-4 fill-blue-600/50 dark:fill-blue-400/50" />
-              <span>Plataforma gratuita com foco em eventos acadêmicos.</span>
+              <span>Plataforma gratuita com foco em eventos acadêmicos</span>
             </div>
             <br />
             <div className="inline-flex items-center gap-8">
@@ -325,65 +361,39 @@ export default function ProducersLandingPage() {
           </div>
 
           <div className="space-y-4">
-            <details className="group bg-white dark:bg-card border border-gray-200 dark:border-border rounded-2xl overflow-hidden transition-colors [&_summary::-webkit-details-marker]:hidden">
-              <summary className="flex items-center justify-between cursor-pointer p-6 font-bold text-gray-900 dark:text-gray-100 text-lg outline-none transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                A plataforma cobra alguma taxa sobre os ingressos?
-                <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform duration-300 group-open:-rotate-180" />
-              </summary>
-              <div className="px-6 pb-6 text-gray-600 dark:text-gray-400 font-medium leading-relaxed transition-colors border-t border-gray-100 dark:border-border pt-4 mt-2 mx-6">
-                Não. A EventAqui é uma iniciativa gratuita para suporte em eventos estudantis e não é cobrada nenhuma taxa de serviço pelo uso do sistema. 
-              </div>
-            </details>
+            {faqs.map((faq, index) => {
+              const isOpen = openFaqIndex === index;
 
-            <details className="group bg-white dark:bg-card border border-gray-200 dark:border-border rounded-2xl overflow-hidden transition-colors [&_summary::-webkit-details-marker]:hidden">
-              <summary className="flex items-center justify-between cursor-pointer p-6 font-bold text-gray-900 dark:text-gray-100 text-lg outline-none transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                É obrigatório ter uma conta no Mercado Pago?
-                <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform duration-300 group-open:-rotate-180" />
-              </summary>
-              <div className="px-6 pb-6 text-gray-600 dark:text-gray-400 font-medium leading-relaxed transition-colors border-t border-gray-100 dark:border-border pt-4 mt-2 mx-6">
-                Para você receber valores, sim. A infraestrutura de pagamentos desta plataforma foi arquitetada para o uso da API de Checkout do Mercado Pago.
-              </div>
-            </details>
-
-            <details className="group bg-white dark:bg-card border border-gray-200 dark:border-border rounded-2xl overflow-hidden transition-colors [&_summary::-webkit-details-marker]:hidden">
-              <summary className="flex items-center justify-between cursor-pointer p-6 font-bold text-gray-900 dark:text-gray-100 text-lg outline-none transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                O Mercado Pago cobra alguma taxa?
-                <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform duration-300 group-open:-rotate-180" />
-              </summary>
-              <div className="px-6 pb-6 text-gray-600 dark:text-gray-400 font-medium leading-relaxed transition-colors border-t border-gray-100 dark:border-border pt-4 mt-2 mx-6">
-                Sim. A taxa padrão de processamento do próprio Mercado Pago para Pix com QR code dinâmico é de 0,99% (aproximadamente 1%) por transação.
-              </div>
-            </details>
-
-            <details className="group bg-white dark:bg-card border border-gray-200 dark:border-border rounded-2xl overflow-hidden transition-colors [&_summary::-webkit-details-marker]:hidden">
-              <summary className="flex items-center justify-between cursor-pointer p-6 font-bold text-gray-900 dark:text-gray-100 text-lg outline-none transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                Como eu recebo o dinheiro das minhas vendas?
-                <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform duration-300 group-open:-rotate-180" />
-              </summary>
-              <div className="px-6 pb-6 text-gray-600 dark:text-gray-400 font-medium leading-relaxed transition-colors border-t border-gray-100 dark:border-border pt-4 mt-2 mx-6">
-                De forma direta e instantânea. Nossa arquitetura conecta a sua conta pessoal do Mercado Pago à sua conta da EventAqui e vincula a todos os eventos organizados por você. Quando um cliente realiza o PIX, o valor é creditado imediatamente no seu saldo. Lembrando que haverá desconto de 1% do valor pela taxa de transação do Mercado Pago. A responsabilidade é inteiramente sua. A EventAqui não retém nenhum valor.
-              </div>
-            </details>
-
-            <details className="group bg-white dark:bg-card border border-gray-200 dark:border-border rounded-2xl overflow-hidden transition-colors [&_summary::-webkit-details-marker]:hidden">
-              <summary className="flex items-center justify-between cursor-pointer p-6 font-bold text-gray-900 dark:text-gray-100 text-lg outline-none transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                Como minha equipe valida a entrada das pessoas no evento?
-                <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform duration-300 group-open:-rotate-180" />
-              </summary>
-              <div className="px-6 pb-6 text-gray-600 dark:text-gray-400 font-medium leading-relaxed transition-colors border-t border-gray-100 dark:border-border pt-4 mt-2 mx-6">
-                No painel administrativo, clique em "Equipe de Portaria", informe o e-mail da pessoa que você quer designar como seu agente de portaria, depois clique em "Convidar Agente" para habilitar aquele e-mail com o acesso ao leitor de QR Code de validação dos ingressos. Com o próprio celular, o agente acessa o Scanner de Check-in, lê o QR Code da pessoa, a catraca virtual fica verde. É rápido e antifraude.
-              </div>
-            </details>
-
-            <details className="group bg-white dark:bg-card border border-gray-200 dark:border-border rounded-2xl overflow-hidden transition-colors [&_summary::-webkit-details-marker]:hidden">
-              <summary className="flex items-center justify-between cursor-pointer p-6 font-bold text-gray-900 dark:text-gray-100 text-lg outline-none transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                Como faço para liberar meu acesso como produtor/organizador?
-                <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform duration-300 group-open:-rotate-180" />
-              </summary>
-              <div className="px-6 pb-6 text-gray-600 dark:text-gray-400 font-medium leading-relaxed transition-colors border-t border-gray-100 dark:border-border pt-4 mt-2 mx-6">
-                Para manter a integridade da plataforma e evitar fraudes, novos produtores não são ativados automaticamente. Crie a sua conta de usuário e, em seguida, envie um e-mail para {" "}<span className="font-black">eventaqui@gmail.com</span> se identificando e com as informações do seu evento para solicitar o acesso às ferramentas de criação.
-              </div>
-            </details>
+              return (
+                <div 
+                  key={index} 
+                  className="group bg-white dark:bg-card border border-gray-200 dark:border-border rounded-2xl shadow-sm transition-colors overflow-hidden"
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleFaq(index)}
+                    className="flex w-full cursor-pointer items-center justify-between gap-3 p-6 font-bold text-gray-900 dark:text-gray-100 text-left focus:outline-none transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400"
+                  >
+                    <span className="text-lg">{faq.question}</span>
+                    <span className={`shrink-0 rounded-full bg-gray-50 dark:bg-slate-800 p-1.5 text-gray-900 dark:text-gray-300 sm:p-3 transition-transform duration-500 ease-in-out ${isOpen ? '-rotate-180' : ''}`}>
+                      <ChevronDown className="h-5 w-5" />
+                    </span>
+                  </button>
+                  
+                  <div 
+                    className={`grid transition-all duration-500 ease-in-out ${
+                      isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                    }`}
+                  >
+                    <div className="overflow-hidden">
+                      <div className="px-6 pb-6 text-gray-600 dark:text-gray-400 font-medium leading-relaxed transition-colors border-t border-gray-100 dark:border-border pt-4 mt-2 mx-6">
+                        {faq.answer}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
