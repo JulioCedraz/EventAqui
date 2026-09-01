@@ -118,3 +118,48 @@ DROP TRIGGER IF EXISTS enforce_profile_protection ON public.profiles;
 CREATE TRIGGER enforce_profile_protection 
   BEFORE UPDATE ON public.profiles 
   FOR EACH ROW EXECUTE PROCEDURE public.protect_sensitive_profile_fields();
+
+
+-- =========================================================
+-- 3. POLÍTICAS DE SEGURANÇA PARA CUPONS
+-- =========================================================
+
+ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
+
+-- Política para ADMINS: Permissão total usando a função get_user_role()
+DROP POLICY IF EXISTS "Admins podem tudo nos cupons" ON public.coupons;
+CREATE POLICY "Admins podem tudo nos cupons" ON public.coupons
+FOR ALL
+TO authenticated
+USING (
+  public.get_user_role() = 'admin'
+)
+WITH CHECK (
+  public.get_user_role() = 'admin'
+);
+
+-- Política para PRODUTORES: Acesso apenas aos cupons dos seus próprios eventos
+DROP POLICY IF EXISTS "Produtores gerenciam seus proprios cupons" ON public.coupons;
+CREATE POLICY "Produtores gerenciam seus proprios cupons" ON public.coupons
+FOR ALL
+TO authenticated
+USING (
+  producer_id = auth.uid() OR
+  EXISTS (
+    SELECT 1 FROM public.events 
+    WHERE id = coupons.event_id AND producer_id = auth.uid()
+  )
+)
+WITH CHECK (
+  producer_id = auth.uid() OR
+  EXISTS (
+    SELECT 1 FROM public.events 
+    WHERE id = coupons.event_id AND producer_id = auth.uid()
+  )
+);
+
+-- Política de LEITURA GERAL: Necessária para validação de cupons na tela de checkout
+DROP POLICY IF EXISTS "Leitura geral de cupons" ON public.coupons;
+CREATE POLICY "Leitura geral de cupons" ON public.coupons
+FOR SELECT
+USING (true);
