@@ -11,9 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
-  Loader2, Calendar, Clock, CreditCard, Copy, 
+  Loader2, Calendar, Clock, Copy, 
   CheckCircle2, QrCode, Ticket, AlertTriangle, 
-  Image as ImageIcon, Info, Share2, Shield, Tag
+  Image as ImageIcon, Info, Share2, Shield, Tag,
+  DollarSignIcon
 } from "lucide-react";
 
 type Event = Database['public']['Tables']['events']['Row'];
@@ -401,6 +402,11 @@ export default function EventDetails() {
           <Card className="max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden rounded-3xl border-0 dark:bg-card transition-colors">
             <CardHeader className="bg-transparent border-b border-gray-100 dark:border-slate-800/50 pb-6 text-center transition-colors">
               <CardTitle className="text-2xl font-extrabold text-gray-900 dark:text-gray-100 transition-colors">Resumo do Pedido</CardTitle>
+              {(!isFreeEvent && finalPrice > 0) && (
+                <p className="text-sm font-bold text-blue-600 dark:text-blue-400 mt-2 transition-colors">
+                  Finalize o pagamento para garantir o seu ingresso.
+                </p>
+              )}
             </CardHeader>
             
             <CardContent className="p-6 md:p-8">
@@ -431,7 +437,7 @@ export default function EventDetails() {
                 {(!isFreeEvent && finalPrice > 0) && (
                   <div className="flex justify-between items-center text-gray-600 dark:text-gray-400 transition-colors">
                     <span className="font-medium flex items-center gap-2">
-                      <CreditCard className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                      <DollarSignIcon className="w-4 h-4 text-blue-500 dark:text-blue-400" />
                       Pagamento
                     </span>
                     <span className="flex gap-2 items-center justify-center font-semibold text-gray-900 dark:text-gray-100 transition-colors">
@@ -447,14 +453,21 @@ export default function EventDetails() {
                     : 'bg-blue-50/50 border-gray-100 dark:bg-blue-500/10 dark:border-blue-500/20'
                 }`}>
                   <span className="text-gray-900 dark:text-gray-100 font-bold transition-colors">Total a pagar:</span>
-                  <span className={`text-3xl font-black tracking-tight transition-colors ${isFreeEvent || finalPrice === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'}`}>
-                    {isFreeEvent || finalPrice === 0 ? 'Gratuito' : `R$ ${finalPrice.toFixed(2).replace('.', ',')}`}
-                  </span>
+                  <div className="text-right flex flex-col items-end">
+                    {appliedCoupon && (
+                      <span className="text-sm text-gray-400 dark:text-gray-500 line-through mb-1">
+                        R$ {event.price.toFixed(2).replace('.', ',')}
+                      </span>
+                    )}
+                    <span className={`text-3xl font-black tracking-tight transition-colors ${isFreeEvent || finalPrice === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                      {isFreeEvent || finalPrice === 0 ? 'Gratuito' : `R$ ${finalPrice.toFixed(2).replace('.', ',')}`}
+                    </span>
+                  </div>
                 </div>
                 
                 <p className="text-xs text-center text-muted-foreground mt-2 flex items-center justify-center gap-1.5 transition-colors">
                   <Clock className="w-3.5 h-3.5" />
-                  {isFreeEvent || finalPrice === 0 ? 'Sua vaga será reservada imediatamente.' : 'O código PIX será gerado na próxima tela.'}
+                  {isFreeEvent || finalPrice === 0 ? 'Sua vaga será reservada imediatamente.' : 'Após a confirmação, você terá 30 minutos para efetuar o PIX.'}
                 </p>
               </div>
 
@@ -544,13 +557,27 @@ export default function EventDetails() {
 
               <div className="flex items-start gap-4 flex-1">
                 <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center shrink-0 mt-1 transition-colors">
-                  <CreditCard className="w-6 h-6 text-emerald-600 dark:text-emerald-400 transition-colors" />
+                  <DollarSignIcon className="w-6 h-6 text-emerald-600 dark:text-emerald-400 transition-colors" />
                 </div>
                 <div>
-                  <span className="block text-sm font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider transition-colors">Valor Unitário</span>
-                  <span className="block text-2xl text-emerald-600 dark:text-emerald-400 font-black tracking-tight mt-1 transition-colors">
-                    {isFreeEvent ? 'Gratuito' : `R$ ${event.price.toFixed(2).replace('.', ',')}`}
+                  <span className="flex items-center text-sm font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider transition-colors">
+                    VALOR FINAL
+                    {appliedCoupon && (
+                      <Badge variant="outline" className="ml-2 bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30 text-[10px] px-1.5 py-0.5 font-bold transition-colors">
+                        {appliedCoupon.code}
+                      </Badge>
+                    )}
                   </span>
+                  <div className="flex flex-col">
+                    {appliedCoupon && (
+                      <span className="text-sm text-gray-400 dark:text-gray-500 line-through">
+                        R$ {event.price.toFixed(2).replace('.', ',')}
+                      </span>
+                    )}
+                    <span className="block text-2xl text-emerald-600 dark:text-emerald-400 font-black tracking-tight transition-colors">
+                      {isFreeEvent || finalPrice === 0 ? 'Gratuito' : `R$ ${finalPrice.toFixed(2).replace('.', ',')}`}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
