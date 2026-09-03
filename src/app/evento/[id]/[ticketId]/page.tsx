@@ -5,14 +5,14 @@ import { supabase } from '../../../../lib/supabase';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Database } from '../../../../types/database.types';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
   Loader2, AlertCircle, Clock, Copy, 
-  CheckCircle2, QrCode, ArrowLeft, Ticket 
+  CheckCircle2, QrCode, ArrowLeft, Ticket,
+  Receipt, User, Tag, Calendar
 } from "lucide-react";
 
 type Event = Database['public']['Tables']['events']['Row'];
@@ -28,7 +28,7 @@ export default function ResumePaymentPage() {
   const [pixData, setPixData] = useState<{ qr_code: string; qr_code_base64: string } | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [eventDetails, setEventDetails] = useState<Event | null>(null);
-  const [ticketQuantity, setTicketQuantity] = useState(1);
+  const [ticketDetails, setTicketDetails] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState<string>('Calculando...');
   const [isExpired, setIsExpired] = useState(false);
   const [copiedPix, setCopiedPix] = useState(false);
@@ -44,7 +44,7 @@ export default function ResumePaymentPage() {
 
       const { data: ticketData, error: ticketError } = await supabase
         .from('tickets')
-        .select('*, events(*)')
+        .select('*, events(*), coupons(code, discount_type, discount_value)')
         .eq('id', ticketId)
         .eq('buyer_email', session.user.email)
         .single();
@@ -68,7 +68,7 @@ export default function ResumePaymentPage() {
 
       const eventInfo = Array.isArray(ticketData.events) ? ticketData.events[0] : ticketData.events;
       setEventDetails(eventInfo as Event);
-      setTicketQuantity(ticketData.quantity || 1);
+      setTicketDetails(ticketData);
 
       const limitTime = new Date(ticketData.expires_at).getTime();
       const nowTime = new Date().getTime();
@@ -123,6 +123,22 @@ export default function ResumePaymentPage() {
     }
   };
 
+  // Função para calcular o preço exato com os descontos
+  const getFinalPrice = () => {
+    if (!eventDetails || !ticketDetails) return 0;
+    const basePrice = eventDetails.price * (ticketDetails.quantity || 1);
+    
+    if (!ticketDetails.coupons) return basePrice;
+    
+    let final = basePrice;
+    if (ticketDetails.coupons.discount_type === 'percentage') {
+      final = final - (final * (ticketDetails.coupons.discount_value / 100));
+    } else {
+      final = final - ticketDetails.coupons.discount_value;
+    }
+    return Math.max(0, final);
+  };
+
   // VISTA 1: CARREGANDO
   if (loading) {
     return (
@@ -165,7 +181,7 @@ export default function ResumePaymentPage() {
               <Clock className="w-8 h-8 text-red-500 dark:text-red-400" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2 transition-colors">Código PIX Expirado</h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-8 transition-colors">O prazo de 30 minutos para pagamento encerrou e o seu pedido foi cancelado para libertar as vagas.</p>
+            <p className="text-gray-600 dark:text-gray-400 mb-8 transition-colors">O prazo de 30 minutos para pagamento encerrou e o seu pedido foi cancelado. Para garantir o seu ingresso, faça um novo pedido.</p>
             <Button 
               onClick={() => router.push(`/evento/${eventId}`)} 
               className="w-full h-12 text-base font-bold rounded-xl bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white transition-colors"
@@ -178,52 +194,106 @@ export default function ResumePaymentPage() {
     );
   }
 
+  const basePrice = (eventDetails?.price || 0) * (ticketDetails?.quantity || 1);
+  const finalPrice = getFinalPrice();
+  const hasCoupon = !!ticketDetails?.coupons;
+
   // VISTA 4: PAGAMENTO ATIVO
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-background py-12 px-4 sm:px-6 lg:px-8 flex justify-center items-start transition-colors">
       <Card className="max-w-xl w-full border-gray-200 dark:border-border dark:bg-card shadow-xl overflow-hidden rounded-3xl animate-in fade-in slide-in-from-bottom-4 transition-colors">
         
+        {/* Cabeçalho do Pagamento */}
         <div className="bg-blue-600 dark:bg-blue-900/40 border-b border-transparent dark:border-blue-900/50 p-8 text-center transition-colors">
-          <div className="mx-auto w-12 h-12 bg-blue-500/50 dark:bg-blue-500/20 rounded-full flex items-center justify-center mb-4 transition-colors">
+          <div className="mx-auto w-12 h-12 bg-blue-500/50 dark:bg-blue-500/20 rounded-full flex items-center justify-center mb-4 transition-colors shadow-inner">
             <QrCode className="w-6 h-6 text-white dark:text-blue-400" />
           </div>
-          <h1 className="text-2xl font-extrabold text-white dark:text-blue-50 tracking-tight transition-colors">Finalizar Pagamento</h1>
-          <p className="mt-2 font-medium">
-            <Link href={`/evento/${eventId}`} className="text-blue-100 dark:text-blue-300 hover:text-white dark:hover:text-blue-100 hover:underline transition-colors flex items-center justify-center gap-1.5">
-              <Ticket className="w-4 h-4" />
-              {eventDetails?.title}
-            </Link>
-          </p>
+          <h1 className="text-2xl font-extrabold text-white dark:text-blue-50 tracking-tight transition-colors mb-2">Finalizar Pagamento</h1>
+          <Link href={`/evento/${eventId}`} className="inline-flex items-center justify-center gap-1.5 text-blue-100 dark:text-blue-300 hover:text-white dark:hover:text-blue-100 hover:underline transition-colors font-medium">
+            <Ticket className="w-4 h-4" />
+            {eventDetails?.title}
+          </Link>
+          <div className="flex items-center justify-center gap-1.5 text-blue-200/80 dark:text-blue-400/80 text-sm mt-2">
+            <Calendar className="w-3.5 h-3.5" />
+            {eventDetails?.event_date ? new Date(eventDetails.event_date).toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' }) : 'Data a definir'}
+          </div>
         </div>
 
-        <CardContent className="p-8">
-          <div className="flex justify-between items-center mb-8 pb-6 border-b border-gray-100 dark:border-border transition-colors">
-            <span className="text-gray-500 dark:text-gray-400 font-medium transition-colors">Quantidade: {ticketQuantity}x</span>
-            <span className="text-3xl font-black text-gray-900 dark:text-gray-100 transition-colors">
-              R$ {((eventDetails?.price || 0) * ticketQuantity).toFixed(2).replace('.', ',')}
-            </span>
+        <CardContent className="p-6 md:p-8">
+          
+          {/* Banner de Urgência */}
+          <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl p-4 flex items-start gap-3 mb-8 shadow-sm transition-colors">
+            <Clock className="w-5 h-5 text-amber-600 dark:text-amber-500 mt-0.5 animate-pulse shrink-0" />
+            <div>
+              <p className="font-bold text-amber-900 dark:text-amber-400 text-sm mb-0.5 transition-colors">Seu ingresso está reservado!</p>
+              <p className="text-sm text-amber-700 dark:text-amber-500 transition-colors">
+                Realize o pagamento em até <strong className="font-black">{timeLeft}</strong> para garantir sua vaga.
+              </p>
+            </div>
           </div>
 
+          {/* Resumo do Pedido */}
+          <div className="bg-gray-50/80 dark:bg-slate-900/50 p-5 rounded-2xl border border-gray-100 dark:border-slate-800/80 mb-8 transition-colors">
+            <h4 className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+              <Receipt className="w-3.5 h-3.5" /> Resumo do Pedido
+            </h4>
+            
+            <div className="space-y-3">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1.5"><User className="w-4 h-4" /> Titular</span>
+                <span className="font-bold text-gray-900 dark:text-gray-100 truncate max-w-50">{ticketDetails?.buyer_name}</span>
+              </div>
+              
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1.5"><Ticket className="w-4 h-4" /> Ingresso ({ticketDetails?.quantity}x)</span>
+                <span className="font-semibold text-gray-700 dark:text-gray-300">R$ {basePrice.toFixed(2).replace('.', ',')}</span>
+              </div>
+
+              {hasCoupon && (
+                <div className="flex justify-between items-center text-sm text-emerald-600 dark:text-emerald-400">
+                  <span className="flex items-center gap-1.5 font-medium"><Tag className="w-4 h-4" /> Desconto ({ticketDetails.coupons.code})</span>
+                  <span className="font-bold">
+                    - {ticketDetails.coupons.discount_type === 'percentage' ? `${ticketDetails.coupons.discount_value}%` : `R$ ${ticketDetails.coupons.discount_value.toFixed(2).replace('.', ',')}`}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-gray-200/60 dark:border-slate-700/50 flex justify-between items-center">
+              <span className="font-bold text-gray-900 dark:text-gray-100 transition-colors">Total a pagar:</span>
+              <div className="text-right">
+                {hasCoupon && (
+                  <span className="block text-xs text-gray-400 dark:text-gray-500 line-through mb-0.5">
+                    R$ {basePrice.toFixed(2).replace('.', ',')}
+                  </span>
+                )}
+                <span className="text-3xl font-black text-blue-600 dark:text-blue-400 tracking-tight transition-colors">
+                  R$ {finalPrice.toFixed(2).replace('.', ',')}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Instruções de Pagamento */}
           {pixData && (
             <div className="text-center flex flex-col items-center">
               
-              <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20 px-4 py-2 text-sm font-bold flex items-center gap-2 mb-8 shadow-sm transition-colors">
-                <Clock className="w-4 h-4 animate-pulse" /> 
-                Vence em: <span className="text-lg ml-1 font-black">{timeLeft}</span>
-              </Badge>
-
-              <p className="text-gray-600 dark:text-gray-400 font-medium mb-6 transition-colors">Escaneie o QR Code abaixo com a app do seu banco:</p>
+              <div className="w-full text-left mb-4">
+                <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 transition-colors">Escaneie o QR Code abaixo</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm transition-colors">Abra o aplicativo do seu banco e escolha a opção de pagar via QR Code:</p>
+              </div>
               
               <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800 mb-8 inline-block transition-colors">
                 <img 
                   src={`data:image/jpeg;base64,${pixData.qr_code_base64}`} 
                   alt="QR Code PIX" 
-                  className="w-56 h-56 object-contain" 
+                  className="w-48 h-48 sm:w-56 sm:h-56 object-contain" 
                 />
               </div>
               
-              <div className="w-full mb-8 space-y-3 text-left">
-                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 ml-1 transition-colors">Ou use o PIX Copia e Cola:</label>
+              <div className="w-full mb-8 text-left">
+                <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 transition-colors">PIX Copia e Cola</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-3 transition-colors">Está no celular? Copie o código abaixo e cole no aplicativo do seu banco.</p>
                 <div className="flex gap-2">
                   <Input 
                     type="text" 

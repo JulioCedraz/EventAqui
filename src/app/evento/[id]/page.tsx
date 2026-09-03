@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { Database } from '../../../types/database.types';
 import SmartModal, { DialogConfig } from '../../../components/SmartModal';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,9 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
-  Loader2, Calendar, Clock, CreditCard, Copy, 
+  Loader2, Calendar, Clock, Copy, 
   CheckCircle2, QrCode, Ticket, AlertTriangle, 
-  Image as ImageIcon, Info, Share2, Shield
+  Image as ImageIcon, Info, Share2, Shield, Tag,
+  DollarSignIcon
 } from "lucide-react";
 
 type Event = Database['public']['Tables']['events']['Row'];
@@ -21,7 +22,10 @@ type Event = Database['public']['Tables']['events']['Row'];
 export default function EventDetails() {
   const router = useRouter();
   const urlParams = useParams();
+  const searchParams = useSearchParams();
   const id = urlParams?.id as string;
+  const autoCoupon = searchParams?.get('cupom');
+  const hasAutoApplied = useRef(false);
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(false);
@@ -33,7 +37,15 @@ export default function EventDetails() {
   const [soldTickets, setSoldTickets] = useState(0);
   const [dialog, setDialog] = useState<DialogConfig | null>(null);
   const [isModalProcessing, setIsModalProcessing] = useState(false);
-  
+  const [couponInput, setCouponInput] = useState('');
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    id: string;
+    code: string;
+    discount_type: 'percentage' | 'fixed';
+    discount_value: number;
+  } | null>(null);
+
   const fetchEventAndStatus = useCallback(async () => {
     if (!id) return;
     setLoading(true);
@@ -93,6 +105,62 @@ export default function EventDetails() {
     fetchEventAndStatus();
   }, [fetchEventAndStatus]);
 
+  const handleApplyCoupon = async (codeToApply?: any) => {
+    const code = typeof codeToApply === 'string' ? codeToApply : couponInput;
+    if (!code.trim()) return;
+    
+    setIsApplyingCoupon(true);
+    
+    try {
+      const res = await fetch('/api/coupons/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ couponCode: code, eventId: event?.id })
+      });
+      const data = await res.json();
+      
+      if (!res.ok) {
+        toast.error(data.erro || 'Cupom inválido.');
+        setAppliedCoupon(null);
+      } else {
+        setAppliedCoupon(data);
+        toast.success('Cupom aplicado com sucesso!');
+        setCouponInput(code.toUpperCase());
+      }
+    } catch (error) {
+      toast.error('Erro ao validar o cupom.');
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
+
+  useEffect(() => {
+    if (event?.id && autoCoupon && !hasAutoApplied.current && !appliedCoupon) {
+      hasAutoApplied.current = true;
+      setCouponInput(autoCoupon.toUpperCase());
+      handleApplyCoupon(autoCoupon);
+    }
+  }, [event?.id, autoCoupon]);
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    toast.info('Cupom removido.', { position: 'bottom-center' });
+  };
+
+  const getFinalPrice = () => {
+    if (!event) return 0;
+    if (event.price === 0) return 0;
+    if (!appliedCoupon) return event.price;
+
+    let final = event.price;
+    if (appliedCoupon.discount_type === 'percentage') {
+      final = final - (final * (appliedCoupon.discount_value / 100));
+    } else {
+      final = final - appliedCoupon.discount_value;
+    }
+    return Math.max(0, final);
+  };
+
   const handleShare = async () => {
     const url = window.location.href;
     if (navigator.share) {
@@ -150,8 +218,9 @@ export default function EventDetails() {
 
   const handleBuy = async () => {
     setBuying(true);
-    const isFree = event!.price === 0;
-    const toastId = toast.loading(isFree ? 'Garantindo sua vaga...' : 'Gerando PIX seguro e reservando a sua vaga...');
+    const isFreeEvent = event!.price === 0;
+    const finalPrice = getFinalPrice();
+    const toastId = toast.loading(finalPrice === 0 ? 'Garantindo sua vaga...' : 'Gerando PIX seguro e reservando a sua vaga...');
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -162,16 +231,14 @@ export default function EventDetails() {
       }
 
       const validQuantity = 1;
-      const totalPrice = event!.price;
-
       const buyerName = session.user.user_metadata?.first_name 
         ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name || ''}`.trim()
         : (session.user.user_metadata?.full_name || 'Usuário');
 
       // ==========================================================
-      // FLUXO DE INGRESSO GRATUITO
+      // FLUXO DE INGRESSO NATIVAMENTE GRATUITO
       // ==========================================================
-      if (isFree || totalPrice === 0) {
+      if (isFreeEvent) {
         const newFreeTicket = {
           event_id: event!.id,
           user_id: session.user.id,
@@ -196,7 +263,7 @@ export default function EventDetails() {
       }
 
       // ==========================================================
-      // FLUXO NORMAL: EVENTOS PAGOS VIA MERCADO PAGO (PIX)
+      // FLUXO DE PAGAMENTO (Ou zerado por cupom de desconto)
       // ==========================================================
       const expirationDate = new Date();
       expirationDate.setMinutes(expirationDate.getMinutes() + 30);
@@ -224,16 +291,24 @@ export default function EventDetails() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: `${event!.title} (${validQuantity}x)`, 
-          price: totalPrice,
+          price: event!.price,
           email: session.user.email,
           ticketId: createdTicket.id,
           expires_at: isoExpiration,
-          producerId: event!.producer_id
+          producerId: event!.producer_id,
+          couponCode: appliedCoupon?.code
         })
       });
 
       const paymentResponse = await res.json();
       if (!res.ok) throw new Error(paymentResponse.erro || 'Falha ao processar o pedido no Mercado Pago');
+
+      if (paymentResponse.is_free) {
+        toast.success('Inscrição confirmada com sucesso via cupom!', { id: toastId });
+        setShowConfirmModal(false);
+        router.push('/tickets');
+        return;
+      }
 
       const { error: updateError } = await supabase.from('tickets').update({
         pix_qr_code: paymentResponse.qr_code,
@@ -301,6 +376,7 @@ export default function EventDetails() {
   const isSoldOut = event.total_spots !== null && soldTickets >= event.total_spots;
   const availableSpots = event.total_spots !== null ? Math.max(0, event.total_spots - soldTickets) : null;
   const isFreeEvent = event.price === 0;
+  const finalPrice = getFinalPrice();
 
   const formatEventDate = (dateString: string) => {
     const dateObj = new Date(dateString);
@@ -339,24 +415,42 @@ export default function EventDetails() {
           <Card className="max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden rounded-3xl border-0 dark:bg-card transition-colors">
             <CardHeader className="bg-transparent border-b border-gray-100 dark:border-slate-800/50 pb-6 text-center transition-colors">
               <CardTitle className="text-2xl font-extrabold text-gray-900 dark:text-gray-100 transition-colors">Resumo do Pedido</CardTitle>
+              {(!isFreeEvent && finalPrice > 0) && (
+                <p className="text-sm font-bold text-blue-600 dark:text-blue-400 mt-2 transition-colors">
+                  Finalize o pagamento para garantir o seu ingresso.
+                </p>
+              )}
             </CardHeader>
             
             <CardContent className="p-6 md:p-8">
               <div className="space-y-5 mb-8">
+                
                 <div className="flex justify-between items-center text-gray-600 dark:text-gray-400 transition-colors">
                   <span className="font-medium flex items-center gap-2">
                     <Ticket className="w-4 h-4 text-blue-500 dark:text-blue-400" />
                     Ingresso
                   </span>
-                  <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
+                  <span className={`font-semibold text-gray-900 dark:text-gray-100 transition-colors ${appliedCoupon ? 'line-through text-gray-400 dark:text-gray-600 text-sm' : ''}`}>
                     {isFreeEvent ? 'Gratuito' : `R$ ${event.price.toFixed(2).replace('.', ',')}`}
                   </span>
                 </div>
+
+                {appliedCoupon && (
+                  <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400 transition-colors">
+                    <span className="font-medium flex items-center gap-2">
+                      <Tag className="w-4 h-4" />
+                      Desconto ({appliedCoupon.code})
+                    </span>
+                    <span className="font-semibold">
+                      - {appliedCoupon.discount_type === 'percentage' ? `${appliedCoupon.discount_value}%` : `R$ ${appliedCoupon.discount_value.toFixed(2).replace('.', ',')}`}
+                    </span>
+                  </div>
+                )}
                 
-                {!isFreeEvent && (
+                {(!isFreeEvent && finalPrice > 0) && (
                   <div className="flex justify-between items-center text-gray-600 dark:text-gray-400 transition-colors">
                     <span className="font-medium flex items-center gap-2">
-                      <CreditCard className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                      <DollarSignIcon className="w-4 h-4 text-blue-500 dark:text-blue-400" />
                       Pagamento
                     </span>
                     <span className="flex gap-2 items-center justify-center font-semibold text-gray-900 dark:text-gray-100 transition-colors">
@@ -367,19 +461,26 @@ export default function EventDetails() {
                 )}
                 
                 <div className={`pt-5 mt-2 border-t flex justify-between items-center p-4 rounded-2xl transition-colors ${
-                  isFreeEvent 
+                  isFreeEvent || finalPrice === 0 
                     ? 'bg-emerald-50 border-emerald-100 dark:bg-emerald-500/10 dark:border-emerald-500/20' 
                     : 'bg-blue-50/50 border-gray-100 dark:bg-blue-500/10 dark:border-blue-500/20'
                 }`}>
                   <span className="text-gray-900 dark:text-gray-100 font-bold transition-colors">Total a pagar:</span>
-                  <span className={`text-3xl font-black tracking-tight transition-colors ${isFreeEvent ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'}`}>
-                    {isFreeEvent ? 'Gratuito' : `R$ ${event.price.toFixed(2).replace('.', ',')}`}
-                  </span>
+                  <div className="text-right flex flex-col items-end">
+                    {appliedCoupon && (
+                      <span className="text-sm text-gray-400 dark:text-gray-500 line-through mb-1">
+                        R$ {event.price.toFixed(2).replace('.', ',')}
+                      </span>
+                    )}
+                    <span className={`text-3xl font-black tracking-tight transition-colors ${isFreeEvent || finalPrice === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                      {isFreeEvent || finalPrice === 0 ? 'Gratuito' : `R$ ${finalPrice.toFixed(2).replace('.', ',')}`}
+                    </span>
+                  </div>
                 </div>
                 
                 <p className="text-xs text-center text-muted-foreground mt-2 flex items-center justify-center gap-1.5 transition-colors">
                   <Clock className="w-3.5 h-3.5" />
-                  {isFreeEvent ? 'Sua vaga será reservada imediatamente.' : 'O código PIX será gerado na próxima tela.'}
+                  {isFreeEvent || finalPrice === 0 ? 'Sua vaga será reservada imediatamente.' : 'Após a confirmação, você terá 30 minutos para efetuar o PIX.'}
                 </p>
               </div>
 
@@ -395,7 +496,7 @@ export default function EventDetails() {
                 <Button 
                   onClick={handleBuy}
                   disabled={buying}
-                  className={`flex-1 h-12 rounded-xl font-bold text-white shadow-md transition-colors ${isFreeEvent ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20' : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 shadow-blue-600/20'}`}
+                  className={`flex-1 h-12 rounded-xl font-bold text-white shadow-md transition-colors ${isFreeEvent || finalPrice === 0 ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20' : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 shadow-blue-600/20'}`}
                 >
                   {buying ? (
                     <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Processando</>
@@ -421,7 +522,7 @@ export default function EventDetails() {
                 alt={`Capa do evento ${event.title}`} 
                 className="w-full h-auto block"
               />
-              <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
             </div>
           ) : (
             <div className="w-full h-64 md:h-100 bg-linear-to-br from-blue-600 to-indigo-800 dark:from-slate-800 dark:to-slate-900 flex flex-col items-center justify-center text-white/50 transition-colors">
@@ -469,13 +570,27 @@ export default function EventDetails() {
 
               <div className="flex items-start gap-4 flex-1">
                 <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center shrink-0 mt-1 transition-colors">
-                  <CreditCard className="w-6 h-6 text-emerald-600 dark:text-emerald-400 transition-colors" />
+                  <DollarSignIcon className="w-6 h-6 text-emerald-600 dark:text-emerald-400 transition-colors" />
                 </div>
                 <div>
-                  <span className="block text-sm font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider transition-colors">Valor Unitário</span>
-                  <span className="block text-2xl text-emerald-600 dark:text-emerald-400 font-black tracking-tight mt-1 transition-colors">
-                    {isFreeEvent ? 'Gratuito' : `R$ ${event.price.toFixed(2).replace('.', ',')}`}
+                  <span className="flex items-center text-sm font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider transition-colors">
+                    VALOR FINAL
+                    {appliedCoupon && (
+                      <Badge variant="outline" className="ml-2 bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30 text-[10px] px-1.5 py-0.5 font-bold transition-colors">
+                        {appliedCoupon.code}
+                      </Badge>
+                    )}
                   </span>
+                  <div className="flex flex-col">
+                    {appliedCoupon && (
+                      <span className="text-sm text-gray-400 dark:text-gray-500 line-through">
+                        R$ {event.price.toFixed(2).replace('.', ',')}
+                      </span>
+                    )}
+                    <span className="block text-2xl text-emerald-600 dark:text-emerald-400 font-black tracking-tight transition-colors">
+                      {isFreeEvent || finalPrice === 0 ? 'Gratuito' : `R$ ${finalPrice.toFixed(2).replace('.', ',')}`}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -593,15 +708,63 @@ export default function EventDetails() {
                   </Badge>
                 )}
 
-                <div className={`flex flex-col md:flex-row justify-between items-center p-6 rounded-2xl border transition-colors ${
-                  isFreeEvent 
+                {/* CAMPO DE CUPOM DE DESCONTO */}
+                {!isFreeEvent && (
+                  <div className="bg-white dark:bg-slate-900/50 p-4 rounded-2xl border border-gray-200 dark:border-slate-800 transition-colors">
+                    {appliedCoupon ? (
+                      <div className="flex items-center justify-between animate-in fade-in zoom-in-95">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center shrink-0">
+                            <Tag className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-gray-900 dark:text-gray-100 tracking-wide">{appliedCoupon.code}</p>
+                            <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">Cupom aplicado com sucesso!</p>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={handleRemoveCoupon} className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-500/10">
+                          Remover
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <Input 
+                          value={couponInput} 
+                          onChange={e => setCouponInput(e.target.value.toUpperCase())} 
+                          placeholder="Possui um cupom de desconto?" 
+                          className="h-12 rounded-xl uppercase placeholder:normal-case font-medium" 
+                        />
+                        <Button 
+                          disabled={!couponInput.trim() || isApplyingCoupon} 
+                          onClick={handleApplyCoupon} 
+                          className="h-12 rounded-xl px-6 bg-gray-900 hover:bg-gray-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold w-full sm:w-auto shrink-0"
+                        >
+                          {isApplyingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Aplicar'}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* BLOCO DE TOTAL A PAGAR */}
+                <div className={`flex flex-col md:flex-row justify-between items-center gap-3 md:gap-0 p-6 rounded-2xl border transition-colors ${
+                  isFreeEvent || finalPrice === 0 
                     ? 'bg-emerald-50/50 border-emerald-100 dark:bg-emerald-500/10 dark:border-emerald-500/20' 
                     : 'bg-blue-50/50 border-blue-100 dark:bg-blue-500/10 dark:border-blue-500/20'
                 }`}>
-                  <span className="font-bold text-gray-500 dark:text-gray-400 text-lg transition-colors">Total a pagar:</span>
-                  <span className={`text-4xl font-black tracking-tight transition-colors ${isFreeEvent ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'}`}>
-                    {isFreeEvent ? 'Gratuito' : `R$ ${event.price.toFixed(2).replace('.', ',')}`}
+                  <span className="font-bold text-gray-500 dark:text-gray-400 text-lg transition-colors text-center md:text-left">
+                    Total a pagar:
                   </span>
+                  <div className="flex flex-col items-center text-center md:items-end md:text-right">
+                    {appliedCoupon && (
+                      <span className="text-sm text-gray-400 dark:text-gray-500 line-through mb-1 animate-in slide-in-from-right-4">
+                        R$ {event.price.toFixed(2).replace('.', ',')}
+                      </span>
+                    )}
+                    <span className={`text-4xl font-black tracking-tight transition-colors ${isFreeEvent || finalPrice === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                      {isFreeEvent || finalPrice === 0 ? 'Gratuito' : `R$ ${finalPrice.toFixed(2).replace('.', ',')}`}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl transition-colors">
@@ -616,12 +779,12 @@ export default function EventDetails() {
                   onClick={() => setShowConfirmModal(true)}
                   disabled={buying}
                   className={`w-full h-16 text-white font-black text-xl rounded-2xl shadow-xl transition-all hover:scale-[1.01] active:scale-[0.99] ${
-                    isFreeEvent 
+                    isFreeEvent || finalPrice === 0
                     ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20 dark:bg-emerald-600 dark:hover:bg-emerald-700' 
                     : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20 dark:bg-blue-600 dark:hover:bg-blue-700'
                   }`}
                 >
-                  {isFreeEvent ? 'Garantir minha vaga' : 'Garantir o meu ingresso'}
+                  {isFreeEvent || finalPrice === 0 ? 'Garantir minha vaga' : 'Garantir o meu ingresso'}
                 </Button>
               </div>
             )}

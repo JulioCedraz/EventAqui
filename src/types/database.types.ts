@@ -9,6 +9,61 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      coupons: {
+        Row: {
+          id: string;
+          code: string;
+          event_id: string | null;
+          producer_id: string | null;
+          discount_type: "percentage" | "fixed";
+          discount_value: number;
+          max_uses: number | null;
+          used_count: number | null;
+          expires_at: string | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          code: string;
+          event_id?: string | null;
+          producer_id?: string | null;
+          discount_type: "percentage" | "fixed";
+          discount_value: number;
+          max_uses?: number | null;
+          used_count?: number | null;
+          expires_at?: string | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          code?: string;
+          event_id?: string | null;
+          producer_id?: string | null;
+          discount_type?: "percentage" | "fixed";
+          discount_value?: number;
+          max_uses?: number | null;
+          used_count?: number | null;
+          expires_at?: string | null;
+          created_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "coupons_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "coupons_producer_id_fkey";
+            columns: ["producer_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+
       events: {
         Row: {
           producer_id: string | null;
@@ -139,6 +194,7 @@ export type Database = {
           id: string;
           event_id: string;
           user_id: string | null;
+          coupon_id: string | null;
           buyer_name: string;
           buyer_email: string;
           payment_status: string | null;
@@ -153,6 +209,7 @@ export type Database = {
           id?: string;
           event_id: string;
           user_id?: string | null;
+          coupon_id?: string | null;
           buyer_name: string;
           buyer_email: string;
           payment_status?: string | null;
@@ -167,6 +224,7 @@ export type Database = {
           id?: string;
           event_id?: string;
           user_id?: string | null;
+          coupon_id?: string | null;
           buyer_name?: string;
           buyer_email?: string;
           payment_status?: string | null;
@@ -189,7 +247,14 @@ export type Database = {
             foreignKeyName: "tickets_user_id_fkey";
             columns: ["user_id"];
             isOneToOne: false;
-            referencedRelation: "users";
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tickets_coupon_id_fkey";
+            columns: ["coupon_id"];
+            isOneToOne: false;
+            referencedRelation: "coupons";
             referencedColumns: ["id"];
           },
         ];

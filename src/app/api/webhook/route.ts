@@ -40,16 +40,33 @@ export async function POST(request: Request) {
       const ticketId = paymentData.external_reference; 
 
       if (ticketId) {
-        const { error: erroUpdate } = await supabaseAdmin
+        const { data: ticketData, error: erroUpdate } = await supabaseAdmin
           .from('tickets')
           .update({ payment_status: 'approved' })
-          .eq('id', String(ticketId));
+          .eq('id', String(ticketId))
+          .select('coupon_id')
+          .single();
 
         if (erroUpdate) {
           console.error('Erro ao atualizar banco:', erroUpdate);
           return NextResponse.json({ erro: 'Falha ao atualizar banco' }, { status: 500 });
         }
         
+        if (ticketData?.coupon_id) {
+          const { data: couponData } = await supabaseAdmin
+            .from('coupons')
+            .select('used_count')
+            .eq('id', ticketData.coupon_id)
+            .single();
+
+          if (couponData) {
+            await supabaseAdmin
+              .from('coupons')
+              .update({ used_count: (couponData.used_count || 0) + 1 })
+              .eq('id', ticketData.coupon_id);
+          }
+        }
+
         console.log(`Ingresso ${ticketId} atualizado para APPROVED com sucesso.`);
       }
     }

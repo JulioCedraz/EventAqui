@@ -1,7 +1,8 @@
 -- =========================================================
--- 1. RESET E CRIAÇÃO DAS TABELAS BASE
+-- RESET E CRIAÇÃO DAS TABELAS BASE
 -- =========================================================
 DROP TABLE IF EXISTS public.tickets CASCADE;
+DROP TABLE IF EXISTS public.coupons CASCADE;
 DROP TABLE IF EXISTS public.events CASCADE;
 DROP TABLE IF EXISTS public.profiles CASCADE;
 
@@ -18,15 +19,15 @@ CREATE TABLE public.profiles (
     university text,
     course text,
     semester text,
-    enrollment_number text;
-
+    enrollment_number text,
+    
     -- Campos Pessoa Jurídica (PJ)
     profile_type text CHECK (profile_type IN ('PF', 'PJ')) DEFAULT 'PF',
     cnpj text UNIQUE,
     company_name text,
     trading_name text,
 
-    -- Coluna Gerada Dinamicamente (Se PJ pega Nome Fantasia/Razão Social, se PF pega Nome + Sobrenome)
+    -- Coluna Gerada Dinamicamente
     full_name text GENERATED ALWAYS AS (
         COALESCE(
             NULLIF(trading_name, ''), 
@@ -55,10 +56,25 @@ CREATE TABLE public.events (
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now())
 );
 
+CREATE TABLE public.coupons (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    code text NOT NULL,
+    event_id uuid REFERENCES public.events(id) ON DELETE CASCADE,
+    producer_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
+    discount_type text CHECK (discount_type IN ('percentage', 'fixed')) NOT NULL,
+    discount_value numeric(10, 2) NOT NULL,
+    max_uses integer,
+    used_count integer DEFAULT 0,
+    expires_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
+    UNIQUE(code, event_id)
+);
+
 CREATE TABLE public.tickets (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     event_id uuid NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
     user_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
+    coupon_id uuid REFERENCES public.coupons(id) ON DELETE SET NULL,
     buyer_name text NOT NULL,
     buyer_email text NOT NULL,
     payment_status text,
@@ -71,10 +87,12 @@ CREATE TABLE public.tickets (
 );
 
 -- =========================================================
--- 2. ÍNDICES DE PERFORMANCE
+-- ÍNDICES DE PERFORMANCE
 -- =========================================================
 CREATE INDEX IF NOT EXISTS idx_events_producer_id ON public.events(producer_id);
 CREATE INDEX IF NOT EXISTS idx_profiles_producer_id ON public.profiles(producer_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_event_id ON public.tickets(event_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_user_id ON public.tickets(user_id);
 CREATE INDEX IF NOT EXISTS idx_profiles_deletion_queue ON public.profiles(deletion_scheduled_at) WHERE status = 'pending_deletion';
+CREATE INDEX IF NOT EXISTS idx_coupons_event_id ON public.coupons(event_id);
+CREATE INDEX IF NOT EXISTS idx_coupons_code ON public.coupons(code);
