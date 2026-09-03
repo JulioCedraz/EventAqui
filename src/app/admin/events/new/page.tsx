@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { 
-  Loader2, Calendar, Pencil, CheckCircle2, ArrowLeft, Tag, Plus, Trash2 
+  Loader2, Calendar, Pencil, CheckCircle2, ArrowLeft, Tag, Plus, Trash2, Share2 
 } from "lucide-react";
 
 interface LocalCoupon {
@@ -53,7 +53,7 @@ function EventForm() {
   
   // Campos do formulário de Cupom
   const [cCode, setCCode] = useState('');
-  const [cType, setCType] = useState<'percentage'|'fixed'>('percentage');
+  const [cType, setCType] = useState<'fixed'|'percentage'>('fixed');
   const [cValue, setCValue] = useState('');
   const [cMaxUses, setCMaxUses] = useState('');
   const [cExpires, setCExpires] = useState('');
@@ -557,16 +557,34 @@ function EventForm() {
                             <span>{coupon.expires_at ? `Validade: ${new Date(coupon.expires_at).toLocaleDateString('pt-BR')}` : 'Sem validade'}</span>
                           </div>
                         </div>
-                        <Button 
-                          type="button" 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => handleRemoveCoupon(coupon.id, coupon.isNew)} 
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-500/10 rounded-xl"
-                          title="Remover cupom"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          {editId && !coupon.isNew && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                const url = `${window.location.origin}/evento/${editId}?cupom=${coupon.code}`;
+                                navigator.clipboard.writeText(url);
+                                toast.success('Link promocional copiado!');
+                              }}
+                              className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-500/10 rounded-xl"
+                              title="Divulgue o evento já com o cupom aplicado!"
+                            >
+                              <Share2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                          <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleRemoveCoupon(coupon.id, coupon.isNew)} 
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-500/10 rounded-xl"
+                            title="Remover cupom"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -604,7 +622,7 @@ function EventForm() {
                           min="0.01" 
                           value={cValue} 
                           onChange={e => setCValue(e.target.value)} 
-                          placeholder={cType === 'percentage' ? 'Ex: 20' : 'Ex: 15.00'} 
+                          placeholder={cType === 'percentage' ? 'Ex: 20' : 'Ex: 20.00'} 
                           className="h-11 rounded-xl" 
                         />
                       </div>

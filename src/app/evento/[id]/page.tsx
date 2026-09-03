@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { Database } from '../../../types/database.types';
 import SmartModal, { DialogConfig } from '../../../components/SmartModal';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,7 +22,10 @@ type Event = Database['public']['Tables']['events']['Row'];
 export default function EventDetails() {
   const router = useRouter();
   const urlParams = useParams();
+  const searchParams = useSearchParams();
   const id = urlParams?.id as string;
+  const autoCoupon = searchParams?.get('cupom');
+  const hasAutoApplied = useRef(false);
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(false);
@@ -102,15 +105,17 @@ export default function EventDetails() {
     fetchEventAndStatus();
   }, [fetchEventAndStatus]);
 
-  const handleApplyCoupon = async () => {
-    if (!couponInput.trim()) return;
+  const handleApplyCoupon = async (codeToApply?: any) => {
+    const code = typeof codeToApply === 'string' ? codeToApply : couponInput;
+    if (!code.trim()) return;
+    
     setIsApplyingCoupon(true);
     
     try {
       const res = await fetch('/api/coupons/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ couponCode: couponInput, eventId: event?.id })
+        body: JSON.stringify({ couponCode: code, eventId: event?.id })
       });
       const data = await res.json();
       
@@ -120,7 +125,7 @@ export default function EventDetails() {
       } else {
         setAppliedCoupon(data);
         toast.success('Cupom aplicado com sucesso!');
-        setCouponInput('');
+        setCouponInput(code.toUpperCase());
       }
     } catch (error) {
       toast.error('Erro ao validar o cupom.');
@@ -128,6 +133,14 @@ export default function EventDetails() {
       setIsApplyingCoupon(false);
     }
   };
+
+  useEffect(() => {
+    if (event?.id && autoCoupon && !hasAutoApplied.current && !appliedCoupon) {
+      hasAutoApplied.current = true;
+      setCouponInput(autoCoupon.toUpperCase());
+      handleApplyCoupon(autoCoupon);
+    }
+  }, [event?.id, autoCoupon]);
 
   const handleRemoveCoupon = () => {
     setAppliedCoupon(null);
