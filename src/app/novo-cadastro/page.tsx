@@ -117,7 +117,26 @@ export default function SignupPage() {
       setSuccessMsg("Quase lá! Enviamos um link de confirmação para o seu e-mail. Clique nele para ativar a conta.");
       form.setValue("password", "");
     } catch (err: any) {
-      setErrorMsg(err.message);
+      console.error("Erro bruto do cadastro:", err);
+
+      // 1. Define uma mensagem padrão de segurança
+      let finalMessage = "Ocorreu um erro inesperado ao criar a conta. Tente novamente.";
+
+      // 2. Tenta extrair a mensagem do erro de forma segura
+      if (typeof err === "string") {
+        finalMessage = err;
+      } else if (err?.message && typeof err.message === "string") {
+        finalMessage = err.message;
+      } else if (err?.error_description && typeof err.error_description === "string") {
+        finalMessage = err.error_description;
+      }
+
+      // 3. Trava de segurança contra objetos vazios ou mal convertidos
+      if (finalMessage === "{}" || finalMessage === "[object Object]") {
+        finalMessage = "Não foi possível validar os dados no servidor. Verifique suas informações e tente novamente.";
+      }
+
+      setErrorMsg(finalMessage);
     } finally {
       setIsLoading(false);
     }
