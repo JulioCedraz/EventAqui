@@ -747,13 +747,15 @@ export default function EventDetails() {
                 )}
 
                 {/* BLOCO DE TOTAL A PAGAR */}
-                <div className={`flex flex-col md:flex-row justify-between items-center p-6 rounded-2xl border transition-colors ${
+                <div className={`flex flex-col md:flex-row justify-between items-center gap-3 md:gap-0 p-6 rounded-2xl border transition-colors ${
                   isFreeEvent || finalPrice === 0 
                     ? 'bg-emerald-50/50 border-emerald-100 dark:bg-emerald-500/10 dark:border-emerald-500/20' 
                     : 'bg-blue-50/50 border-blue-100 dark:bg-blue-500/10 dark:border-blue-500/20'
                 }`}>
-                  <span className="font-bold text-gray-500 dark:text-gray-400 text-lg transition-colors">Total a pagar:</span>
-                  <div className="text-right flex flex-col items-end">
+                  <span className="font-bold text-gray-500 dark:text-gray-400 text-lg transition-colors text-center md:text-left">
+                    Total a pagar:
+                  </span>
+                  <div className="flex flex-col items-center text-center md:items-end md:text-right">
                     {appliedCoupon && (
                       <span className="text-sm text-gray-400 dark:text-gray-500 line-through mb-1 animate-in slide-in-from-right-4">
                         R$ {event.price.toFixed(2).replace('.', ',')}
