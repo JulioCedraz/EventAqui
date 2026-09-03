@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import SmartModal, { DialogConfig } from '../../../../components/SmartModal';
 import { 
   Loader2, Calendar, Pencil, CheckCircle2, ArrowLeft, Tag, Plus, Trash2, Share2 
 } from "lucide-react";
@@ -50,6 +51,10 @@ function EventForm() {
   const [coupons, setCoupons] = useState<LocalCoupon[]>([]);
   const [couponsToDelete, setCouponsToDelete] = useState<string[]>([]);
   const [showCouponForm, setShowCouponForm] = useState(false);
+  const [isSavingCoupon, setIsSavingCoupon] = useState(false);
+  const [showTooltipFor, setShowTooltipFor] = useState<string | null>(null);
+  const [dialog, setDialog] = useState<DialogConfig | null>(null);
+  const [isModalProcessing, setIsModalProcessing] = useState(false);
   
   // Campos do formulário de Cupom
   const [cCode, setCCode] = useState('');
@@ -179,7 +184,7 @@ function EventForm() {
   };
 
   // Funções de Gestão dos Cupons
-  const handleAddCoupon = () => {
+  const handleAddCoupon = async () => {
     if (!cCode.trim() || !cValue) {
       toast.error('Código e Valor são obrigatórios para criar um cupom.');
       return;
@@ -196,17 +201,54 @@ function EventForm() {
       return;
     }
 
-    const newCoupon: LocalCoupon = {
-      id: `temp_${Date.now()}`,
-      code: cCode.toUpperCase().trim(),
-      discount_type: cType,
-      discount_value: numValue,
-      max_uses: cMaxUses ? parseInt(cMaxUses, 10) : null,
-      expires_at: cExpires ? new Date(cExpires).toISOString() : null,
-      isNew: true
-    };
+    if (editId) {
+      setIsSavingCoupon(true);
+      const couponPayload = {
+        code: cCode.toUpperCase().trim(),
+        event_id: editId,
+        producer_id: currentUserId,
+        discount_type: cType,
+        discount_value: numValue,
+        max_uses: cMaxUses ? parseInt(cMaxUses, 10) : null,
+        expires_at: cExpires ? new Date(cExpires).toISOString() : null
+      };
 
-    setCoupons([...coupons, newCoupon]);
+      const { data: insertedCoupon, error } = await supabase
+        .from('coupons')
+        .insert(couponPayload)
+        .select()
+        .single();
+
+      setIsSavingCoupon(false);
+
+      if (error) {
+        if (error.code === '23505') {
+          toast.error('Este código de cupom já existe para este evento.');
+        } else {
+          toast.error('Erro ao salvar o cupom diretamente no banco.');
+        }
+        return;
+      }
+
+      setCoupons([...coupons, insertedCoupon]);
+      toast.success('Cupom ativado com sucesso!');
+      
+      // Dispara o balão e some após 6 segundos
+      setShowTooltipFor(insertedCoupon.id);
+      setTimeout(() => setShowTooltipFor(null), 6000);
+
+    } else {
+      const newCoupon: LocalCoupon = {
+        id: `temp_${Date.now()}`,
+        code: cCode.toUpperCase().trim(),
+        discount_type: cType,
+        discount_value: numValue,
+        max_uses: cMaxUses ? parseInt(cMaxUses, 10) : null,
+        expires_at: cExpires ? new Date(cExpires).toISOString() : null,
+        isNew: true
+      };
+      setCoupons([...coupons, newCoupon]);
+    }
     
     setCCode('');
     setCValue('');
@@ -215,11 +257,36 @@ function EventForm() {
     setShowCouponForm(false);
   };
 
-  const handleRemoveCoupon = (id: string, isNew?: boolean) => {
-    if (!isNew) {
-      setCouponsToDelete([...couponsToDelete, id]);
-    }
-    setCoupons(coupons.filter(c => c.id !== id));
+  const handleRemoveCoupon = (idToRemove: string, isNew?: boolean) => {
+    setDialog({
+      isOpen: true,
+      type: 'confirm',
+      title: 'Excluir Cupom',
+      message: 'Tem certeza que deseja excluir este cupom? Esta ação é imediata e não pode ser desfeita.',
+      confirmText: 'Sim, excluir',
+      onConfirm: async () => {
+        setIsModalProcessing(true);
+        try {
+          if (!isNew && editId) {
+            const { error } = await supabase
+              .from('coupons')
+              .delete()
+              .eq('id', idToRemove);
+              
+            if (error) throw error;
+          }
+          
+          setCoupons(prev => prev.filter(c => c.id !== idToRemove));
+          toast.success('Cupom excluído com sucesso!');
+          setDialog(null);
+        } catch (error) {
+          console.error('Erro ao excluir cupom:', error);
+          toast.error('Erro ao excluir o cupom. Tente novamente.');
+        } finally {
+          setIsModalProcessing(false);
+        }
+      }
+    });
   };
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
@@ -346,6 +413,11 @@ function EventForm() {
 
   return (
     <main className="bg-gray-50 dark:bg-background py-10 px-4 sm:px-6 lg:px-8 grow flex flex-col items-center min-h-screen transition-colors">
+      <SmartModal 
+        dialog={dialog} 
+        onClose={() => setDialog(null)} 
+        isProcessing={isModalProcessing} 
+      />
       <div className="w-full max-w-4xl space-y-8">
         
         <div className="pt-1 pb-1">
@@ -559,20 +631,29 @@ function EventForm() {
                         </div>
                         <div className="flex items-center gap-1">
                           {editId && !coupon.isNew && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                const url = `${window.location.origin}/evento/${editId}?cupom=${coupon.code}`;
-                                navigator.clipboard.writeText(url);
-                                toast.success('Link promocional copiado!');
-                              }}
-                              className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-500/10 rounded-xl"
-                              title="Divulgue o evento já com o cupom aplicado!"
-                            >
-                              <Share2 className="w-4 h-4" />
-                            </Button>
+                            <div className="relative flex items-center justify-center">
+                              {showTooltipFor === coupon.id && (
+                                <div className="absolute bottom-full mb-3 right-0 w-56 bg-blue-600 text-white text-sm leading-tight font-medium p-3 rounded-xl shadow-xl z-50 animate-in fade-in zoom-in slide-in-from-bottom-2 duration-300">
+                                   Divulgue o evento com este cupom já aplicado! ✅
+                                  <div className="absolute -bottom-1.5 right-4 w-3 h-3 bg-blue-600 rotate-45 rounded-sm"></div>
+                                </div>
+                              )}
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  const url = `${window.location.origin}/evento/${editId}?cupom=${coupon.code}`;
+                                  navigator.clipboard.writeText(url);
+                                  toast.success('Link promocional copiado!');
+                                  setShowTooltipFor(null);
+                                }}
+                                className={`transition-all duration-300 rounded-xl ${showTooltipFor === coupon.id ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/30 dark:text-blue-300 ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-slate-900 animate-pulse' : 'text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-500/10'}`}
+                                title="Divulgue o evento com este cupom já aplicado!"
+                              >
+                                <Share2 className="w-4 h-4" />
+                              </Button>
+                            </div>
                           )}
                           <Button 
                             type="button" 
@@ -651,8 +732,8 @@ function EventForm() {
                       <Button type="button" variant="ghost" onClick={() => setShowCouponForm(false)} className="rounded-xl h-11 px-6 font-medium">
                         Cancelar
                       </Button>
-                      <Button type="button" onClick={handleAddCoupon} className="rounded-xl h-11 px-8 font-bold bg-blue-600 hover:bg-blue-700 text-white">
-                        Adicionar Cupom
+                      <Button type="button" onClick={handleAddCoupon} disabled={isSavingCoupon} className="rounded-xl h-11 px-8 font-bold bg-blue-600 hover:bg-blue-700 text-white">
+                        {isSavingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Adicionar Cupom'}
                       </Button>
                     </div>
                   </div>
