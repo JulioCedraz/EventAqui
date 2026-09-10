@@ -1,6 +1,7 @@
 -- =========================================================
 -- RESET E CRIAÇÃO DAS TABELAS BASE
 -- =========================================================
+DROP TABLE IF EXISTS public.guests CASCADE;
 DROP TABLE IF EXISTS public.tickets CASCADE;
 DROP TABLE IF EXISTS public.coupons CASCADE;
 DROP TABLE IF EXISTS public.events CASCADE;
@@ -86,6 +87,20 @@ CREATE TABLE public.tickets (
     expires_at timestamp with time zone
 );
 
+CREATE TABLE public.guests (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    ticket_id uuid NOT NULL REFERENCES public.tickets(id) ON DELETE CASCADE,
+    buyer_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    guest_name text NOT NULL,
+    guest_email text NOT NULL,
+    guest_cpf text NOT NULL,
+    guest_phone text,
+    is_claimed boolean DEFAULT false,
+    has_been_edited boolean DEFAULT false,
+    claimed_by_user_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
+    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 -- =========================================================
 -- ÍNDICES DE PERFORMANCE
 -- =========================================================
@@ -96,3 +111,5 @@ CREATE INDEX IF NOT EXISTS idx_tickets_user_id ON public.tickets(user_id);
 CREATE INDEX IF NOT EXISTS idx_profiles_deletion_queue ON public.profiles(deletion_scheduled_at) WHERE status = 'pending_deletion';
 CREATE INDEX IF NOT EXISTS idx_coupons_event_id ON public.coupons(event_id);
 CREATE INDEX IF NOT EXISTS idx_coupons_code ON public.coupons(code);
+CREATE INDEX IF NOT EXISTS idx_guests_ticket_id ON public.guests(ticket_id);
+CREATE INDEX IF NOT EXISTS idx_guests_buyer_id ON public.guests(buyer_id);
