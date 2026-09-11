@@ -9,12 +9,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { 
   Loader2, Calendar, Clock, Copy, 
   CheckCircle2, QrCode, Ticket, AlertTriangle, 
   Image as ImageIcon, Info, Share2, Shield, Tag,
-  DollarSignIcon
+  DollarSignIcon, User, Users, UserPlus
 } from "lucide-react";
 
 type Event = Database['public']['Tables']['events']['Row'];
@@ -39,6 +40,13 @@ export default function EventDetails() {
   const [isModalProcessing, setIsModalProcessing] = useState(false);
   const [couponInput, setCouponInput] = useState('');
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  
+  const [isCasadinha, setIsCasadinha] = useState(false);
+  const [guestName, setGuestName] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
+  const [guestCpf, setGuestCpf] = useState('');
+  const [guestPhone, setGuestPhone] = useState('');
+
   const [appliedCoupon, setAppliedCoupon] = useState<{
     id: string;
     code: string;
@@ -150,9 +158,11 @@ export default function EventDetails() {
   const getFinalPrice = () => {
     if (!event) return 0;
     if (event.price === 0) return 0;
-    if (!appliedCoupon) return event.price;
+    
+    const basePrice = isCasadinha ? event.price * 2 : event.price;
+    if (!appliedCoupon) return basePrice;
 
-    let final = event.price;
+    let final = basePrice;
     if (appliedCoupon.discount_type === 'percentage') {
       final = final - (final * (appliedCoupon.discount_value / 100));
     } else {
@@ -216,6 +226,16 @@ export default function EventDetails() {
     });
   };
 
+  const handleOpenConfirmModal = () => {
+    if (isCasadinha) {
+      if (!guestName.trim() || !guestEmail.trim() || !guestCpf.trim()) {
+        toast.error('Por favor, preencha o Nome, E-mail e CPF do seu convidado.');
+        return;
+      }
+    }
+    setShowConfirmModal(true);
+  };
+
   const handleBuy = async () => {
     setBuying(true);
     const isFreeEvent = event!.price === 0;
@@ -230,7 +250,7 @@ export default function EventDetails() {
         return; 
       }
 
-      const validQuantity = 1;
+      const validQuantity = isCasadinha ? 2 : 1;
       const buyerName = session.user.user_metadata?.first_name 
         ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name || ''}`.trim()
         : (session.user.user_metadata?.full_name || 'Usuário');
@@ -250,10 +270,21 @@ export default function EventDetails() {
           expires_at: null
         };
 
-        const { error: insertFreeError } = await supabase.from('tickets').insert(newFreeTicket);
+        const { data: freeTicket, error: insertFreeError } = await supabase.from('tickets').insert(newFreeTicket).select().single();
 
-        if (insertFreeError) {
+        if (insertFreeError || !freeTicket) {
           throw new Error('Erro ao registrar o ingresso no banco de dados.');
+        }
+
+        if (isCasadinha) {
+          await supabase.from('guests').insert({
+            ticket_id: freeTicket.id,
+            buyer_id: session.user.id,
+            guest_name: guestName.trim(),
+            guest_email: guestEmail.trim(),
+            guest_cpf: guestCpf.trim(),
+            guest_phone: guestPhone.trim() || null
+          });
         }
 
         toast.success('Inscrição confirmada com sucesso!', { id: toastId });
@@ -286,12 +317,23 @@ export default function EventDetails() {
         throw new Error('Erro ao registrar o ingresso pendente no banco de dados.');
       }
       
+      if (isCasadinha) {
+        await supabase.from('guests').insert({
+          ticket_id: createdTicket.id,
+          buyer_id: session.user.id,
+          guest_name: guestName.trim(),
+          guest_email: guestEmail.trim(),
+          guest_cpf: guestCpf.trim(),
+          guest_phone: guestPhone.trim() || null
+        });
+      }
+
       const res = await fetch('/api/payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: `${event!.title} (${validQuantity}x)`, 
-          price: event!.price,
+          price: isCasadinha ? event!.price * 2 : event!.price,
           email: session.user.email,
           ticketId: createdTicket.id,
           expires_at: isoExpiration,
@@ -377,6 +419,7 @@ export default function EventDetails() {
   const availableSpots = event.total_spots !== null ? Math.max(0, event.total_spots - soldTickets) : null;
   const isFreeEvent = event.price === 0;
   const finalPrice = getFinalPrice();
+  const basePriceMultiplier = isCasadinha ? 2 : 1;
 
   const formatEventDate = (dateString: string) => {
     const dateObj = new Date(dateString);
@@ -417,7 +460,7 @@ export default function EventDetails() {
               <CardTitle className="text-2xl font-extrabold text-gray-900 dark:text-gray-100 transition-colors">Resumo do Pedido</CardTitle>
               {(!isFreeEvent && finalPrice > 0) && (
                 <p className="text-sm font-bold text-blue-600 dark:text-blue-400 mt-2 transition-colors">
-                  Finalize o pagamento para garantir o seu ingresso.
+                  Finalize o pagamento para garantir {isCasadinha ? 'as suas vagas' : 'o seu ingresso'}.
                 </p>
               )}
             </CardHeader>
@@ -428,10 +471,10 @@ export default function EventDetails() {
                 <div className="flex justify-between items-center text-gray-600 dark:text-gray-400 transition-colors">
                   <span className="font-medium flex items-center gap-2">
                     <Ticket className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-                    Ingresso
+                    Ingresso {isCasadinha && '(x2)'}
                   </span>
                   <span className={`font-semibold text-gray-900 dark:text-gray-100 transition-colors ${appliedCoupon ? 'line-through text-gray-400 dark:text-gray-600 text-sm' : ''}`}>
-                    {isFreeEvent ? 'Gratuito' : `R$ ${event.price.toFixed(2).replace('.', ',')}`}
+                    {isFreeEvent ? 'Gratuito' : `R$ ${(event.price * basePriceMultiplier).toFixed(2).replace('.', ',')}`}
                   </span>
                 </div>
 
@@ -469,7 +512,7 @@ export default function EventDetails() {
                   <div className="text-right flex flex-col items-end">
                     {appliedCoupon && (
                       <span className="text-sm text-gray-400 dark:text-gray-500 line-through mb-1">
-                        R$ {event.price.toFixed(2).replace('.', ',')}
+                        R$ ${(event.price * basePriceMultiplier).toFixed(2).replace('.', ',')}
                       </span>
                     )}
                     <span className={`text-3xl font-black tracking-tight transition-colors ${isFreeEvent || finalPrice === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'}`}>
@@ -584,7 +627,7 @@ export default function EventDetails() {
                   <div className="flex flex-col">
                     {appliedCoupon && (
                       <span className="text-sm text-gray-400 dark:text-gray-500 line-through">
-                        R$ {event.price.toFixed(2).replace('.', ',')}
+                        R$ {(event.price * basePriceMultiplier).toFixed(2).replace('.', ',')}
                       </span>
                     )}
                     <span className="block text-2xl text-emerald-600 dark:text-emerald-400 font-black tracking-tight transition-colors">
@@ -708,6 +751,90 @@ export default function EventDetails() {
                   </Badge>
                 )}
 
+                {/* TIPO DE INGRESSO (INDIVIDUAL OU CASADINHA) */}
+                <div className="flex bg-gray-100 dark:bg-slate-900/50 p-1.5 rounded-2xl border border-gray-200 dark:border-slate-800 transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => setIsCasadinha(false)}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold rounded-xl transition-all ${
+                      !isCasadinha 
+                        ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' 
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    <User className="w-4 h-4" />
+                    Individual (1x)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsCasadinha(true)}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold rounded-xl transition-all ${
+                      isCasadinha 
+                        ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' 
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    <Users className="w-4 h-4" />
+                    Casadinha (2x)
+                  </button>
+                </div>
+
+                {/* FORMULÁRIO DO CONVIDADO (CASADINHA) */}
+                {isCasadinha && (
+                  <div className="bg-white dark:bg-slate-900/50 p-6 rounded-2xl border border-blue-100 dark:border-blue-900/30 animate-in fade-in slide-in-from-top-4 transition-colors">
+                    <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                      <UserPlus className="w-5 h-5 text-blue-500" />
+                      Dados do Convidado
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="guestName">Nome Completo *</Label>
+                        <Input 
+                          id="guestName"
+                          placeholder="Digite o nome completo"
+                          value={guestName}
+                          onChange={(e) => setGuestName(e.target.value)}
+                          className="mt-1 h-12 rounded-xl bg-gray-50 dark:bg-slate-900"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="guestEmail">E-mail *</Label>
+                        <Input 
+                          id="guestEmail"
+                          type="email"
+                          placeholder="E-mail que receberá o ingresso"
+                          value={guestEmail}
+                          onChange={(e) => setGuestEmail(e.target.value)}
+                          className="mt-1 h-12 rounded-xl bg-gray-50 dark:bg-slate-900"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="guestCpf">CPF *</Label>
+                          <Input 
+                            id="guestCpf"
+                            placeholder="000.000.000-00"
+                            value={guestCpf}
+                            onChange={(e) => setGuestCpf(e.target.value)}
+                            className="mt-1 h-12 rounded-xl bg-gray-50 dark:bg-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="guestPhone">Telefone (Opcional)</Label>
+                          <Input 
+                            id="guestPhone"
+                            placeholder="(00) 00000-0000"
+                            value={guestPhone}
+                            onChange={(e) => setGuestPhone(e.target.value)}
+                            className="mt-1 h-12 rounded-xl bg-gray-50 dark:bg-slate-900"
+                          />
+                          <p className="text-[10px] text-gray-500 mt-1 ml-1 leading-tight">Usado apenas caso haja problemas com o e-mail.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* CAMPO DE CUPOM DE DESCONTO */}
                 {!isFreeEvent && (
                   <div className="bg-white dark:bg-slate-900/50 p-4 rounded-2xl border border-gray-200 dark:border-slate-800 transition-colors">
@@ -758,7 +885,7 @@ export default function EventDetails() {
                   <div className="flex flex-col items-center text-center md:items-end md:text-right">
                     {appliedCoupon && (
                       <span className="text-sm text-gray-400 dark:text-gray-500 line-through mb-1 animate-in slide-in-from-right-4">
-                        R$ {event.price.toFixed(2).replace('.', ',')}
+                        R$ {(event.price * basePriceMultiplier).toFixed(2).replace('.', ',')}
                       </span>
                     )}
                     <span className={`text-4xl font-black tracking-tight transition-colors ${isFreeEvent || finalPrice === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'}`}>
@@ -776,7 +903,7 @@ export default function EventDetails() {
 
                 <Button 
                   size="lg"
-                  onClick={() => setShowConfirmModal(true)}
+                  onClick={handleOpenConfirmModal}
                   disabled={buying}
                   className={`w-full h-16 text-white font-black text-xl rounded-2xl shadow-xl transition-all hover:scale-[1.01] active:scale-[0.99] ${
                     isFreeEvent || finalPrice === 0
@@ -784,7 +911,7 @@ export default function EventDetails() {
                     : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20 dark:bg-blue-600 dark:hover:bg-blue-700'
                   }`}
                 >
-                  {isFreeEvent || finalPrice === 0 ? 'Garantir minha vaga' : 'Garantir o meu ingresso'}
+                  {isCasadinha ? 'Garantir os ingressos' : 'Garantir o meu ingresso'}
                 </Button>
               </div>
             )}
