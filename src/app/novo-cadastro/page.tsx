@@ -33,6 +33,7 @@ export default function SignupPage() {
   const [successMsg, setSuccessMsg] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState("customer");
+  const [nextUrl, setNextUrl] = useState("");
 
   // ==========================================
   // 2. CONFIGURAÇÃO DO REACT HOOK FORM
@@ -43,7 +44,6 @@ export default function SignupPage() {
       profileType: 'PF',
       email: '',
       password: '',
-      // Inicialização para evitar avisos de uncontrolled input
       firstName: '', lastName: '', cpf: '', birthDate: '', phone: '',
       semester: '', enrollmentNumber: '', university: '', customUniversity: '',
       course: '', customCourse: '', companyName: '', tradingName: '', cnpj: ''
@@ -57,8 +57,14 @@ export default function SignupPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlRole = params.get('role');
+    const urlNext = params.get('next');
+    
     if (urlRole && ['admin', 'producer', 'agent'].includes(urlRole)) {
       setRole(urlRole);
+    }
+    
+    if (urlNext) {
+      setNextUrl(urlNext);
     }
   }, []);
 
@@ -99,11 +105,14 @@ export default function SignupPage() {
             role: role, 
           };
 
+      const redirectUrl = nextUrl ? `${window.location.origin}${nextUrl}` : `${window.location.origin}/login`;
+
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
           data: userMetaData,
+          emailRedirectTo: redirectUrl,
         },
       });
 
@@ -184,7 +193,7 @@ export default function SignupPage() {
                     {String(errors.email.message)}
                   </p>
                   {String(errors.email.message).includes("cadastrado") && (
-                    <Link href="/login" className="self-start mt-1">
+                    <Link href={nextUrl ? `/login?next=${nextUrl}` : "/login"} className="self-start mt-1">
                       <Button 
                         variant="link" 
                         type="button" 
@@ -283,7 +292,7 @@ export default function SignupPage() {
         </CardContent>
 
         <CardFooter className="flex justify-center border-t border-gray-100 dark:border-border pt-6 transition-colors">
-          <Link href="/login" className="w-full text-center">
+          <Link href={nextUrl ? `/login?next=${nextUrl}` : "/login"} className="w-full text-center">
             <Button
               variant="ghost"
               type="button"
