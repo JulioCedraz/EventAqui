@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import SmartModal, { DialogConfig } from "../../components/SmartModal";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +13,8 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
-
+  const searchParams = useSearchParams();
+  const next = searchParams?.get('next');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -109,9 +110,9 @@ export default function LoginPage() {
       const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(",").map((adminEmail) => adminEmail.trim()) || [];
 
       if (userEmail && admins.includes(userEmail)) {
-        router.push("/admin");
+        router.push(next || "/admin");
       } else {
-        router.push("/tickets");
+        router.push(next || "/tickets");
       }
     } catch (err: any) {
       setErrorMsg(err.message);
