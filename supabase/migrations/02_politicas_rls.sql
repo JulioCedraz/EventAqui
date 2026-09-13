@@ -69,12 +69,11 @@ CREATE POLICY "Tickets - Leitura" ON public.tickets FOR SELECT USING (
   user_id = auth.uid() 
   OR buyer_email = (auth.jwt()->>'email')::text
   OR public.is_ticket_manager(event_id)
+  OR id IN (SELECT ticket_id FROM public.guests)
 );
 
 CREATE POLICY "Tickets - Resgate pelo Convidado" ON public.tickets FOR UPDATE USING (
   id IN (SELECT ticket_id FROM public.guests WHERE is_claimed = false)
-) WITH CHECK (
-  user_id = auth.uid()
 );
 
 CREATE POLICY "Tickets - Inserção" ON public.tickets FOR INSERT WITH CHECK (
