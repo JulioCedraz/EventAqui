@@ -71,9 +71,9 @@ export async function POST(request: Request) {
         .eq('id', ticketId);
     }
 
-    // =========================================================================
-    // EVENTOS GRATUITOS (Ou pagamentos que zeraram por conta de 100% de desconto)
-    // =========================================================================
+    // ===================================================================
+    // EVENTOS GRATUITOS (Ou com cupons de 100% de desconto)
+    // ===================================================================
     if (finalPrice === 0) {
       await supabaseAdmin
         .from('tickets')
@@ -86,6 +86,30 @@ export async function POST(request: Request) {
           .update({ used_count: (couponData.used_count || 0) + 1 })
           .eq('id', appliedCouponId);
       }
+
+      // =================================================================
+      // FLUXO DA CASADINHA: VERIFICAÇÃO E PREPARO DE E-MAIL 
+      // =================================================================
+      const { data: guestData } = await supabaseAdmin
+        .from('guests')
+        .select('*')
+        .eq('ticket_id', ticketId)
+        .single();
+
+      if (guestData && !guestData.is_claimed) {
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eventaqui.vercel.app';
+        const magicLink = `${baseUrl}/resgatar/${guestData.id}`;
+        
+        // Simulação do envio de e-mail (Preparo para a integração SMTP)
+        console.log('\n================================================');
+        console.log(`[CASADINHA] Ingresso aprovado com 100% de desconto.`);
+        console.log(`[CASADINHA] Preparando e-mail para: ${guestData.guest_email}`);
+        console.log(`[CASADINHA] Link Mágico gerado: ${magicLink}`);
+        console.log('================================================\n');
+        
+        // Plugar a função sendEmail() aqui
+      }
+      // =================================================================
 
       return NextResponse.json({
         id: `free_${crypto.randomUUID()}`,
