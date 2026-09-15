@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
     const { data: ticket, error: ticketError } = await supabaseAdmin
       .from('tickets')
-      .select('event_id')
+      .select('event_id, quantity')
       .eq('id', ticketId)
       .single();
 
@@ -48,6 +48,10 @@ export async function POST(request: Request) {
         return NextResponse.json({ erro: 'Este cupom não é válido para este evento.' }, { status: 400 });
       }
 
+      if (coupon.is_casadinha_only && ticket.quantity < 2) {
+        return NextResponse.json({ erro: 'Este cupom é exclusivo para ingressos Casadinha.' }, { status: 400 });
+      }
+      
       if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
         return NextResponse.json({ erro: 'Este cupom já está expirado.' }, { status: 400 });
       }

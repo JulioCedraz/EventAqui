@@ -8,7 +8,7 @@ const supabaseAdmin = createClient(
 
 export async function POST(request: Request) {
   try {
-    const { couponCode, eventId } = await request.json();
+    const { couponCode, eventId, isCasadinha } = await request.json();
 
     if (!couponCode || !eventId) {
       return NextResponse.json(
@@ -34,42 +34,36 @@ export async function POST(request: Request) {
     // REGRAS DE VALIDAÇÃO
     // ==========================================
 
-    // 1. Verificação de Escopo (Se está atrelado a um evento específico)
+    // 1. Verificação de Escopo (Evento)
     if (coupon.event_id && coupon.event_id !== eventId) {
-      return NextResponse.json(
-        { erro: 'Este cupom não é válido para este evento.' },
-        { status: 400 }
-      );
+      return NextResponse.json({ erro: 'Este cupom não é válido para este evento.' }, { status: 400 });
     }
 
-    // 2. Verificação de Validade (Data)
+    // 2. Verificação de Exclusividade Casadinha
+    if (coupon.is_casadinha_only && !isCasadinha) {
+      return NextResponse.json({ erro: 'Este cupom é válido exclusivamente para ingressos do tipo Casadinha (2x).' }, { status: 400 });
+    }
+
+    // 3. Verificação de Validade (Data)
     if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
-      return NextResponse.json(
-        { erro: 'Este cupom já expirou.' },
-        { status: 400 }
-      );
+      return NextResponse.json({ erro: 'Este cupom já expirou.' }, { status: 400 });
     }
 
-    // 3. Verificação de Escassez (Limite de usos)
+    // 4. Verificação de Escassez (Limite de usos)
     if (coupon.max_uses !== null && coupon.used_count !== null && coupon.used_count >= coupon.max_uses) {
-      return NextResponse.json(
-        { erro: 'Este cupom atingiu o limite de utilizações.' },
-        { status: 400 }
-      );
+      return NextResponse.json({ erro: 'Este cupom atingiu o limite de utilizações.' }, { status: 400 });
     }
 
     return NextResponse.json({
       id: coupon.id,
       code: coupon.code,
       discount_type: coupon.discount_type,
-      discount_value: coupon.discount_value
+      discount_value: coupon.discount_value,
+      is_casadinha_only: coupon.is_casadinha_only
     }, { status: 200 });
 
   } catch (error: any) {
     console.error('Erro na validação do cupom:', error);
-    return NextResponse.json(
-      { erro: 'Erro interno ao validar o cupom.' },
-      { status: 500 }
-    );
+    return NextResponse.json({ erro: 'Erro interno ao validar o cupom.' }, { status: 500 });
   }
 }

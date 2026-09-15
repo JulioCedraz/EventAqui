@@ -23,6 +23,7 @@ interface LocalCoupon {
   expires_at: string | null;
   isNew?: boolean;
   used_count?: number;
+  is_casadinha_only?: boolean;
 }
 
 function EventForm() {
@@ -62,6 +63,7 @@ function EventForm() {
   const [cValue, setCValue] = useState('');
   const [cMaxUses, setCMaxUses] = useState('');
   const [cExpires, setCExpires] = useState('');
+  const [cIsCasadinhaOnly, setCIsCasadinhaOnly] = useState(false);
 
   useEffect(() => {
     const checkAdminAndFetchEvent = async () => {
@@ -210,7 +212,8 @@ function EventForm() {
         discount_type: cType,
         discount_value: numValue,
         max_uses: cMaxUses ? parseInt(cMaxUses, 10) : null,
-        expires_at: cExpires ? new Date(cExpires).toISOString() : null
+        expires_at: cExpires ? new Date(cExpires).toISOString() : null,
+        is_casadinha_only: cIsCasadinhaOnly
       };
 
       const { data: insertedCoupon, error } = await supabase
@@ -245,7 +248,8 @@ function EventForm() {
         discount_value: numValue,
         max_uses: cMaxUses ? parseInt(cMaxUses, 10) : null,
         expires_at: cExpires ? new Date(cExpires).toISOString() : null,
-        isNew: true
+        isNew: true,
+        is_casadinha_only: cIsCasadinhaOnly
       };
       setCoupons([...coupons, newCoupon]);
     }
@@ -254,6 +258,7 @@ function EventForm() {
     setCValue('');
     setCMaxUses('');
     setCExpires('');
+    setCIsCasadinhaOnly(false);
     setShowCouponForm(false);
   };
 
@@ -379,7 +384,8 @@ function EventForm() {
             discount_type: c.discount_type,
             discount_value: c.discount_value,
             max_uses: c.max_uses,
-            expires_at: c.expires_at
+            expires_at: c.expires_at,
+            is_casadinha_only: c.is_casadinha_only || false
           }));
 
         if (couponsToInsert.length > 0) {
@@ -615,15 +621,20 @@ function EventForm() {
                     {coupons.map(coupon => (
                       <div key={coupon.id} className="flex items-center justify-between p-4 rounded-2xl border border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50">
                         <div>
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span className="font-bold uppercase bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2.5 py-0.5 rounded text-sm tracking-wide">
                               {coupon.code}
                             </span>
+                            {coupon.is_casadinha_only && (
+                              <span className="font-bold uppercase bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-2.5 py-0.5 rounded text-[10px] tracking-wide">
+                                Exclusivo Casadinha
+                              </span>
+                            )}
                             <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
                               {coupon.discount_type === 'percentage' ? `${coupon.discount_value}% OFF` : `R$ ${coupon.discount_value.toFixed(2)} OFF`}
                             </span>
                           </div>
-                          <div className="text-xs font-medium text-gray-500 dark:text-gray-400 flex gap-2">
+                          <div className="text-xs font-medium text-gray-500 dark:text-gray-400 flex gap-2 mt-1">
                             <span>{coupon.max_uses ? `${coupon.used_count || 0}/${coupon.max_uses} usos` : 'Uso ilimitado'}</span>
                             <span>•</span>
                             <span>{coupon.expires_at ? `Validade: ${new Date(coupon.expires_at).toLocaleDateString('pt-BR')}` : 'Sem validade'}</span>
@@ -727,7 +738,19 @@ function EventForm() {
                           className="h-11 rounded-xl" 
                         />
                       </div>
+                      <div className="space-y-2 sm:col-span-2 pt-3 border-t border-blue-100/50 dark:border-blue-900/30">
+                        <label className="flex items-center space-x-3 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer transition-colors">
+                          <input 
+                            type="checkbox" 
+                            checked={cIsCasadinhaOnly} 
+                            onChange={(e) => setCIsCasadinhaOnly(e.target.checked)} 
+                            className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-800 text-blue-600 focus:ring-blue-500 w-4 h-4 transition-colors"
+                          />
+                          <span>Válido <strong className="text-blue-600 dark:text-blue-400">exclusivamente</strong> para ingressos Casadinha (Compre 1 Leve 2)</span>
+                        </label>
+                      </div>
                     </div>
+                    
                     <div className="flex justify-end gap-3 pt-2">
                       <Button type="button" variant="ghost" onClick={() => setShowCouponForm(false)} className="rounded-xl h-11 px-6 font-medium">
                         Cancelar

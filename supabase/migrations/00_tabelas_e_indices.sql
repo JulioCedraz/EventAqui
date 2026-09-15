@@ -68,7 +68,8 @@ CREATE TABLE public.coupons (
     used_count integer DEFAULT 0,
     expires_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
-    UNIQUE(code, event_id)
+    UNIQUE(code, event_id),
+    is_casadinha_only BOOLEAN DEFAULT false
 );
 
 CREATE TABLE public.tickets (

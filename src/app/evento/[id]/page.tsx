@@ -52,7 +52,16 @@ export default function EventDetails() {
     code: string;
     discount_type: 'percentage' | 'fixed';
     discount_value: number;
+    is_casadinha_only?: boolean;
   } | null>(null);
+
+  useEffect(() => {
+    if (!isCasadinha && appliedCoupon?.is_casadinha_only) {
+      setAppliedCoupon(null);
+      setCouponInput('');
+      toast.info('Cupom removido. Ele é válido somente para a opção Casadinha.', { duration: 5000 });
+    }
+  }, [isCasadinha, appliedCoupon]);
 
   const fetchEventAndStatus = useCallback(async () => {
     if (!id) return;
@@ -123,7 +132,7 @@ export default function EventDetails() {
       const res = await fetch('/api/coupons/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ couponCode: code, eventId: event?.id })
+        body: JSON.stringify({ couponCode: code, eventId: event?.id, isCasadinha })
       });
       const data = await res.json();
       
