@@ -253,79 +253,44 @@ export default function EventDetails() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { 
-        toast.dismiss(toastId);
-        router.push('/login'); 
-        return; 
-      }
+      if (!session) {
+         toast.dismiss(toastId);
+         router.push('/login');
+         return;
+       }
 
       const validQuantity = isCasadinha ? 2 : 1;
-      const buyerName = session.user.user_metadata?.first_name 
-        ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name || ''}`.trim()
+      const buyerName = session.user.user_metadata?.first_name
+         ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name || ''}`.trim()
         : (session.user.user_metadata?.full_name || 'Usuário');
 
-      // ==========================================================
-      // FLUXO DE INGRESSO NATIVAMENTE GRATUITO
-      // ==========================================================
-      if (isFreeEvent) {
-        const newFreeTicket = {
-          event_id: event!.id,
-          user_id: session.user.id,
-          buyer_name: buyerName,
-          buyer_email: session.user.email!,
-          payment_status: 'approved',
-          quantity: validQuantity,
-          is_used: false,
-          expires_at: null
-        };
-
-        const { data: freeTicket, error: insertFreeError } = await supabase.from('tickets').insert(newFreeTicket).select().single();
-
-        if (insertFreeError || !freeTicket) {
-          throw new Error('Erro ao registrar o ingresso no banco de dados.');
-        }
-
-        if (isCasadinha) {
-          await supabase.from('guests').insert({
-            ticket_id: freeTicket.id,
-            buyer_id: session.user.id,
-            guest_name: guestName.trim(),
-            guest_email: guestEmail.trim(),
-            guest_cpf: guestCpf.trim(),
-            guest_phone: guestPhone.trim() || null
-          });
-        }
-
-        toast.success('Inscrição confirmada com sucesso!', { id: toastId });
-        setShowConfirmModal(false);
-        router.push('/tickets');
-        return;
+      // 1. Unifica a expiração (só existe prazo se houver valor a pagar)
+      let isoExpiration = null;
+      if (finalPrice > 0) {
+        const expirationDate = new Date();
+        expirationDate.setMinutes(expirationDate.getMinutes() + 30);
+        isoExpiration = expirationDate.toISOString();
       }
 
-      // ==========================================================
-      // FLUXO DE PAGAMENTO (Ou zerado por cupom de desconto)
-      // ==========================================================
-      const expirationDate = new Date();
-      expirationDate.setMinutes(expirationDate.getMinutes() + 30);
-      const isoExpiration = expirationDate.toISOString();
-
-      const newPaidTicket = {
+      // 2. Cria o ingresso no banco 
+      const newTicket = {
         event_id: event!.id,
         user_id: session.user.id,
         buyer_name: buyerName,
         buyer_email: session.user.email!,
-        payment_status: 'pending',
+        payment_status: finalPrice === 0 ? 'approved' : 'pending',
         quantity: validQuantity,
         is_used: false,
         expires_at: isoExpiration
       };
 
-      const { data: createdTicket, error: supabaseError } = await supabase.from('tickets').insert(newPaidTicket).select().single();
-      
+      const { data: createdTicket, error: supabaseError } = await supabase.from('tickets').insert(newTicket).select().single();
+
       if (supabaseError || !createdTicket) {
-        throw new Error('Erro ao registrar o ingresso pendente no banco de dados.');
+        throw new Error('Erro ao registrar o ingresso no banco de dados.');
       }
-      
+
+      // 3. Cria o acompanhante (se for Casadinha)
       if (isCasadinha) {
         await supabase.from('guests').insert({
           ticket_id: createdTicket.id,
@@ -337,11 +302,12 @@ export default function EventDetails() {
         });
       }
 
+      // 4. Chama a API para todos os pedidos
       const res = await fetch('/api/payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: `${event!.title} (${validQuantity}x)`, 
+          title: `${event!.title} (${validQuantity}x)`,
           price: isCasadinha ? event!.price * 2 : event!.price,
           email: session.user.email,
           ticketId: createdTicket.id,
@@ -352,15 +318,18 @@ export default function EventDetails() {
       });
 
       const paymentResponse = await res.json();
-      if (!res.ok) throw new Error(paymentResponse.erro || 'Falha ao processar o pedido no Mercado Pago');
 
+      if (!res.ok) throw new Error(paymentResponse.erro || 'Falha ao processar o pedido');
+
+      // 5. Se a API retornar que é gratuito, finaliza aqui
       if (paymentResponse.is_free) {
-        toast.success('Inscrição confirmada com sucesso via cupom!', { id: toastId });
+        toast.success('Inscrição confirmada com sucesso!', { id: toastId });
         setShowConfirmModal(false);
         router.push('/tickets');
         return;
       }
 
+      // 6. Se for pago, prossegue para exibir o PIX
       const { error: updateError } = await supabase.from('tickets').update({
         pix_qr_code: paymentResponse.qr_code,
         pix_qr_code_base64: paymentResponse.qr_code_base64
@@ -373,7 +342,7 @@ export default function EventDetails() {
       setPixData(paymentResponse);
       setPendingTicket({ ...createdTicket, expires_at: isoExpiration });
       setShowConfirmModal(false);
-      
+
       toast.success('PIX gerado! Realize o pagamento em até 30 minutos.', { id: toastId });
 
     } catch (error: any) {
