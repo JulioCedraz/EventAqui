@@ -299,8 +299,8 @@ function EventForm() {
 
     if (!isFree) {
       const numericPrice = parseFloat(price);
-      if (isNaN(numericPrice) || numericPrice < 10) {
-        toast.error('O valor do ingresso pago deve ser de no mínimo R$ 10,00. Para eventos gratuitos, marque a opção "Gratuito".');
+      if (isNaN(numericPrice) || numericPrice < 1) {
+        toast.error('O valor do ingresso pago deve ser de no mínimo R$ 1,00. Para eventos gratuitos, marque a opção "Gratuito".');
         return;
       }
     }
