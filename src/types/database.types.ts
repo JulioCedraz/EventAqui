@@ -79,6 +79,7 @@ export type Database = {
           used_count: number | null;
           expires_at: string | null;
           created_at: string | null;
+          is_casadinha_only: boolean | null;
         };
         Insert: {
           id?: string;
@@ -91,6 +92,7 @@ export type Database = {
           used_count?: number | null;
           expires_at?: string | null;
           created_at?: string | null;
+          is_casadinha_only?: boolean | null;
         };
         Update: {
           id?: string;
@@ -103,6 +105,7 @@ export type Database = {
           used_count?: number | null;
           expires_at?: string | null;
           created_at?: string | null;
+          is_casadinha_only?: boolean | null;
         };
         Relationships: [
           {
