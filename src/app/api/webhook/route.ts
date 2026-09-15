@@ -89,35 +89,39 @@ export async function POST(request: Request) {
         // DISPARO DE E-MAILS (COMPRADOR E CONVIDADO CASADINHA)
         // =================================================================
         const title = paymentData.description || 'Evento';
-        const email = paymentData.payer?.email || ticketData?.buyer_email;
+        
+        const buyerEmail = ticketData?.buyer_email || paymentData.payer?.email;
+
+        const emailsToSend = [];
 
         // E-mail 1: Ingresso do Comprador
-        const buyerQrUrl = generateQrCodeUrl(ticketId);
-        const buyerMailOptions = {
-          from: '"EventAqui" <eventaqui@gmail.com>',
-          to: email, 
-          subject: `🎫 Seu ingresso para ${title} está garantido!`,
-          html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333; text-align: center; border: 1px solid #eaeaea; border-radius: 12px; overflow: hidden;">
-              <div style="background-color: #2563eb; padding: 30px; color: white;">
-                <h1 style="margin: 0; font-size: 24px;">Ingresso Aprovado!</h1>
-              </div>
-              <div style="padding: 30px;">
-                <p style="font-size: 16px;">Seu pagamento foi confirmado e o seu ingresso para <strong>${title}</strong> já está disponível.</p>
-                <p style="font-size: 14px; color: #666;">Apresente o QR Code abaixo na portaria do evento:</p>
-                
-                <img src="${buyerQrUrl}" alt="QR Code do Ingresso" style="width: 250px; height: 250px; margin: 20px auto; border-radius: 8px; border: 1px solid #ddd;" />
-                
-                <p style="font-size: 12px; color: #888;">Código do ingresso (caso o leitor falhe):</p>
-                <div style="background-color: #f3f4f6; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 14px; font-weight: bold; letter-spacing: 1px;">
-                  ${ticketId}
+        if (buyerEmail) {
+          const buyerQrUrl = generateQrCodeUrl(ticketId);
+          const buyerMailOptions = {
+            from: '"EventAqui" <eventaqui@gmail.com>',
+            to: buyerEmail, 
+            subject: `🎫 Seu ingresso para ${title} está garantido!`,
+            html: `
+              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333; text-align: center; border: 1px solid #eaeaea; border-radius: 12px; overflow: hidden;">
+                <div style="background-color: #2563eb; padding: 30px; color: white;">
+                  <h1 style="margin: 0; font-size: 24px;">Ingresso Aprovado!</h1>
+                </div>
+                <div style="padding: 30px;">
+                  <p style="font-size: 16px;">Seu pagamento foi confirmado e o seu ingresso para <strong>${title}</strong> já está disponível.</p>
+                  <p style="font-size: 14px; color: #666;">Apresente o QR Code abaixo na portaria do evento:</p>
+                  
+                  <img src="${buyerQrUrl}" alt="QR Code do Ingresso" style="width: 250px; height: 250px; margin: 20px auto; border-radius: 8px; border: 1px solid #ddd;" />
+                  
+                  <p style="font-size: 12px; color: #888;">Código do ingresso (caso o leitor falhe):</p>
+                  <div style="background-color: #f3f4f6; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 14px; font-weight: bold; letter-spacing: 1px;">
+                    ${ticketId}
+                  </div>
                 </div>
               </div>
-            </div>
-          `
-        };
-        
-        await transporter.sendMail(buyerMailOptions).catch(console.error);
+            `
+          };
+          emailsToSend.push(transporter.sendMail(buyerMailOptions));
+        }
 
         // E-mail 2: Link Mágico do Convidado (Se for Casadinha)
         const { data: guestData } = await supabaseAdmin
@@ -126,7 +130,7 @@ export async function POST(request: Request) {
           .eq('ticket_id', ticketId)
           .single();
 
-        if (guestData && !guestData.is_claimed) {
+        if (guestData && !guestData.is_claimed && guestData.guest_email) {
           const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eventaqui.vercel.app';
           const magicLink = `${baseUrl}/resgatar/${guestData.id}`;
           
@@ -148,9 +152,10 @@ export async function POST(request: Request) {
               </div>
             `
           };
-          await transporter.sendMail(guestMailOptions).catch(console.error);
+          emailsToSend.push(transporter.sendMail(guestMailOptions));
         }
-        // =================================================================
+
+        await Promise.allSettled(emailsToSend);
 
         console.log(`Ingresso ${ticketId} atualizado para APPROVED e e-mails disparados.`);
       }
