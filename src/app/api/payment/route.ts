@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
+import { transporter, generateQrCodeUrl } from '@/lib/mail';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -71,9 +72,9 @@ export async function POST(request: Request) {
         .eq('id', ticketId);
     }
 
-    // =========================================================================
-    // EVENTOS GRATUITOS (Ou pagamentos que zeraram por conta de 100% de desconto)
-    // =========================================================================
+    // ===================================================================
+    // EVENTOS GRATUITOS (Ou com cupons de 100% de desconto)
+    // ===================================================================
     if (finalPrice === 0) {
       await supabaseAdmin
         .from('tickets')
@@ -86,6 +87,71 @@ export async function POST(request: Request) {
           .update({ used_count: (couponData.used_count || 0) + 1 })
           .eq('id', appliedCouponId);
       }
+
+      // =================================================================
+      // DISPARO DE E-MAILS (COMPRADOR E CONVIDADO CASADINHA)
+      // =================================================================
+      
+      // 1. Envia o ingresso oficial com QR Code para o Comprador
+      const buyerQrUrl = generateQrCodeUrl(ticketId);
+      const buyerMailOptions = {
+        from: '"EventAqui" <eventaqui@gmail.com>',
+        to: email, 
+        subject: `🎫 Seu ingresso para ${title} está garantido!`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333; text-align: center; border: 1px solid #eaeaea; border-radius: 12px; overflow: hidden;">
+            <div style="background-color: #2563eb; padding: 30px; color: white;">
+              <h1 style="margin: 0; font-size: 24px;">Ingresso Aprovado!</h1>
+            </div>
+            <div style="padding: 30px;">
+              <p style="font-size: 16px;">Seu ingresso para <strong>${title}</strong> já está disponível.</p>
+              <p style="font-size: 14px; color: #666;">Apresente o QR Code abaixo na portaria do evento:</p>
+              
+              <img src="${buyerQrUrl}" alt="QR Code do Ingresso" style="width: 250px; height: 250px; margin: 20px auto; border-radius: 8px; border: 1px solid #ddd;" />
+              
+              <p style="font-size: 12px; color: #888;">Código do ingresso (caso o leitor falhe):</p>
+              <div style="background-color: #f3f4f6; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 14px; font-weight: bold; letter-spacing: 1px;">
+                ${ticketId}
+              </div>
+            </div>
+          </div>
+        `
+      };
+      
+      transporter.sendMail(buyerMailOptions).catch(console.error);
+
+      // 2. Busca se há um convidado (Casadinha) para disparar o Link Mágico
+      const { data: guestData } = await supabaseAdmin
+        .from('guests')
+        .select('*')
+        .eq('ticket_id', ticketId)
+        .single();
+
+      if (guestData && !guestData.is_claimed) {
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eventaqui.vercel.app';
+        const magicLink = `${baseUrl}/resgatar/${guestData.id}`;
+        
+        const guestMailOptions = {
+          from: '"EventAqui" <eventaqui@gmail.com>',
+          to: guestData.guest_email,
+          subject: `🎁 Você ganhou um ingresso para ${title}!`,
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333; text-align: center; border: 1px solid #eaeaea; border-radius: 12px;">
+              <div style="padding: 30px;">
+                <h2 style="color: #2563eb;">Olá, ${guestData.guest_name}!</h2>
+                <p>Você acaba de ganhar um ingresso <strong>Casadinha</strong> para <strong>${title}</strong>.</p>
+                <p>Para emitir o seu QR Code oficial no seu nome, vincule este ingresso ao seu perfil gratuitamente clicando abaixo:</p>
+                <a href="${magicLink}" style="display: inline-block; background-color: #10b981; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0;">
+                  Resgatar Meu Ingresso
+                </a>
+                <p style="font-size: 12px; color: #888;">Link alternativo: <br/> ${magicLink}</p>
+              </div>
+            </div>
+          `
+        };
+        transporter.sendMail(guestMailOptions).catch(console.error);
+      }
+      // =================================================================
 
       return NextResponse.json({
         id: `free_${crypto.randomUUID()}`,
@@ -131,7 +197,7 @@ export async function POST(request: Request) {
       payer: { email: email },
       date_of_expiration: expires_at,
       external_reference: ticketId,
-      notification_url: `${baseUrl}/api/webhook`
+      notification_url: `${baseUrl}/api/webhook?producerId=${producerId}`
     };
 
     const response = await fetch('https://api.mercadopago.com/v1/payments', {

@@ -7,15 +7,16 @@ import QRCode from 'react-qr-code';
 import Link from 'next/link';
 import SmartModal, { DialogConfig } from '../../components/SmartModal';
 
-// Componentes shadcn/ui e ícones
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { 
   Calendar, Ticket, Copy, CheckCircle2, 
   Trash2, XCircle, ArrowRight, QrCode, 
-  ArrowLeft, Clock, Receipt, User, Wallet
+  ArrowLeft, Clock, Receipt, User, Wallet,
+  Users, HelpCircle, Edit3, Link as LinkIcon
 } from "lucide-react";
 
 export default function MyTickets() {
@@ -24,8 +25,62 @@ export default function MyTickets() {
   const [tickets, setTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedTicketId, setCopiedTicketId] = useState<string | null>(null);
+  const [copiedLink, setCopiedLink] = useState<string | null>(null);
   const [dialog, setDialog] = useState<DialogConfig | null>(null);
   const [isModalProcessing, setIsModalProcessing] = useState(false);
+
+const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+  const [editForm, setEditForm] = useState({
+    id: '',
+    name: '',
+    email: '',
+    cpf: '',
+    phone: ''
+  });
+
+  const openEditModal = (guest: any) => {
+    setEditForm({
+      id: guest.id,
+      name: guest.guest_name || '',
+      email: guest.guest_email || '',
+      cpf: guest.guest_cpf || '',
+      phone: guest.guest_phone || ''
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateGuest = async () => {
+    if (!editForm.name.trim() || !editForm.email.trim() || !editForm.cpf.trim()) {
+      toast.error('Nome, E-mail e CPF são obrigatórios.');
+      return;
+    }
+
+    setIsSubmittingEdit(true);
+    try {
+      const { error } = await supabase
+        .from('guests')
+        .update({
+          guest_name: editForm.name.trim(),
+          guest_email: editForm.email.trim(),
+          guest_cpf: editForm.cpf.trim(),
+          guest_phone: editForm.phone.trim() || null,
+          has_been_edited: true
+        })
+        .eq('id', editForm.id);
+
+      if (error) throw error;
+
+      toast.success('Dados do convidado atualizados com sucesso!');
+      setIsEditModalOpen(false);
+      fetchTickets();
+    } catch (error: any) {
+      console.error('Erro ao atualizar convidado:', error);
+      toast.error('Erro ao atualizar. Tente novamente.');
+    } finally {
+      setIsSubmittingEdit(false);
+    }
+  };
 
   const fetchTickets = useCallback(async () => {
     setLoading(true);
@@ -38,7 +93,7 @@ export default function MyTickets() {
 
     const { data, error } = await supabase
       .from('tickets')
-      .select(`*, events (*), coupons(code, discount_type, discount_value)`)
+      .select(`*, events (*), coupons(code, discount_type, discount_value), guests(*)`)
       .eq('buyer_email', session.user.email)
       .order('created_at', { ascending: false });
 
@@ -56,7 +111,6 @@ export default function MyTickets() {
     fetchTickets();
   }, [fetchTickets]);
 
-  // Função para calcular o valor final pago no ingresso
   const calculateFinalPrice = (ticket: any) => {
     const basePrice = (ticket.events?.price || 0) * (ticket.quantity || 1);
     if (!ticket.coupons) return basePrice;
@@ -132,6 +186,19 @@ export default function MyTickets() {
     }
   };
 
+  const copyGuestLink = async (guestId: string) => {
+    // Monta o link mágico que será construído depois
+    const magicLink = `${window.location.origin}/resgatar/${guestId}`;
+    try {
+      await navigator.clipboard.writeText(magicLink);
+      setCopiedLink(guestId);
+      toast.success('Link de resgate copiado! Envie para seu convidado.');
+      setTimeout(() => setCopiedLink(null), 3000);
+    } catch (error) {
+      toast.error('Falha ao copiar o link.');
+    }
+  };
+
   if (loading && tickets.length === 0) {
     return (
       <main className="min-h-screen bg-gray-50 dark:bg-background py-10 px-4 sm:px-6 lg:px-8 relative transition-colors">
@@ -164,6 +231,83 @@ export default function MyTickets() {
     <main className="min-h-screen bg-gray-50 dark:bg-background py-10 px-4 sm:px-6 lg:px-8 relative transition-colors">
       <SmartModal dialog={dialog} onClose={() => setDialog(null)} isProcessing={isModalProcessing} />
 
+      {/* MODAL DE EDIÇÃO DO CONVIDADO */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 dark:bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <Card className="max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden rounded-3xl border-0 dark:bg-card">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-800/50">
+              <h2 className="text-xl font-extrabold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-blue-500" />
+                Editar Convidado
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
+                Atenção: Por questões de segurança, esta alteração só pode ser feita <strong className="text-red-500 dark:text-red-400 font-bold">uma única vez</strong>. Verifique os dados com cuidado.
+              </p>
+            </div>
+            
+            <div className="p-6 space-y-4 bg-gray-50/50 dark:bg-slate-900/20">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">Nome Completo *</label>
+                <Input 
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                  placeholder="Nome do convidado"
+                  className="h-12 rounded-xl bg-white dark:bg-slate-900"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">E-mail *</label>
+                <Input 
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({...editForm, email: e.target.value})}
+                  placeholder="email@exemplo.com"
+                  className="h-12 rounded-xl bg-white dark:bg-slate-900"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">CPF *</label>
+                  <Input 
+                    value={editForm.cpf}
+                    onChange={(e) => setEditForm({...editForm, cpf: e.target.value})}
+                    placeholder="000.000.000-00"
+                    className="h-12 rounded-xl bg-white dark:bg-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">Telefone</label>
+                  <Input 
+                    value={editForm.phone}
+                    onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
+                    placeholder="(00) 00000-0000"
+                    className="h-12 rounded-xl bg-white dark:bg-slate-900"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 flex gap-3 border-t border-gray-100 dark:border-slate-800/50">
+              <Button 
+                variant="outline"
+                onClick={() => setIsEditModalOpen(false)}
+                disabled={isSubmittingEdit}
+                className="flex-1 h-12 rounded-xl font-bold dark:border-slate-700"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleUpdateGuest}
+                disabled={isSubmittingEdit}
+                className="flex-1 h-12 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {isSubmittingEdit ? 'Salvando...' : 'Salvar Dados'}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
       <div className="max-w-4xl mx-auto">
         <div className="flex flex-wrap items-center gap-3 mb-8">
           <Ticket className="w-8 h-8 text-blue-600 dark:text-blue-500 transition-colors" />
@@ -195,13 +339,19 @@ export default function MyTickets() {
           <div className="space-y-6">
             {tickets.map((ticket) => {
               const finalPrice = calculateFinalPrice(ticket);
+              const guest = ticket.guests && ticket.guests.length > 0 ? ticket.guests[0] : null;
+              const isCasadinha = ticket.quantity === 2;
               
               return (
-                <Card key={ticket.id} className="overflow-hidden rounded-2xl shadow-sm border-gray-200 dark:border-border dark:bg-card hover:shadow-md transition-all group">
-                  <div className="flex flex-col md:flex-row h-full">
+                <Card key={ticket.id} className="overflow-hidden rounded-2xl shadow-sm border-gray-200 dark:border-border dark:bg-card transition-all flex flex-col">
+                  
+                  {/* ========================================== */}
+                  {/* 1. INGRESSO DO TITULAR (COMPRADOR)         */}
+                  {/* ========================================== */}
+                  <div className="flex flex-col md:flex-row h-full relative">
                     
                     {/* Info do Evento e Recibo (Esquerda) */}
-                    <div className="flex-1 p-6 md:p-8 flex flex-col justify-between">
+                    <div className="flex-1 p-6 md:p-8 flex flex-col justify-between z-10">
                       <div className="mb-6">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
                           {ticket.payment_status === 'approved' && !ticket.is_used && (
@@ -226,71 +376,77 @@ export default function MyTickets() {
                           )}
                         </div>
 
-                        <Link href={`/evento/${ticket.event_id}`} className="block group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                          <h2 className="text-2xl font-extrabold text-gray-900 dark:text-gray-100 mb-3 leading-tight transition-colors">
+                        <Link href={`/evento/${ticket.event_id}`} className="block hover:opacity-80 transition-opacity">
+                          <h2 className="text-2xl font-extrabold text-gray-900 dark:text-gray-100 mb-2 leading-tight transition-colors">
                             {ticket.events?.title}
                           </h2>
                         </Link>
                         
-                        <div className="flex items-center text-gray-500 dark:text-gray-400 font-medium text-sm transition-colors">
+                        <div className="flex items-center text-gray-500 dark:text-gray-400 font-medium text-sm transition-colors mb-4">
                           <Calendar className="w-4 h-4 mr-2 text-blue-500 dark:text-blue-400" />
                           {ticket.events?.event_date ? new Date(ticket.events.event_date).toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' }) : 'Data a definir'}
                         </div>
                       </div>
 
-                      {/* Detalhes da Compra / Recibo */}
-                      <div className="bg-gray-50/80 dark:bg-slate-900/50 p-4 sm:p-5 rounded-2xl border border-gray-100 dark:border-slate-800/80 mt-auto transition-colors">
-                        <h4 className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                          <Receipt className="w-3.5 h-3.5" /> Detalhes do Pedido
-                        </h4>
-                        
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-4">
-                          <div>
-                            <span className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 mb-0.5"><User className="w-3 h-3" /> Titular</span>
-                            <span className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate block">{ticket.buyer_name}</span>
-                          </div>
-                          <div>
-                            <span className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 mb-0.5">
-                              <Wallet className="w-3 h-3" /> Valor
-                              {ticket.coupons?.code && (
-                                <span className="ml-1.5 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 rounded border border-emerald-200 dark:border-emerald-500/30">
-                                  {ticket.coupons.code}
+                      <div className="space-y-4 mt-auto z-10">
+                        {/* Detalhes da Compra / Recibo */}
+                        <div className="bg-gray-50/80 dark:bg-slate-900/50 p-4 sm:p-5 rounded-2xl border border-gray-100 dark:border-slate-800/80 transition-colors">
+                          <h4 className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                            <Receipt className="w-3.5 h-3.5" /> Detalhes do Pedido {isCasadinha && '(Pacote Casadinha)'}
+                          </h4>
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-4">
+                            <div>
+                              <span className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 mb-0.5"><User className="w-3 h-3" /> Titular {isCasadinha && '(Comprador)'}</span>
+                              <span className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate block">{ticket.buyer_name}</span>
+                            </div>
+                            <div>
+                              <span className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 mb-0.5">
+                                <Wallet className="w-3 h-3" /> Valor Total
+                                {ticket.coupons?.code && (
+                                  <span className="ml-1.5 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 rounded border border-emerald-200 dark:border-emerald-500/30">
+                                    {ticket.coupons.code}
+                                  </span>
+                                )}
+                              </span>
+                              <div className="flex items-baseline gap-1.5">
+                                {ticket.coupons && (
+                                  <span className="text-xs text-gray-400 dark:text-gray-500 line-through">
+                                    R$ {((ticket.events?.price || 0) * (ticket.quantity || 1)).toFixed(2).replace('.', ',')}
+                                  </span>
+                                )}
+                                <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
+                                  {finalPrice === 0 ? 'Gratuito' : `R$ ${finalPrice.toFixed(2).replace('.', ',')}`}
                                 </span>
-                              )}
-                            </span>
-                            <div className="flex items-baseline gap-1.5">
-                              {ticket.coupons && (
-                                <span className="text-xs text-gray-400 dark:text-gray-500 line-through">
-                                  R$ {((ticket.events?.price || 0) * (ticket.quantity || 1)).toFixed(2).replace('.', ',')}
-                                </span>
-                              )}
-                              <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
-                                {finalPrice === 0 ? 'Gratuito' : `R$ ${finalPrice.toFixed(2).replace('.', ',')}`}
+                              </div>
+                            </div>
+                            <div className="sm:col-span-2 pt-2 mt-1 border-t border-gray-200/60 dark:border-slate-700/50">
+                              <span className="text-xs text-gray-500 dark:text-gray-400 mb-0.5 block">Emitido em</span>
+                              <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                {new Date(ticket.created_at).toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' })}
                               </span>
                             </div>
-                          </div>
-                          <div className="sm:col-span-2 pt-2 mt-1 border-t border-gray-200/60 dark:border-slate-700/50">
-                            <span className="text-xs text-gray-500 dark:text-gray-400 mb-0.5 block">Emitido em</span>
-                            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                              {new Date(ticket.created_at).toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' })}
-                            </span>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Divisória tracejada no Desktop */}
-                    <div className="hidden md:flex flex-col items-center justify-center relative">
-                      <div className="w-6 h-6 rounded-full bg-gray-50 dark:bg-background absolute -top-3 shadow-inner transition-colors z-10"></div>
+                    {/* Divisória tracejada vertical do Titular (Desktop) */}
+                    <div className="hidden md:flex flex-col items-center justify-center relative z-0">
+                      {!isCasadinha && (
+                        <div className="w-6 h-6 rounded-full bg-gray-50 dark:bg-background absolute -top-3 shadow-inner transition-colors z-10"></div>
+                      )}
                       <div className="w-px h-full border-r-2 border-dashed border-gray-200 dark:border-slate-800 transition-colors"></div>
-                      <div className="w-6 h-6 rounded-full bg-gray-50 dark:bg-background absolute -bottom-3 shadow-inner transition-colors z-10"></div>
+                      {!isCasadinha && (
+                        <div className="w-6 h-6 rounded-full bg-gray-50 dark:bg-background absolute -bottom-3 shadow-inner transition-colors z-10"></div>
+                      )}
                     </div>
                     
-                    {/* Divisória mobile */}
+                    {/* Divisória tracejada vertical (Mobile) */}
                     <div className="md:hidden h-px border-b-2 border-dashed border-gray-200 dark:border-slate-800 mx-6"></div>
                     
-                    {/* Ações / QR Code (Direita) */}
-                    <div className="p-6 md:p-8 bg-gray-50/50 dark:bg-slate-900/30 md:w-[320px] flex flex-col justify-center items-center text-center transition-colors">
+                    {/* Ações / QR Code do Titular (Direita) */}
+                    <div className="p-6 md:p-8 bg-gray-50/50 dark:bg-slate-900/30 md:w-[320px] flex flex-col justify-center items-center text-center transition-colors z-10">
                       
                       {ticket.payment_status === 'approved' && !ticket.is_used && (
                         <div className="w-full flex flex-col items-center">
@@ -298,7 +454,7 @@ export default function MyTickets() {
                             <QRCode value={ticket.id} size={140} style={{ height: "auto", maxWidth: "100%", width: "100%" }} viewBox={`0 0 140 140`} />
                           </div>
                           <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1.5 transition-colors">
-                            <QrCode className="w-3.5 h-3.5" /> Código de Entrada
+                            <QrCode className="w-3.5 h-3.5" /> Seu QR Code
                           </p>
                           
                           <div className="flex items-center bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl w-full overflow-hidden shadow-sm transition-colors">
@@ -309,7 +465,7 @@ export default function MyTickets() {
                               variant="ghost" 
                               size="icon" 
                               onClick={() => handleCopyCode(ticket.id)}
-                              className={`rounded-none border-l border-gray-200 dark:border-slate-700 h-full px-3 transition-colors ${copiedTicketId === ticket.id ? 'bg-green-50 text-green-600 hover:bg-green-100 dark:bg-emerald-500/20 dark:text-emerald-400' : 'text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800'}`}
+                              className={`h-full px-3 transition-colors ${copiedTicketId === ticket.id ? 'bg-green-50 text-green-600 hover:bg-green-100 dark:bg-emerald-500/20 dark:text-emerald-400' : 'text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800'}`}
                             >
                               {copiedTicketId === ticket.id ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                             </Button>
@@ -356,6 +512,117 @@ export default function MyTickets() {
 
                     </div>
                   </div>
+
+                  {/* ========================================== */}
+                  {/* 2. INGRESSO DO CONVIDADO (CASADINHA)       */}
+                  {/* ========================================== */}
+                  {isCasadinha && guest && ticket.payment_status !== 'cancelled' && (
+                    <>
+                      {/* Divisória Horizontal Rasgada (Separação visual de ingressos) */}
+                      <div className="relative flex items-center justify-center w-full z-20">
+                        <div className="absolute left-0 -ml-3 w-6 h-6 rounded-full bg-gray-50 dark:bg-background shadow-inner"></div>
+                        <div className="w-full h-px border-b-2 border-dashed border-gray-300 dark:border-slate-700"></div>
+                        <div className="absolute right-0 -mr-3 w-6 h-6 rounded-full bg-gray-50 dark:bg-background shadow-inner"></div>
+                      </div>
+
+                      <div className={`flex flex-col md:flex-row relative z-10 ${guest.is_claimed ? 'bg-emerald-50/40 dark:bg-emerald-950/10' : 'bg-blue-50/40 dark:bg-blue-950/10'} transition-colors`}>
+                        
+                        {/* Dados do Convidado (Esquerda) */}
+                        <div className="flex-1 p-6 md:p-8 flex flex-col justify-center">
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="text-lg font-bold flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                              <Users className="w-5 h-5 text-blue-500" />
+                              Ingresso do Convidado
+                            </h4>
+                            {guest.is_claimed ? (
+                              <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 px-3 py-1 text-xs">Resgatado</Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-500/20 dark:text-amber-400 px-3 py-1 text-xs">Aguardando Resgate</Badge>
+                            )}
+                          </div>
+
+                          <div className="mb-6">
+                            <p className="font-extrabold text-2xl tracking-tight text-gray-900 dark:text-gray-100 mb-1">{guest.guest_name}</p>
+                            <p className="text-base text-gray-600 dark:text-gray-400 font-medium">{guest.guest_email}</p>
+                          </div>
+
+                          {!guest.is_claimed && (
+                            <div className="flex flex-col xl:flex-row gap-3 w-full">
+                              <Button 
+                                variant="outline" 
+                                onClick={() => copyGuestLink(guest.id)}
+                                className="w-full xl:flex-1 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/40 h-12 rounded-xl font-bold"
+                              >
+                                {copiedLink === guest.id ? <CheckCircle2 className="w-4 h-4 mr-2" /> : <LinkIcon className="w-4 h-4 mr-2" />}
+                                Copiar Link de Resgate
+                              </Button>
+                              
+                              <div className="flex items-stretch gap-2 w-full xl:flex-1">
+                                <Button
+                                  variant="ghost"
+                                  disabled={guest.has_been_edited}
+                                  onClick={() => openEditModal(guest)}
+                                  className="flex-1 h-12 text-gray-600 hover:text-blue-700 hover:bg-blue-100 dark:text-gray-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/30 rounded-xl font-bold"
+                                >
+                                  <Edit3 className="w-4 h-4 mr-2" />
+                                  {guest.has_been_edited ? 'Dados Editados' : 'Editar Dados'}
+                                </Button>
+
+                                <div className="relative group flex items-center justify-center shrink-0">
+                                  <button type="button" className="h-12 w-12 flex items-center justify-center hover:bg-blue-100 dark:hover:bg-slate-800 rounded-xl transition-colors focus:outline-none" aria-label="Informação sobre edição">
+                                    <HelpCircle className="w-5 h-5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors" />
+                                  </button>
+
+                                  <div className="hidden group-hover:block group-focus-within:block absolute bottom-full right-0 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto mb-2 w-64 p-3 bg-gray-900 dark:bg-gray-100 text-xs text-gray-100 dark:text-gray-800 text-center rounded-xl shadow-xl z-20 before:content-[''] before:absolute before:top-full before:right-4 sm:before:left-1/2 sm:before:right-auto sm:before:-translate-x-1/2 before:border-6 before:border-transparent before:border-t-gray-900 dark:before:border-t-gray-100">
+                                    <strong className="block mb-1">Atenção!</strong>
+                                    Os dados do convidado poderão ser alterados <b>uma única vez</b> enquanto o ingresso não for resgatado.
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Divisória tracejada vertical do Convidado (Desktop) */}
+                        <div className="hidden md:flex flex-col items-center justify-center relative">
+                          <div className="w-px h-full border-r-2 border-dashed border-gray-300 dark:border-slate-700 transition-colors"></div>
+                        </div>
+                        
+                        {/* Divisória tracejada vertical (Mobile) */}
+                        <div className="md:hidden h-px border-b-2 border-dashed border-gray-300 dark:border-slate-700 mx-6"></div>
+
+                        {/* Esqueleto QR Code do Convidado (Direita) */}
+                        <div className="p-6 md:p-8 md:w-[320px] flex flex-col justify-center items-center text-center transition-colors">
+                          {guest.is_claimed ? (
+                            <div className="w-full flex flex-col items-center animate-in zoom-in-95">
+                              <div className="w-24 h-24 bg-emerald-100 dark:bg-emerald-900/40 rounded-full flex items-center justify-center mb-4 transition-colors shadow-inner border-4 border-white dark:border-slate-800">
+                                <CheckCircle2 className="w-12 h-12 text-emerald-600 dark:text-emerald-400" />
+                              </div>
+                              <p className="text-lg font-black text-gray-800 dark:text-gray-200 mb-1">
+                                Resgatado!
+                              </p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400 px-4 leading-relaxed">
+                                O QR Code definitivo já está disponível na conta do seu convidado.
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="w-full flex flex-col items-center opacity-80">
+                              <div className="w-36 h-36 bg-white/50 dark:bg-slate-900/50 rounded-3xl flex items-center justify-center mb-5 border-2 border-dashed border-gray-300 dark:border-slate-600 transition-colors shadow-sm">
+                                <QrCode className="w-14 h-14 text-gray-300 dark:text-gray-600" />
+                              </div>
+                              <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1.5 transition-colors">
+                                <Clock className="w-4 h-4" /> Aguardando
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors px-2 leading-relaxed font-medium">
+                                O QR Code de entrada será gerado assim que o seu convidado acessar o link e criar a conta.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                      </div>
+                    </>
+                  )}
                 </Card>
               );
             })}

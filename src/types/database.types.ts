@@ -9,6 +9,64 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      guests: {
+        Row: {
+          id: string
+          ticket_id: string
+          buyer_id: string
+          guest_name: string
+          guest_email: string
+          guest_cpf: string
+          guest_phone: string | null
+          is_claimed: boolean | null
+          has_been_edited: boolean | null
+          claimed_by_user_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          ticket_id: string
+          buyer_id: string
+          guest_name: string
+          guest_email: string
+          guest_cpf: string
+          guest_phone?: string | null
+          is_claimed?: boolean | null
+          has_been_edited?: boolean | null
+          claimed_by_user_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          ticket_id?: string
+          buyer_id?: string
+          guest_name?: string
+          guest_email?: string
+          guest_cpf?: string
+          guest_phone?: string | null
+          is_claimed?: boolean | null
+          has_been_edited?: boolean | null
+          claimed_by_user_id?: string | null
+          created_at?: string
+          }
+        Relationships: [
+          {
+            foreignKeyName: "guests_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guests_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+
       coupons: {
         Row: {
           id: string;
