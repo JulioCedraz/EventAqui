@@ -57,10 +57,18 @@ export default function ResgatarIngresso() {
     window.location.reload();
   };
 
+  // Normalização segura de dados cruzados
+  const cleanDoc = (val?: string | null) => (val || '').replace(/\D/g, '');
+  const cleanEmail = (val?: string | null) => (val || '').trim().toLowerCase();
+
   const handleClaim = async () => {
     if (!session || !guest) return;
     
-    if (!guest.tickets || !guest.tickets.event_id) {
+    // Suporte resiliente a objeto ou array retornado na relação
+    const originalTicket = Array.isArray(guest.tickets) ? guest.tickets[0] : guest.tickets;
+    const eventData = Array.isArray(originalTicket?.events) ? originalTicket.events[0] : originalTicket?.events;
+
+    if (!originalTicket || !originalTicket.event_id) {
       toast.error('Erro ao ler os dados do evento. Tente recarregar a página.');
       return;
     }
@@ -69,7 +77,7 @@ export default function ResgatarIngresso() {
 
     try {
       const guestTicket = {
-        event_id: guest.tickets.event_id,
+        event_id: originalTicket.event_id,
         user_id: session.user.id,
         buyer_name: `${session.user.user_metadata?.first_name || ''} ${session.user.user_metadata?.last_name || ''}`.trim() || 'Convidado',
         buyer_email: session.user.email,
@@ -78,12 +86,16 @@ export default function ResgatarIngresso() {
         is_used: false,
       };
 
-      const { error: insertError } = await supabase
+      // 1. Cria o ingresso novo e obtém o ID gerado para o QR Code
+      const { data: createdTicket, error: insertError } = await supabase
         .from('tickets')
-        .insert(guestTicket);
+        .insert(guestTicket)
+        .select('id')
+        .single();
 
       if (insertError) throw insertError;
 
+      // 2. Desmembra o lote original do titular
       const { error: updateTicketError } = await supabase
         .from('tickets')
         .update({ quantity: 1 })
@@ -91,6 +103,7 @@ export default function ResgatarIngresso() {
         
       if (updateTicketError) throw updateTicketError;
 
+      // 3. Marca convite como resgatado
       const { error: guestError } = await supabase
         .from('guests')
         .update({ 
@@ -101,7 +114,21 @@ export default function ResgatarIngresso() {
 
       if (guestError) throw guestError;
 
-      toast.success('Ingresso resgatado com sucesso! Bem-vindo(a) ao evento.');
+      // 4. Disparo do e-mail com o QR Code para o Convidado (assíncrono)
+      if (createdTicket?.id) {
+        fetch('/api/send-guest-ticket', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: session.user.email,
+            name: session.user.user_metadata?.first_name || 'Convidado',
+            eventTitle: eventData?.title || 'Evento',
+            newTicketId: createdTicket.id
+          })
+        }).catch((err) => console.error('Erro silencioso ao enviar email do convidado:', err));
+      }
+
+      toast.success('Ingresso resgatado com sucesso! O QR Code também foi enviado para seu e-mail.');
       router.push('/tickets');
     } catch (error: any) {
       console.error(error);
@@ -132,7 +159,7 @@ export default function ResgatarIngresso() {
           <AlertTriangle className="w-14 h-14 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">Link Inválido</h2>
           <p className="text-gray-500 dark:text-gray-400 px-6">
-            Não conseguimos encontrar este convite. O link pode estar quebrado ou ter sido deletado.
+            Não conseguimos encontrar este convite. O link pode estar quebrado ou ter sido cancelado.
           </p>
           <Button onClick={() => router.push('/')} className="mt-8 font-bold" variant="outline">
             Voltar ao Início
@@ -145,14 +172,21 @@ export default function ResgatarIngresso() {
   // ==========================================
   // VARIÁVEIS DE EXIBIÇÃO
   // ==========================================
-  const event = guest.tickets?.events;
-  const buyerName = guest.tickets?.buyer_name || 'Alguém';
+  const ticketRef = Array.isArray(guest.tickets) ? guest.tickets[0] : guest.tickets;
+  const event = Array.isArray(ticketRef?.events) ? ticketRef.events[0] : ticketRef?.events;
+  const buyerName = ticketRef?.buyer_name || 'Alguém';
   const isClaimed = guest.is_claimed;
   
-  // Validação de Segurança de Dados Cruzados
-  const userEmail = session?.user?.email;
-  const userCpf = session?.user?.user_metadata?.cpf;
-  const isMismatch = session && (guest.guest_email !== userEmail && guest.guest_cpf !== userCpf);
+  // Validação segura contra discrepâncias de pontuação e maiúsculas
+  const userEmail = cleanEmail(session?.user?.email);
+  const userCpf = cleanDoc(session?.user?.user_metadata?.cpf);
+  const guestEmail = cleanEmail(guest.guest_email);
+  const guestCpf = cleanDoc(guest.guest_cpf);
+
+  const isMismatch = Boolean(
+    session && 
+    (guestEmail !== userEmail && (guestCpf && userCpf ? guestCpf !== userCpf : true))
+  );
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-background flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative transition-colors">
@@ -172,7 +206,7 @@ export default function ResgatarIngresso() {
           </h1>
           <p className="text-blue-100 text-lg font-medium">
             {isClaimed 
-              ? 'Este ingresso já foi vinculado a uma conta.' 
+              ? 'Este ingresso já foi ativado e transferido para uma conta.' 
               : <>{buyerName} comprou uma <strong className="text-white">Casadinha</strong> e reservou essa vaga para você.</>}
           </p>
         </div>
@@ -214,7 +248,9 @@ export default function ResgatarIngresso() {
                 </div>
                 <h4 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">QR Code Gerado</h4>
                 <p className="text-gray-500 dark:text-gray-400 mb-8">
-                  Este ingresso já foi ativado com sucesso. Acesse o seu painel para ver o código de entrada.
+                  {session?.user?.id === guest.claimed_by_user_id 
+                    ? 'Você já resgatou este convite. Acesse seu painel para ver o QR Code e detalhes da entrada.' 
+                    : 'Este ingresso já foi ativado com sucesso por uma conta vinculada.'}
                 </p>
                 <Button onClick={() => router.push('/tickets')} className="w-full h-14 bg-gray-900 hover:bg-gray-800 dark:bg-blue-600 text-white font-bold text-lg rounded-xl">
                   Acessar Meus Ingressos
@@ -275,7 +311,7 @@ export default function ResgatarIngresso() {
                       <p className="text-sm font-bold text-red-800 dark:text-red-400 mb-1">Incompatibilidade de Dados</p>
                       <p className="text-xs text-red-600 dark:text-red-300 leading-relaxed">
                         O e-mail ou CPF desta conta não conferem com os dados que o comprador cadastrou (<strong className="opacity-80">{guest.guest_email}</strong>). 
-                        Faça login na conta correta ou peça ao comprador para editar os dados.
+                        Faça login na conta correta ou peça ao comprador para ajustar suas informações.
                       </p>
                     </div>
                   </div>
