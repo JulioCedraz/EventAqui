@@ -117,7 +117,7 @@ export async function POST(request: Request) {
           `
         };
         
-        transporter.sendMail(buyerMailOptions).catch(console.error);
+        await transporter.sendMail(buyerMailOptions).catch(console.error);
 
         // E-mail 2: Link Mágico do Convidado (Se for Casadinha)
         const { data: guestData } = await supabaseAdmin
@@ -148,7 +148,7 @@ export async function POST(request: Request) {
               </div>
             `
           };
-          transporter.sendMail(guestMailOptions).catch(console.error);
+          await transporter.sendMail(guestMailOptions).catch(console.error);
         }
         // =================================================================
 

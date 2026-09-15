@@ -122,7 +122,7 @@ export async function POST(request: Request) {
         `
       };
       
-      transporter.sendMail(buyerMailOptions).catch(console.error);
+      await transporter.sendMail(buyerMailOptions).catch(console.error);
 
       // 2. Busca se há um convidado (Casadinha) para disparar o Link Mágico
       const { data: guestData } = await supabaseAdmin
@@ -153,7 +153,7 @@ export async function POST(request: Request) {
             </div>
           `
         };
-        transporter.sendMail(guestMailOptions).catch(console.error);
+        await transporter.sendMail(guestMailOptions).catch(console.error);
       }
       // =================================================================
 
