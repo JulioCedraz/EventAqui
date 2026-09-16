@@ -863,7 +863,7 @@ export default function EventDetails() {
                 <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl transition-colors">
                   <Shield className="w-6 h-6 text-slate-400 shrink-0" />
                   <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                    <strong className="text-slate-700 dark:text-slate-300">Ingresso nominal e intransferível.</strong> Vinculado à matrícula do titular da conta para liberação na portaria.
+                    <strong className="text-slate-700 dark:text-slate-300">Ingresso nominal e intransferível.</strong> Vinculado ao CPF e e-mail do titular da conta cadastrada.
                   </p>
                 </div>
 
