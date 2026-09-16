@@ -10,9 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { 
-  Loader2, AlertCircle, Clock, Copy, 
-  CheckCircle2, QrCode, ArrowLeft, Ticket,
-  Receipt, User, Tag, Calendar
+  Loader2, AlertCircle, Clock, Copy,
+  CheckCircle2, QrCode, Ticket, Tag,
+  Receipt, User, Calendar, ArrowLeft
 } from "lucide-react";
 
 type Event = Database['public']['Tables']['events']['Row'];
@@ -66,8 +66,7 @@ export default function ResumePaymentPage() {
         return;
       }
 
-      const eventInfo = Array.isArray(ticketData.events) ? ticketData.events[0] : ticketData.events;
-      setEventDetails(eventInfo as Event);
+      setEventDetails(ticketData.events as Event);
       setTicketDetails(ticketData);
 
       const limitTime = new Date(ticketData.expires_at).getTime();
@@ -92,8 +91,8 @@ export default function ResumePaymentPage() {
             setIsExpired(true);
             supabase.from('tickets').update({ payment_status: 'cancelled' }).eq('id', ticketId);
           } else {
-            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+            const minutes = String(Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
+            const seconds = String(Math.floor((distance % (1000 * 60)) / 1000)).padStart(2, '0');
             setTimeLeft(`${minutes}m ${seconds}s`);
           }
         }, 1000);
@@ -123,23 +122,6 @@ export default function ResumePaymentPage() {
     }
   };
 
-  // Função para calcular o preço exato com os descontos
-  const getFinalPrice = () => {
-    if (!eventDetails || !ticketDetails) return 0;
-    const basePrice = eventDetails.price * (ticketDetails.quantity || 1);
-    
-    if (!ticketDetails.coupons) return basePrice;
-    
-    let final = basePrice;
-    if (ticketDetails.coupons.discount_type === 'percentage') {
-      final = final - (final * (ticketDetails.coupons.discount_value / 100));
-    } else {
-      final = final - ticketDetails.coupons.discount_value;
-    }
-    return Math.max(0, final);
-  };
-
-  // VISTA 1: CARREGANDO
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background transition-colors">
@@ -148,7 +130,6 @@ export default function ResumePaymentPage() {
     );
   }
 
-  // VISTA 2: ERRO
   if (errorMsg) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background px-4 transition-colors">
@@ -171,7 +152,6 @@ export default function ResumePaymentPage() {
     );
   }
 
-  // VISTA 3: EXPIRADO
   if (isExpired) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background px-4 transition-colors">
@@ -195,10 +175,18 @@ export default function ResumePaymentPage() {
   }
 
   const basePrice = (eventDetails?.price || 0) * (ticketDetails?.quantity || 1);
-  const finalPrice = getFinalPrice();
   const hasCoupon = !!ticketDetails?.coupons;
+  
+  let finalPrice = basePrice;
+  if (hasCoupon) {
+    if (ticketDetails.coupons.discount_type === 'percentage') {
+      finalPrice -= finalPrice * (ticketDetails.coupons.discount_value / 100);
+    } else {
+      finalPrice -= ticketDetails.coupons.discount_value;
+    }
+    finalPrice = Math.max(0, finalPrice);
+  }
 
-  // VISTA 4: PAGAMENTO ATIVO
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-background py-12 px-4 sm:px-6 lg:px-8 flex justify-center items-start transition-colors">
       <Card className="max-w-xl w-full border-gray-200 dark:border-border dark:bg-card shadow-xl overflow-hidden rounded-3xl animate-in fade-in slide-in-from-bottom-4 transition-colors">
@@ -208,7 +196,7 @@ export default function ResumePaymentPage() {
           <div className="mx-auto w-12 h-12 bg-blue-500/50 dark:bg-blue-500/20 rounded-full flex items-center justify-center mb-4 transition-colors shadow-inner">
             <QrCode className="w-6 h-6 text-white dark:text-blue-400" />
           </div>
-          <h1 className="text-2xl font-extrabold text-white dark:text-blue-50 tracking-tight transition-colors mb-2">Finalizar Pagamento</h1>
+          <h1 className="text-2xl font-extrabold text-white dark:text-blue-50 tracking-tight transition-colors mb-2">Pagamento pendente</h1>
           <Link href={`/evento/${eventId}`} className="inline-flex items-center justify-center gap-1.5 text-blue-100 dark:text-blue-300 hover:text-white dark:hover:text-blue-100 hover:underline transition-colors font-medium">
             <Ticket className="w-4 h-4" />
             {eventDetails?.title}
@@ -245,7 +233,10 @@ export default function ResumePaymentPage() {
               </div>
               
               <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1.5"><Ticket className="w-4 h-4" /> Ingresso ({ticketDetails?.quantity}x)</span>
+                <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                  <Ticket className="w-4 h-4" /> 
+                  {ticketDetails?.quantity === 2 ? 'Casadinha' : 'Ingresso Individual'}
+                </span>
                 <span className="font-semibold text-gray-700 dark:text-gray-300">R$ {basePrice.toFixed(2).replace('.', ',')}</span>
               </div>
 
@@ -279,8 +270,8 @@ export default function ResumePaymentPage() {
             <div className="text-center flex flex-col items-center">
               
               <div className="w-full text-left mb-4">
-                <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 transition-colors">Escaneie o QR Code abaixo</p>
-                <p className="text-gray-500 dark:text-gray-400 text-sm transition-colors">Abra o aplicativo do seu banco e escolha a opção de pagar via QR Code:</p>
+                <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 transition-colors">Pix QR Code</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm transition-colors">Pegue o seu celular, acesse o aplicativo do seu banco, toque em Pix, depois em Ler QR Code:</p>
               </div>
               
               <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800 mb-8 inline-block transition-colors">
@@ -293,7 +284,7 @@ export default function ResumePaymentPage() {
               
               <div className="w-full mb-8 text-left">
                 <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 transition-colors">PIX Copia e Cola</p>
-                <p className="text-gray-500 dark:text-gray-400 text-sm mb-3 transition-colors">Está no celular? Copie o código abaixo e cole no aplicativo do seu banco.</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-3 transition-colors">Está no celular? Copie o código abaixo, acesse o aplicativo do seu banco, e cole na área de pagamento Pix Copia e Cola.</p>
                 <div className="flex gap-2">
                   <Input 
                     type="text" 
