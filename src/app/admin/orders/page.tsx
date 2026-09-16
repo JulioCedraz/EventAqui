@@ -22,6 +22,7 @@ type Order = {
   event_id: string;
   user_id: string | null;
   coupon_id: string | null;
+  isInheritedCoupon?: boolean;
   events: {
     title: string;
     price: number;
@@ -95,7 +96,7 @@ export default function OrdersPage() {
       let query = supabase
         .from('tickets')
         .select(`
-          id, created_at, buyer_name, buyer_email, payment_status, quantity, event_id, user_id, coupon_id,
+          id, created_at, buyer_name, buyer_email, payment_status, quantity, event_id, user_id, coupon_id, pix_qr_code,
           events!inner ( title, price, producer_id ),
           coupons ( code, discount_type, discount_value )
         `)
@@ -110,6 +111,21 @@ export default function OrdersPage() {
       if (!ticketsError && ticketsData) {
         const userIds = Array.from(new Set(ticketsData.map((t: any) => t.user_id).filter(Boolean)));
         
+        // 1. Busca os convidados para mapear os cupons das casadinhas desmembradas
+        const { data: guestsData } = await supabase.from('guests').select('guest_email, ticket_id');
+        const originalTicketsMap = new Map();
+        ticketsData.forEach((t: any) => originalTicketsMap.set(t.id, t));
+
+        const guestCouponMap = new Map();
+        guestsData?.forEach(guest => {
+          const parentTicket = originalTicketsMap.get(guest.ticket_id);
+          if (parentTicket && parentTicket.coupons) {
+            const key = `${(guest.guest_email || '').toLowerCase()}_${parentTicket.event_id}`;
+            guestCouponMap.set(key, parentTicket.coupons);
+          }
+        });
+
+        // 2. Busca os perfis acadêmicos
         let profilesMap: Record<string, any> = {};
         if (userIds.length > 0) {
           const { data: profilesData } = await supabase
@@ -124,10 +140,26 @@ export default function OrdersPage() {
           }
         }
 
-        const enrichedOrders = ticketsData.map((t: any) => ({
-          ...t,
-          profiles: t.user_id ? profilesMap[t.user_id] : null
-        }));
+        // 3. Aplica a Herança do Cupom
+        const enrichedOrders = ticketsData.map((t: any) => {
+          let appliedCoupon = t.coupons;
+          let isInherited = false;
+
+          if (!appliedCoupon && t.payment_status === 'approved' && !t.pix_qr_code && t.quantity === 1) {
+            const key = `${(t.buyer_email || '').toLowerCase()}_${t.event_id}`;
+            if (guestCouponMap.has(key)) {
+              appliedCoupon = guestCouponMap.get(key);
+              isInherited = true;
+            }
+          }
+
+          return {
+            ...t,
+            coupons: appliedCoupon,
+            isInheritedCoupon: isInherited,
+            profiles: t.user_id ? profilesMap[t.user_id] : null
+          };
+        });
 
         setOrders(enrichedOrders as unknown as Order[]);
         
@@ -158,7 +190,10 @@ export default function OrdersPage() {
     if (order.coupons.discount_type === 'percentage') {
       final = final - (final * (order.coupons.discount_value / 100));
     } else {
-      final = final - order.coupons.discount_value;
+      // Se for valor fixo e for um cupom herdado da casadinha, divide o desconto 
+      // para não abater o valor duas vezes no KPI geral da receita.
+      const discount = order.isInheritedCoupon ? (order.coupons.discount_value / 2) : order.coupons.discount_value;
+      final = final - discount;
     }
     return Math.max(0, final);
   };
@@ -171,8 +206,8 @@ export default function OrdersPage() {
       const matchCoupon = selectedCouponFilter === 'all' 
         ? true 
         : selectedCouponFilter === 'with' 
-          ? !!order.coupon_id 
-          : !order.coupon_id;
+          ? !!order.coupons 
+          : !order.coupons;
       
       return matchEvent && matchStatus && matchCoupon;
     });
