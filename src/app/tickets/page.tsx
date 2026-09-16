@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import QRCode from 'react-qr-code';
 import Link from 'next/link';
 import SmartModal, { DialogConfig } from '../../components/SmartModal';
-
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,7 +28,7 @@ export default function MyTickets() {
   const [dialog, setDialog] = useState<DialogConfig | null>(null);
   const [isModalProcessing, setIsModalProcessing] = useState(false);
 
-const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
   const [editForm, setEditForm] = useState({
     id: '',
@@ -91,7 +90,7 @@ const [isEditModalOpen, setIsEditModalOpen] = useState(false);
       return;
     }
 
-    const { data, error } = await supabase
+    const { data: ticketsData, error } = await supabase
       .from('tickets')
       .select(`*, events (*), coupons(code, discount_type, discount_value), guests(*)`)
       .eq('buyer_email', session.user.email)
@@ -100,8 +99,46 @@ const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     if (error) {
       console.error('Error fetching tickets:', error);
       toast.error('Erro ao carregar os seus ingressos.');
-    } else {
-      setTickets(data || []);
+    } else if (ticketsData) {
+      // 1. Busca se esse usuário foi convidado em alguma casadinha
+      const { data: guestsData } = await supabase
+        .from('guests')
+        .select(`
+          tickets (
+            event_id,
+            coupons (code, discount_type, discount_value)
+          )
+        `)
+        .eq('claimed_by_user_id', session.user.id);
+
+      // 2. Mapeia os cupons herdados da casadinha
+      const guestCouponMap = new Map();
+      if (guestsData) {
+        guestsData.forEach((g: any) => {
+          if (g.tickets?.event_id && g.tickets?.coupons) {
+            guestCouponMap.set(g.tickets.event_id, g.tickets.coupons);
+          }
+        });
+      }
+
+      // 3. Aplica o cupom herdado apenas nos ingressos resgatados
+      const enrichedTickets = ticketsData.map((t: any) => {
+        let appliedCoupon = t.coupons;
+        let isInherited = false;
+
+        if (!appliedCoupon && t.quantity === 1 && !t.pix_qr_code && guestCouponMap.has(t.event_id)) {
+          appliedCoupon = guestCouponMap.get(t.event_id);
+          isInherited = true;
+        }
+
+        return {
+          ...t,
+          coupons: appliedCoupon,
+          isInheritedCoupon: isInherited
+        };
+      });
+
+      setTickets(enrichedTickets);
     }
     
     setLoading(false);
@@ -119,7 +156,9 @@ const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     if (ticket.coupons.discount_type === 'percentage') {
       final = final - (final * (ticket.coupons.discount_value / 100));
     } else {
-      final = final - ticket.coupons.discount_value;
+      // Se for herdado da casadinha, divide o desconto fixo visualmente
+      const discount = ticket.isInheritedCoupon ? (ticket.coupons.discount_value / 2) : ticket.coupons.discount_value;
+      final = final - discount;
     }
     return Math.max(0, final);
   };
@@ -187,7 +226,6 @@ const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   };
 
   const copyGuestLink = async (guestId: string) => {
-    // Monta o link mágico que será construído depois
     const magicLink = `${window.location.origin}/resgatar/${guestId}`;
     try {
       await navigator.clipboard.writeText(magicLink);
@@ -346,7 +384,7 @@ const [isEditModalOpen, setIsEditModalOpen] = useState(false);
                 <Card key={ticket.id} className="overflow-hidden rounded-2xl shadow-sm border-gray-200 dark:border-border dark:bg-card transition-all flex flex-col">
                   
                   {/* ========================================== */}
-                  {/* 1. INGRESSO DO TITULAR (COMPRADOR)         */}
+                  {/* 1. INGRESSO DO TITULAR (COMPRADOR/CONVIDADO) */}
                   {/* ========================================== */}
                   <div className="flex flex-col md:flex-row h-full relative">
                     
