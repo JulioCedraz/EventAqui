@@ -59,7 +59,7 @@ export default function EventDetails() {
     if (!isCasadinha && appliedCoupon?.is_casadinha_only) {
       setAppliedCoupon(null);
       setCouponInput('');
-      toast.info('Cupom removido. Ele é válido somente para a opção Casadinha.', { duration: 5000 });
+      toast.info('Cupom removido. Ele é válido exclusivamente para a opção Casadinha.', { duration: 5000 });
     }
   }, [isCasadinha, appliedCoupon]);
 
@@ -594,24 +594,12 @@ export default function EventDetails() {
                   <DollarSignIcon className="w-6 h-6 text-emerald-600 dark:text-emerald-400 transition-colors" />
                 </div>
                 <div>
-                  <span className="flex items-center text-sm font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider transition-colors">
-                    VALOR FINAL
-                    {appliedCoupon && (
-                      <Badge variant="outline" className="ml-2 bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30 text-[10px] px-1.5 py-0.5 font-bold transition-colors">
-                        {appliedCoupon.code}
-                      </Badge>
-                    )}
+                  <span className="block text-sm font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider transition-colors">
+                    Valor do Ingresso
                   </span>
-                  <div className="flex flex-col">
-                    {appliedCoupon && (
-                      <span className="text-sm text-gray-400 dark:text-gray-500 line-through">
-                        R$ {(event.price * basePriceMultiplier).toFixed(2).replace('.', ',')}
-                      </span>
-                    )}
-                    <span className="block text-2xl text-emerald-600 dark:text-emerald-400 font-black tracking-tight transition-colors">
-                      {isFreeEvent || finalPrice === 0 ? 'Gratuito' : `R$ ${finalPrice.toFixed(2).replace('.', ',')}`}
-                    </span>
-                  </div>
+                  <span className="block text-2xl text-emerald-600 dark:text-emerald-400 font-black tracking-tight transition-colors">
+                    {isFreeEvent ? 'Gratuito' : `R$ ${event.price.toFixed(2).replace('.', ',')}`}
+                  </span>
                 </div>
               </div>
             </div>
@@ -741,7 +729,7 @@ export default function EventDetails() {
                     }`}
                   >
                     <User className="w-4 h-4" />
-                    Individual (1x)
+                    Individual
                   </button>
                   <button
                     type="button"
@@ -753,7 +741,7 @@ export default function EventDetails() {
                     }`}
                   >
                     <Users className="w-4 h-4" />
-                    Casadinha (2x)
+                    Casadinha
                   </button>
                 </div>
 
