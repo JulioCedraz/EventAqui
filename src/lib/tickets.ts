@@ -19,20 +19,10 @@ export async function findCoupon(code: string, eventId: string) {
   return data;
 }
 
-// TODO(db): trocar por incremento atômico via RPC na migration de segurança.
+// Incremento atômico no banco (migration 05): evita perder contagens concorrentes.
 async function incrementCouponUsage(couponId: string) {
-  const { data: coupon } = await supabaseAdmin
-    .from('coupons')
-    .select('used_count')
-    .eq('id', couponId)
-    .single();
-
-  if (!coupon) return;
-
-  await supabaseAdmin
-    .from('coupons')
-    .update({ used_count: (coupon.used_count ?? 0) + 1 })
-    .eq('id', couponId);
+  const { error } = await supabaseAdmin.rpc('increment_coupon_usage', { p_coupon_id: couponId });
+  if (error) console.error(`Falha ao contar uso do cupom ${couponId}:`, error);
 }
 
 async function sendApprovalEmails(ticketId: string, buyerEmail: string, eventTitle: string) {
