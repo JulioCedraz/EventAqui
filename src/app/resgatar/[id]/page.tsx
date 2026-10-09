@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useParams, useRouter } from 'next/navigation';
+import type { Session } from '@supabase/supabase-js';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,16 @@ import {
   User, LogIn, UserPlus, LogOut 
 } from "lucide-react";
 
+type GuestInvite = {
+  isClaimed: boolean;
+  claimedByMe: boolean;
+  isPaid: boolean;
+  isMismatch: boolean;
+  guestEmailHint: string;
+  buyerName: string;
+  event: { title: string; image_url: string | null; event_date: string | null } | null;
+};
+
 export default function ResgatarIngresso() {
   const router = useRouter();
   const params = useParams();
@@ -20,8 +31,8 @@ export default function ResgatarIngresso() {
 
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState(false);
-  const [guest, setGuest] = useState<any>(null);
-  const [session, setSession] = useState<any>(null);
+  const [guest, setGuest] = useState<GuestInvite | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
     const fetchSessionAndGuest = async () => {
@@ -32,15 +43,11 @@ export default function ResgatarIngresso() {
         const { data: { session: activeSession } } = await supabase.auth.getSession();
         setSession(activeSession);
 
-        const { data: guestData, error: guestError } = await supabase
-          .from('guests')
-          .select('*, tickets(*, events(*))')
-          .eq('id', id)
-          .single();
+        const res = await fetch(`/api/guests/${id}`, {
+          headers: activeSession ? { Authorization: `Bearer ${activeSession.access_token}` } : {}
+        });
 
-        if (guestError) throw guestError;
-        setGuest(guestData);
-
+        if (res.ok) setGuest(await res.json());
       } catch (error) {
         console.error('Erro ao buscar link de resgate:', error);
       } finally {
@@ -57,82 +64,25 @@ export default function ResgatarIngresso() {
     window.location.reload();
   };
 
-  // Normalização segura de dados cruzados
-  const cleanDoc = (val?: string | null) => (val || '').replace(/\D/g, '');
-  const cleanEmail = (val?: string | null) => (val || '').trim().toLowerCase();
-
   const handleClaim = async () => {
     if (!session || !guest) return;
-    
-    // Suporte resiliente a objeto ou array retornado na relação
-    const originalTicket = Array.isArray(guest.tickets) ? guest.tickets[0] : guest.tickets;
-    const eventData = Array.isArray(originalTicket?.events) ? originalTicket.events[0] : originalTicket?.events;
-
-    if (!originalTicket || !originalTicket.event_id) {
-      toast.error('Erro ao ler os dados do evento. Tente recarregar a página.');
-      return;
-    }
-
     setClaiming(true);
 
     try {
-      const guestTicket = {
-        event_id: originalTicket.event_id,
-        user_id: session.user.id,
-        buyer_name: `${session.user.user_metadata?.first_name || ''} ${session.user.user_metadata?.last_name || ''}`.trim() || 'Convidado',
-        buyer_email: session.user.email,
-        payment_status: 'approved',
-        quantity: 1,
-        is_used: false,
-      };
+      // O servidor valida o convidado, emite o ingresso e envia o QR Code por e-mail
+      const res = await fetch(`/api/guests/${id}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      });
+      const data = await res.json();
 
-      // 1. Cria o ingresso novo e obtém o ID gerado para o QR Code
-      const { data: createdTicket, error: insertError } = await supabase
-        .from('tickets')
-        .insert(guestTicket)
-        .select('id')
-        .single();
-
-      if (insertError) throw insertError;
-
-      // 2. Desmembra o lote original do titular
-      const { error: updateTicketError } = await supabase
-        .from('tickets')
-        .update({ quantity: 1 })
-        .eq('id', guest.ticket_id);
-        
-      if (updateTicketError) throw updateTicketError;
-
-      // 3. Marca convite como resgatado
-      const { error: guestError } = await supabase
-        .from('guests')
-        .update({ 
-          is_claimed: true,
-          claimed_by_user_id: session.user.id 
-        })
-        .eq('id', guest.id);
-
-      if (guestError) throw guestError;
-
-      // 4. Disparo do e-mail com o QR Code para o Convidado (assíncrono)
-      if (createdTicket?.id) {
-        fetch('/api/send-guest-ticket', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: session.user.email,
-            name: session.user.user_metadata?.first_name || 'Convidado',
-            eventTitle: eventData?.title || 'Evento',
-            newTicketId: createdTicket.id
-          })
-        }).catch((err) => console.error('Erro silencioso ao enviar email do convidado:', err));
-      }
+      if (!res.ok) throw new Error(data.error || 'Erro ao resgatar o ingresso. Tente novamente.');
 
       toast.success('Ingresso resgatado com sucesso! O QR Code também foi enviado para seu e-mail.');
       router.push('/tickets');
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
-      toast.error('Erro ao resgatar o ingresso. Tente novamente.');
+      toast.error(error instanceof Error ? error.message : 'Erro ao resgatar o ingresso. Tente novamente.');
     } finally {
       setClaiming(false);
     }
@@ -172,21 +122,10 @@ export default function ResgatarIngresso() {
   // ==========================================
   // VARIÁVEIS DE EXIBIÇÃO
   // ==========================================
-  const ticketRef = Array.isArray(guest.tickets) ? guest.tickets[0] : guest.tickets;
-  const event = Array.isArray(ticketRef?.events) ? ticketRef.events[0] : ticketRef?.events;
-  const buyerName = ticketRef?.buyer_name || 'Alguém';
-  const isClaimed = guest.is_claimed;
-  
-  // Validação segura contra discrepâncias de pontuação e maiúsculas
-  const userEmail = cleanEmail(session?.user?.email);
-  const userCpf = cleanDoc(session?.user?.user_metadata?.cpf);
-  const guestEmail = cleanEmail(guest.guest_email);
-  const guestCpf = cleanDoc(guest.guest_cpf);
-
-  const isMismatch = Boolean(
-    session && 
-    (guestEmail !== userEmail && (guestCpf && userCpf ? guestCpf !== userCpf : true))
-  );
+  const event = guest.event;
+  const buyerName = guest.buyerName || 'Alguém';
+  const isClaimed = guest.isClaimed;
+  const isMismatch = Boolean(session && guest.isMismatch);
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-background flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative transition-colors">
@@ -248,7 +187,7 @@ export default function ResgatarIngresso() {
                 </div>
                 <h4 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">QR Code Gerado</h4>
                 <p className="text-gray-500 dark:text-gray-400 mb-8">
-                  {session?.user?.id === guest.claimed_by_user_id 
+                  {guest.claimedByMe 
                     ? 'Você já resgatou este convite. Acesse seu painel para ver o QR Code e detalhes da entrada.' 
                     : 'Este ingresso já foi ativado com sucesso por uma conta vinculada.'}
                 </p>
@@ -310,7 +249,7 @@ export default function ResgatarIngresso() {
                     <div>
                       <p className="text-sm font-bold text-red-800 dark:text-red-400 mb-1">Incompatibilidade de Dados</p>
                       <p className="text-xs text-red-600 dark:text-red-300 leading-relaxed">
-                        O e-mail ou CPF desta conta não conferem com os dados que o comprador cadastrou (<strong className="opacity-80">{guest.guest_email}</strong>). 
+                        O e-mail ou CPF desta conta não conferem com os dados que o comprador cadastrou (<strong className="opacity-80">{guest.guestEmailHint}</strong>). 
                         Faça login na conta correta ou peça ao comprador para ajustar suas informações.
                       </p>
                     </div>
@@ -318,10 +257,12 @@ export default function ResgatarIngresso() {
                 ) : (
                   <Button 
                     onClick={handleClaim} 
-                    disabled={claiming}
+                    disabled={claiming || !guest.isPaid}
                     className="w-full h-16 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xl rounded-2xl shadow-xl shadow-emerald-600/20 transition-all hover:scale-[1.02]"
                   >
-                    {claiming ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Resgatar Meu Ingresso'}
+                    {claiming
+                      ? <Loader2 className="w-6 h-6 animate-spin" />
+                      : guest.isPaid ? 'Resgatar Meu Ingresso' : 'Aguardando pagamento do comprador'}
                   </Button>
                 )}
               </div>
