@@ -21,7 +21,6 @@ function AdminHubContent() {
   const [userName, setUserName] = useState('');
   
   // Estados do Mercado Pago
-  const [userId, setUserId] = useState('');
   const [isAlreadyConnected, setIsAlreadyConnected] = useState(false);
 
   useEffect(() => {
@@ -48,7 +47,6 @@ function AdminHubContent() {
 
       const uid = session.user.id;
       const userEmail = session.user.email;
-      setUserId(uid);
 
       const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
 
@@ -150,7 +148,7 @@ function AdminHubContent() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
           
-          <MercadoPagoConnect userId={userId} isAlreadyConnected={isAlreadyConnected} />
+          <MercadoPagoConnect isAlreadyConnected={isAlreadyConnected} />
 
           {menuActions.map((action, index) => (
             <Card key={index} className={`border-0 dark:border dark:border-border dark:hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group overflow-hidden rounded-3xl flex flex-col ${action.color}`}>

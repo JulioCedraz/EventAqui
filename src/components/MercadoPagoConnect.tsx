@@ -1,27 +1,38 @@
 'use client';
 
 import { useState } from 'react';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Wallet, CheckCircle2, ChevronRight, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface MercadoPagoConnectProps {
-  userId: string;
   isAlreadyConnected: boolean;
 }
 
-export default function MercadoPagoConnect({ userId, isAlreadyConnected }: MercadoPagoConnectProps) {
+export default function MercadoPagoConnect({ isAlreadyConnected }: MercadoPagoConnectProps) {
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleConnect = () => {
+  // O servidor gera o "state" do OAuth e o vincula a esta sessão via cookie
+  const handleConnect = async () => {
     setIsLoading(true);
-    
-    const appId = process.env.NEXT_PUBLIC_MP_APP_ID;
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eventaqui.vercel.app';
-    const redirectUri = `${baseUrl}/api/auth/mercadopago/callback`;
-    const authUrl = `https://auth.mercadopago.com/authorization?client_id=${appId}&response_type=code&platform_id=mp&state=${userId}&redirect_uri=${redirectUri}`;
-    
-    window.location.href = authUrl;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/auth/mercadopago/start', {
+        method: 'POST',
+        headers: session ? { Authorization: `Bearer ${session.access_token}` } : {}
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || 'Não foi possível iniciar a conexão.');
+
+      window.location.href = data.url;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não foi possível iniciar a conexão.');
+      setIsLoading(false);
+    }
   };
 
   const cardColor = isAlreadyConnected 

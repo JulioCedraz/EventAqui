@@ -1,16 +1,20 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { cookies } from 'next/headers';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { OAUTH_STATE_COOKIE, verifyOAuthState } from '@/lib/oauth-state';
+import { SITE_URL } from '@/lib/site';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
-  const userId = searchParams.get('state');
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eventaqui.vercel.app';
-  const redirectUri = `${baseUrl}/api/auth/mercadopago/callback`;
+  const cookieStore = await cookies();
+  const userId = verifyOAuthState(cookieStore.get(OAUTH_STATE_COOKIE)?.value, searchParams.get('state'));
+  cookieStore.delete({ name: OAUTH_STATE_COOKIE, path: '/api/auth/mercadopago' });
 
+  // Sem cookie válido não há como saber quem iniciou a conexão: recusa.
   if (!code || !userId) {
-    return NextResponse.redirect(new URL('/profile?error=missing_mp_params', request.url));
+    return NextResponse.redirect(new URL('/admin?error=mp_auth_failed', request.url));
   }
 
   try {
@@ -24,8 +28,8 @@ export async function GET(request: Request) {
         client_secret: process.env.MP_CLIENT_SECRET!,
         client_id: process.env.NEXT_PUBLIC_MP_APP_ID!,
         grant_type: 'authorization_code',
-        code: code,
-        redirect_uri: redirectUri
+        code,
+        redirect_uri: `${SITE_URL}/api/auth/mercadopago/callback`
       })
     });
 
@@ -35,11 +39,6 @@ export async function GET(request: Request) {
       console.error('Erro na resposta do Mercado Pago:', data);
       return NextResponse.redirect(new URL('/admin?error=mp_auth_failed', request.url));
     }
-
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
 
     const { error: dbError } = await supabaseAdmin
       .from('profiles')
