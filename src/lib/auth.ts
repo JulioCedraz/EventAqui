@@ -12,3 +12,22 @@ export async function getRequestUser(request: Request): Promise<User | null> {
 
   return data.user;
 }
+
+// Papel sempre lido de profiles (nunca de user_metadata, que o usuário edita).
+export async function getUserRole(user: User) {
+  const { data: profile } = await supabaseAdmin
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+
+  const role = profile?.role ?? 'customer';
+  const isAdmin = role === 'admin' || adminEmails.includes((user.email ?? '').toLowerCase());
+
+  return { role, isAdmin };
+}

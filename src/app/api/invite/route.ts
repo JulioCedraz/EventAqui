@@ -1,134 +1,107 @@
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getRequestUser, getUserRole } from '@/lib/auth';
+import { SITE_URL } from '@/lib/site';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const optionalText = z.string().trim().max(200).optional();
+
+const bodySchema = z.object({
+  email: z.email().max(254),
+  role: z.enum(['admin', 'producer', 'agent', 'customer']),
+  producerId: z.uuid().optional(),
+  fullName: optionalText,
+  firstName: optionalText,
+  lastName: optionalText,
+  cpf: optionalText,
+  occupation: optionalText,
+  birthDate: optionalText,
+  university: optionalText,
+  course: optionalText,
+  area: optionalText,
+  specialty: optionalText,
+});
+
+// Produtores só podem recrutar quem ainda não tem papel administrativo.
+const RECRUITABLE_ROLES = ['customer', 'agent'];
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() { return cookieStore.getAll(); },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => {
-                cookieStore.set(name, value, options);
-              });
-            } catch (error) { }
-          },
-        },
-      }
-    );
+    const requester = await getRequestUser(request);
+    if (!requester) return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
 
-    const authHeader = request.headers.get('Authorization');
-    const token = authHeader?.replace('Bearer ', '');
-    const { data: { user: requester }, error: authError } = token 
-      ? await supabase.auth.getUser(token) 
-      : await supabase.auth.getUser();
-    
-    if (authError || !requester) {
-      return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
-    }
-
-    const requesterId = requester.id;
-    const requesterEmail = requester.email;
-
-    const { data: requesterProfile } = await supabaseAdmin
-      .from('profiles')
-      .select('role')
-      .eq('id', requesterId)
-      .single();
-
-    const requesterRole = requesterProfile?.role || 'customer';
-
-    const body = await request.json();
-    const { 
-      email, role, producerId, fullName, firstName, lastName, 
-      cpf, occupation, birthDate, university, course, area, specialty 
-    } = body;
-
-    const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(e => e.trim()) || [];
-    const isAdmin = adminEmails.includes(requesterEmail || '') || requesterRole === 'admin';
+    const { role: requesterRole, isAdmin } = await getUserRole(requester);
 
     if (!isAdmin && requesterRole !== 'producer') {
       return NextResponse.json({ error: 'Permissão insuficiente.' }, { status: 403 });
     }
 
-    if (!isAdmin && requesterRole === 'producer' && role !== 'agent') {
+    const parsed = bodySchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 });
+
+    const { role, producerId, fullName, firstName, lastName, cpf, occupation, birthDate, university, course, area, specialty } = parsed.data;
+    const email = parsed.data.email.toLowerCase();
+
+    if (!isAdmin && role !== 'agent') {
       return NextResponse.json({ error: 'Produtores só podem convidar agentes.' }, { status: 403 });
     }
 
-    let finalProducerId = null;
-    if (role === 'agent') {
-      finalProducerId = isAdmin ? (producerId || requesterId) : requesterId;
+    const finalProducerId = role === 'agent'
+      ? (isAdmin ? producerId || requester.id : requester.id)
+      : null;
+
+    const { data: existingUser } = await supabaseAdmin
+      .from('profiles')
+      .select('id, role')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (existingUser && !isAdmin && !RECRUITABLE_ROLES.includes(existingUser.role ?? 'customer')) {
+      return NextResponse.json({ error: 'Este usuário não pode ser convidado como agente.' }, { status: 403 });
     }
 
-    const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-    const redirectToUrl = `${origin}/profile?invite=true`;
-    
-    const metaData: any = { 
-        full_name: fullName,
-        first_name: firstName || (fullName ? fullName.split(' ')[0] : ''),
-        last_name: lastName || (fullName ? fullName.split(' ').slice(1).join(' ') : ''),
-        cpf: cpf || null,
-        occupation: occupation || null,
-        role: role,
-        birth_date: birthDate || null,
-        university: university || null,
-        course: course || null,
-        area: area || null,
-        specialty: specialty || null
-    };
-     
-    if (finalProducerId) metaData.producer_id = finalProducerId;
+    let userId = existingUser?.id;
 
-    const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      data: metaData,
-      redirectTo: redirectToUrl
-    });
+    if (!userId) {
+      const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+        data: {
+          full_name: fullName,
+          first_name: firstName || (fullName ? fullName.split(' ')[0] : ''),
+          last_name: lastName || (fullName ? fullName.split(' ').slice(1).join(' ') : ''),
+          cpf: cpf || null,
+          occupation: occupation || null,
+          birth_date: birthDate || null,
+          university: university || null,
+          course: course || null,
+          area: area || null,
+          specialty: specialty || null,
+        },
+        redirectTo: `${SITE_URL}/profile?invite=true`
+      });
 
-    if (inviteError) {
-      if (inviteError.message.includes('already registered') || inviteError.status === 422) {
-        const { data: existingUser } = await supabaseAdmin
-          .from('profiles')
-          .select('id')
-          .eq('email', email.toLowerCase())
-          .single();
-
-        if (existingUser) {
-          const safeUpdatePayload = {
-            role: role,
-            producer_id: finalProducerId
-          };
-
-          await supabaseAdmin.from('profiles').update(safeUpdatePayload).eq('id', existingUser.id);
-          
-          await supabaseAdmin.auth.admin.updateUserById(existingUser.id, {
-            user_metadata: safeUpdatePayload
-          });
-
-          return NextResponse.json({ 
-            success: true, 
-            message: `Usuário promovido a ${role} com sucesso!`,
-            alreadyExists: true 
-          });
-        }
-      }
-      throw inviteError;
+      if (inviteError || !inviteData.user) throw inviteError;
+      userId = inviteData.user.id;
     }
 
-    return NextResponse.json({ success: true, user: inviteData.user });
+    // O papel é gravado pelo servidor, nunca pelo metadata do cadastro.
+    const rolePayload = { role, producer_id: finalProducerId };
 
-  } catch (err: any) {
-    console.error('Erro na API de Convites:', err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const { error: profileError } = await supabaseAdmin.from('profiles').update(rolePayload).eq('id', userId);
+    if (profileError) throw profileError;
+
+    await supabaseAdmin.auth.admin.updateUserById(userId, { user_metadata: rolePayload });
+
+    if (existingUser) {
+      return NextResponse.json({
+        success: true,
+        message: `Usuário promovido a ${role} com sucesso!`,
+        alreadyExists: true
+      });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Erro na API de Convites:', error);
+    return NextResponse.json({ error: 'Erro interno ao enviar o convite.' }, { status: 500 });
   }
 }
