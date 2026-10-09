@@ -1,0 +1,33 @@
+# EventAqui
+
+Plataforma de venda de ingressos e gestão de portaria.
+
+## Contexto do projeto
+- Stack: Next.js 16 (App Router, Route Handlers), TypeScript, Tailwind + shadcn/ui, Supabase (Postgres, Auth, RLS, Storage, pg_cron), Mercado Pago (PIX, OAuth split), Nodemailer.
+- Textos de UI e comentários de código: pt-BR. Mensagens de commit: inglês.
+- Rotas de API: `src/app/api/**/route.ts`. Utilitários: `src/lib`. Componentes: `src/components`.
+- Tipos do banco: `src/types/database.types.ts`. Regenerar após qualquer migration.
+- Para implementar mudanças e preparar commits, siga a skill `eventaqui-dev`.
+
+## Segurança (inegociável)
+- Nunca confie em valores vindos do cliente para preço, desconto, status de pagamento, role, `producer_id` ou dono de recurso. Recalcule ou busque no servidor.
+- Toda rota em `src/app/api` autentica o usuário e verifica se ele é dono do recurso. Exceção: webhook, que valida a assinatura do gateway.
+- Webhooks: validar assinatura e conferir valor e referência contra o banco antes de aprovar.
+- Autorização nunca usa `user_metadata`, que é editável pelo próprio usuário. Use `profiles.role` ou `app_metadata`.
+- Validar o body de toda rota com `zod`.
+- Segredos nunca com prefixo `NEXT_PUBLIC_`. Nunca retornar `err.message` ao cliente.
+- Dados do usuário em HTML de e-mail devem ser escapados. Rotas que enviam e-mail exigem autenticação.
+- RLS: toda tabela nova com RLS ativo. Toda policy de INSERT/UPDATE com `WITH CHECK`. Nenhum `USING (true)` em tabela com dado pessoal (CPF, e-mail, telefone).
+
+## Escopo e simplificação
+- Altere só o necessário para a tarefa. Simplifique apenas o código que já está sendo tocado.
+- Melhorias fora do escopo: liste ao final como sugestão, sem aplicar.
+- Prefira early returns a `if/else` aninhado.
+- Extraia lógica repetida na terceira ocorrência (regra de três), para `src/lib` ou hooks.
+- Regra de negócio fica no backend. O frontend renderiza e cuida da UX.
+- Reaproveite fluxos existentes somente se forem seguros. Se não forem, corrija o fluxo antes de reaproveitá-lo.
+
+## Banco de dados
+- Toda mudança de schema ou policy vira uma nova migration numerada em `supabase/migrations/`. Nunca editar uma migration já aplicada.
+- Funções `SECURITY DEFINER`: sempre definir `search_path`. Não usar `current_user` para identificar quem chama (dentro da função ele é o dono); use `auth.uid()` ou `auth.role()`.
+- Papel de usuário nunca é lido de `raw_user_meta_data` em triggers de cadastro.
