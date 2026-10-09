@@ -1,235 +1,186 @@
 import { NextResponse } from 'next/server';
-import crypto from 'crypto';
-import { createClient } from '@supabase/supabase-js';
-import { transporter, generateQrCodeUrl } from '@/lib/mail';
+import { z } from 'zod';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getRequestUser } from '@/lib/auth';
+import { applyDiscount, getCouponError } from '@/lib/pricing';
+import { approveTicket, cancelTicket, findCoupon } from '@/lib/tickets';
+import { SITE_URL } from '@/lib/site';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! 
-);
+const PIX_EXPIRATION_MINUTES = 30;
+
+const bodySchema = z.object({
+  eventId: z.uuid(),
+  isCasadinha: z.boolean().default(false),
+  couponCode: z.string().trim().min(1).max(50).optional(),
+  guest: z.object({
+    name: z.string().trim().min(2).max(120),
+    email: z.email().max(254),
+    cpf: z.string().trim().min(11).max(14),
+    phone: z.string().trim().max(20).optional(),
+  }).optional(),
+}).refine((body) => !body.isCasadinha || body.guest, { message: 'Dados do convidado obrigatórios.' });
+
+const isActive = (ticket: { payment_status: string | null; expires_at: string | null }) =>
+  ticket.payment_status === 'approved' || !ticket.expires_at || new Date(ticket.expires_at) > new Date();
+
+const fail = (erro: string, status: number) => NextResponse.json({ erro }, { status });
 
 export async function POST(request: Request) {
   try {
-    const { title, price, email, ticketId, expires_at, producerId, couponCode } = await request.json();
+    const user = await getRequestUser(request);
+    if (!user?.email) return fail('Não autorizado.', 401);
 
-    if (!title || price === undefined || !email || !ticketId || !producerId) {
-      return NextResponse.json({ erro: 'Dados incompletos' }, { status: 400 });
+    const parsed = bodySchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) return fail('Dados inválidos.', 400);
+
+    const { eventId, isCasadinha, couponCode, guest } = parsed.data;
+    const quantity = isCasadinha ? 2 : 1;
+
+    const { data: event } = await supabaseAdmin
+      .from('events')
+      .select('id, title, price, total_spots, producer_id')
+      .eq('id', eventId)
+      .single();
+
+    if (!event) return fail('Evento não encontrado.', 404);
+
+    // Ingressos que ainda ocupam vaga: aprovados ou pendentes dentro do prazo do PIX.
+    const { data: occupied } = await supabaseAdmin
+      .from('tickets')
+      .select('user_id, quantity, payment_status, expires_at')
+      .eq('event_id', eventId)
+      .in('payment_status', ['approved', 'pending']);
+
+    const activeTickets = (occupied ?? []).filter(isActive);
+
+    if (activeTickets.some((ticket) => ticket.user_id === user.id)) {
+      return fail('Você já possui um pedido ativo para este evento.', 409);
     }
+
+    if (event.total_spots !== null) {
+      const sold = activeTickets.reduce((sum, ticket) => sum + (ticket.quantity ?? 1), 0);
+      if (sold + quantity > event.total_spots) return fail('Ingressos esgotados.', 409);
+    }
+
+    let coupon = null;
+    if (couponCode) {
+      coupon = await findCoupon(couponCode, eventId);
+      const couponError = coupon ? getCouponError(coupon, eventId, quantity) : 'Cupom inválido ou inexistente.';
+      if (couponError) return fail(couponError, 400);
+    }
+
+    const amount = applyDiscount(Number(event.price) * quantity, coupon);
+    const expiresAt = amount > 0
+      ? new Date(Date.now() + PIX_EXPIRATION_MINUTES * 60_000).toISOString()
+      : null;
+
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('first_name, last_name, trading_name, company_name')
+      .eq('id', user.id)
+      .single();
+
+    const buyerName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ')
+      || profile?.trading_name || profile?.company_name || 'Usuário';
 
     const { data: ticket, error: ticketError } = await supabaseAdmin
       .from('tickets')
-      .select('event_id, quantity')
-      .eq('id', ticketId)
+      .insert({
+        event_id: eventId,
+        user_id: user.id,
+        buyer_name: buyerName,
+        buyer_email: user.email,
+        payment_status: 'pending',
+        quantity,
+        is_used: false,
+        coupon_id: coupon?.id ?? null,
+        expires_at: expiresAt,
+      })
+      .select('id')
       .single();
 
-    if (ticketError || !ticket) {
-      return NextResponse.json({ erro: 'Ingresso não encontrado para validação.' }, { status: 404 });
-    }
+    if (ticketError || !ticket) throw ticketError;
 
-    let finalPrice = Number(price);
-    let appliedCouponId = null;
-    let couponData = null;
-
-    // =========================================
-    // VALIDAÇÃO E CÁLCULO DE CUPOM
-    // =========================================
-    if (couponCode) {
-      const { data: coupon, error: couponError } = await supabaseAdmin
-        .from('coupons')
-        .select('*')
-        .ilike('code', couponCode.trim())
-        .single();
-
-      if (couponError || !coupon) {
-        return NextResponse.json({ erro: 'Cupom inválido ou inexistente.' }, { status: 400 });
-      }
-
-      if (coupon.event_id && coupon.event_id !== ticket.event_id) {
-        return NextResponse.json({ erro: 'Este cupom não é válido para este evento.' }, { status: 400 });
-      }
-
-      if (coupon.is_casadinha_only && ticket.quantity < 2) {
-        return NextResponse.json({ erro: 'Este cupom é exclusivo para ingressos Casadinha.' }, { status: 400 });
-      }
-      
-      if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
-        return NextResponse.json({ erro: 'Este cupom já está expirado.' }, { status: 400 });
-      }
-
-      if (coupon.max_uses !== null && coupon.used_count !== null && coupon.used_count >= coupon.max_uses) {
-        return NextResponse.json({ erro: 'Este cupom atingiu o limite máximo de utilizações.' }, { status: 400 });
-      }
-
-      if (coupon.discount_type === 'percentage') {
-        finalPrice = finalPrice - (finalPrice * (Number(coupon.discount_value) / 100));
-      } else if (coupon.discount_type === 'fixed') {
-        finalPrice = finalPrice - Number(coupon.discount_value);
-      }
-
-      finalPrice = Math.max(0, finalPrice);
-      appliedCouponId = coupon.id;
-      couponData = coupon;
-
-      await supabaseAdmin
-        .from('tickets')
-        .update({ coupon_id: appliedCouponId })
-        .eq('id', ticketId);
-    }
-
-    // ===================================================================
-    // EVENTOS GRATUITOS (Ou com cupons de 100% de desconto)
-    // ===================================================================
-    if (finalPrice === 0) {
-      await supabaseAdmin
-        .from('tickets')
-        .update({ payment_status: 'approved' })
-        .eq('id', ticketId);
-
-      if (appliedCouponId && couponData) {
-        await supabaseAdmin
-          .from('coupons')
-          .update({ used_count: (couponData.used_count || 0) + 1 })
-          .eq('id', appliedCouponId);
-      }
-
-      // =================================================================
-      // DISPARO DE E-MAILS (COMPRADOR E CONVIDADO CASADINHA)
-      // =================================================================
-      
-      // 1. Envia o ingresso oficial com QR Code para o Comprador
-      const buyerQrUrl = generateQrCodeUrl(ticketId);
-      const buyerMailOptions = {
-        from: '"EventAqui" <eventaqui@gmail.com>',
-        to: email, 
-        subject: `🎫 Seu ingresso para ${title} está garantido!`,
-        html: `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333; text-align: center; border: 1px solid #eaeaea; border-radius: 12px; overflow: hidden;">
-            <div style="background-color: #2563eb; padding: 30px; color: white;">
-              <h1 style="margin: 0; font-size: 24px;">Ingresso Aprovado!</h1>
-            </div>
-            <div style="padding: 30px;">
-              <p style="font-size: 16px;">Seu ingresso para <strong>${title}</strong> já está disponível.</p>
-              <p style="font-size: 14px; color: #666;">Apresente o QR Code abaixo na portaria do evento:</p>
-              
-              <img src="${buyerQrUrl}" alt="QR Code do Ingresso" style="width: 250px; height: 250px; margin: 20px auto; border-radius: 8px; border: 1px solid #ddd;" />
-              
-              <p style="font-size: 12px; color: #888;">Código do ingresso (caso o leitor falhe):</p>
-              <div style="background-color: #f3f4f6; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 14px; font-weight: bold; letter-spacing: 1px;">
-                ${ticketId}
-              </div>
-            </div>
-          </div>
-        `
-      };
-      
-      await transporter.sendMail(buyerMailOptions).catch(console.error);
-
-      // 2. Busca se há um convidado (Casadinha) para disparar o Link Mágico
-      const { data: guestData } = await supabaseAdmin
-        .from('guests')
-        .select('*')
-        .eq('ticket_id', ticketId)
-        .single();
-
-      if (guestData && !guestData.is_claimed) {
-        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eventaqui.vercel.app';
-        const magicLink = `${baseUrl}/resgatar/${guestData.id}`;
-        
-        const guestMailOptions = {
-          from: '"EventAqui" <eventaqui@gmail.com>',
-          to: guestData.guest_email,
-          subject: `🎁 Você ganhou um ingresso para ${title}!`,
-          html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333; text-align: center; border: 1px solid #eaeaea; border-radius: 12px;">
-              <div style="padding: 30px;">
-                <h2 style="color: #2563eb;">Olá, ${guestData.guest_name}!</h2>
-                <p>Você acaba de ganhar um ingresso <strong>Casadinha</strong> para <strong>${title}</strong>.</p>
-                <p>Para emitir o seu QR Code oficial no seu nome, vincule este ingresso ao seu perfil gratuitamente clicando abaixo:</p>
-                <a href="${magicLink}" style="display: inline-block; background-color: #10b981; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0;">
-                  Resgatar Meu Ingresso
-                </a>
-                <p style="font-size: 12px; color: #888;">Link alternativo: <br/> ${magicLink}</p>
-              </div>
-            </div>
-          `
-        };
-        await transporter.sendMail(guestMailOptions).catch(console.error);
-      }
-      // =================================================================
-
-      return NextResponse.json({
-        id: `free_${crypto.randomUUID()}`,
-        is_free: true,
-        status: 'approved',
-        qr_code: null,
-        qr_code_base64: null,
-        expires_at: null
+    if (guest) {
+      const { error: guestError } = await supabaseAdmin.from('guests').insert({
+        ticket_id: ticket.id,
+        buyer_id: user.id,
+        guest_name: guest.name,
+        guest_email: guest.email.toLowerCase(),
+        guest_cpf: guest.cpf,
+        guest_phone: guest.phone || null,
       });
+
+      if (guestError) {
+        await cancelTicket(ticket.id);
+        throw guestError;
+      }
     }
 
-    if (!expires_at) {
-      return NextResponse.json({ erro: 'Dados de expiração incompletos' }, { status: 400 });
+    // Gratuito (evento sem custo ou cupom de 100%): aprova direto no servidor.
+    if (amount === 0) {
+      await approveTicket(ticket.id);
+      return NextResponse.json({ ticketId: ticket.id, is_free: true, status: 'approved' });
     }
 
-    // =========================================
-    // BUSCA O TOKEN DO PRODUTOR NO BANCO
-    // =========================================
-    const { data: producer, error: dbError } = await supabaseAdmin
+    const { data: producer } = await supabaseAdmin
       .from('profiles')
       .select('mp_access_token')
-      .eq('id', producerId)
+      .eq('id', event.producer_id!)
       .single();
 
-    if (dbError || !producer?.mp_access_token) {
-      return NextResponse.json({ 
-        erro: 'O organizador deste evento ainda não configurou o recebimento.' 
-      }, { status: 400 });
+    if (!producer?.mp_access_token) {
+      await cancelTicket(ticket.id);
+      return fail('O organizador deste evento ainda não configurou o recebimento.', 400);
     }
 
-    // =========================================
-    // INTEGRAÇÃO MERCADO PAGO (Eventos Pagos)
-    // =========================================
-    const idempotencyKey = crypto.randomUUID();
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eventaqui.vercel.app';
-    
-    const transactionAmount = Number(finalPrice.toFixed(2));
-
-    const paymentData = {
-      transaction_amount: transactionAmount,
-      description: title,
-      payment_method_id: 'pix',
-      payer: { email: email },
-      date_of_expiration: expires_at,
-      external_reference: ticketId,
-      notification_url: `${baseUrl}/api/webhook?producerId=${producerId}`
-    };
-
-    const response = await fetch('https://api.mercadopago.com/v1/payments', {
+    const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${producer.mp_access_token}`,
-        'X-Idempotency-Key': idempotencyKey,
-        'Content-Type': 'application/json'
+        'X-Idempotency-Key': ticket.id,
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(paymentData)
+      body: JSON.stringify({
+        transaction_amount: amount,
+        description: `${event.title} (${quantity}x)`,
+        payment_method_id: 'pix',
+        payer: { email: user.email },
+        date_of_expiration: expiresAt,
+        external_reference: ticket.id,
+        notification_url: `${SITE_URL}/api/webhook?producerId=${event.producer_id}`,
+      }),
     });
 
-    const data = await response.json();
+    const payment = await mpResponse.json();
+    const pix = payment.point_of_interaction?.transaction_data;
 
-    if (!response.ok) {
-      console.error('Erro Mercado Pago:', data);
-      return NextResponse.json({ erro: data.message || 'Falha na API do Mercado Pago' }, { status: response.status });
+    if (!mpResponse.ok || !pix?.qr_code) {
+      console.error('Erro Mercado Pago:', payment);
+      await cancelTicket(ticket.id);
+      return fail('Falha ao gerar o PIX. Tente novamente.', 502);
+    }
+
+    // O QR salvo aqui é o que o webhook usa para confirmar que o pagamento é deste ingresso.
+    const { error: pixError } = await supabaseAdmin
+      .from('tickets')
+      .update({ pix_qr_code: pix.qr_code, pix_qr_code_base64: pix.qr_code_base64 })
+      .eq('id', ticket.id);
+
+    if (pixError) {
+      await cancelTicket(ticket.id);
+      throw pixError;
     }
 
     return NextResponse.json({
-      id: data.id,
-      qr_code: data.point_of_interaction.transaction_data.qr_code,
-      qr_code_base64: data.point_of_interaction.transaction_data.qr_code_base64,
-      expires_at: expires_at 
+      ticketId: ticket.id,
+      id: payment.id,
+      qr_code: pix.qr_code,
+      qr_code_base64: pix.qr_code_base64,
+      expires_at: expiresAt,
     });
-
-  } catch (error: any) {
-    console.error('Erro interno:', error);
-    return NextResponse.json({ erro: 'Erro interno no servidor' }, { status: 500 });
+  } catch (error) {
+    console.error('Erro interno no pagamento:', error);
+    return fail('Erro interno no servidor.', 500);
   }
 }

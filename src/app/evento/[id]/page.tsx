@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { Database } from '../../../types/database.types';
+import { applyDiscount } from '@/lib/pricing';
 import SmartModal, { DialogConfig } from '../../../components/SmartModal';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -164,20 +165,10 @@ export default function EventDetails() {
     toast.info('Cupom removido.', { position: 'bottom-center' });
   };
 
+  // Apenas exibição: o valor cobrado é recalculado no servidor.
   const getFinalPrice = () => {
     if (!event) return 0;
-    if (event.price === 0) return 0;
-    
-    const basePrice = isCasadinha ? event.price * 2 : event.price;
-    if (!appliedCoupon) return basePrice;
-
-    let final = basePrice;
-    if (appliedCoupon.discount_type === 'percentage') {
-      final = final - (final * (appliedCoupon.discount_value / 100));
-    } else {
-      final = final - appliedCoupon.discount_value;
-    }
-    return Math.max(0, final);
+    return applyDiscount(event.price * (isCasadinha ? 2 : 1), appliedCoupon);
   };
 
   const handleShare = async () => {
@@ -247,7 +238,6 @@ export default function EventDetails() {
 
   const handleBuy = async () => {
     setBuying(true);
-    const isFreeEvent = event!.price === 0;
     const finalPrice = getFinalPrice();
     const toastId = toast.loading(finalPrice === 0 ? 'Garantindo sua vaga...' : 'Gerando PIX seguro e reservando a sua vaga...');
 
@@ -259,61 +249,20 @@ export default function EventDetails() {
          return;
        }
 
-      const validQuantity = isCasadinha ? 2 : 1;
-      const buyerName = session.user.user_metadata?.first_name
-         ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name || ''}`.trim()
-        : (session.user.user_metadata?.full_name || 'Usuário');
-
-      // 1. Unifica a expiração (só existe prazo se houver valor a pagar)
-      let isoExpiration = null;
-      if (finalPrice > 0) {
-        const expirationDate = new Date();
-        expirationDate.setMinutes(expirationDate.getMinutes() + 30);
-        isoExpiration = expirationDate.toISOString();
-      }
-
-      // 2. Cria o ingresso no banco 
-      const newTicket = {
-        event_id: event!.id,
-        user_id: session.user.id,
-        buyer_name: buyerName,
-        buyer_email: session.user.email!,
-        payment_status: finalPrice === 0 ? 'approved' : 'pending',
-        quantity: validQuantity,
-        is_used: false,
-        expires_at: isoExpiration
-      };
-
-      const { data: createdTicket, error: supabaseError } = await supabase.from('tickets').insert(newTicket).select().single();
-
-      if (supabaseError || !createdTicket) {
-        throw new Error('Erro ao registrar o ingresso no banco de dados.');
-      }
-
-      // 3. Cria o acompanhante (se for Casadinha)
-      if (isCasadinha) {
-        await supabase.from('guests').insert({
-          ticket_id: createdTicket.id,
-          buyer_id: session.user.id,
-          guest_name: guestName.trim(),
-          guest_email: guestEmail.trim(),
-          guest_cpf: guestCpf.trim(),
-          guest_phone: guestPhone.trim() || null
-        });
-      }
-
-      // 4. Chama a API para todos os pedidos
+      // O servidor cria o ingresso, calcula o preço e gera o PIX
       const res = await fetch('/api/payment', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
         body: JSON.stringify({
-          title: `${event!.title} (${validQuantity}x)`,
-          price: isCasadinha ? event!.price * 2 : event!.price,
-          email: session.user.email,
-          ticketId: createdTicket.id,
-          expires_at: isoExpiration,
-          producerId: event!.producer_id,
-          couponCode: appliedCoupon?.code
+          eventId: event!.id,
+          isCasadinha,
+          couponCode: appliedCoupon?.code,
+          guest: isCasadinha
+            ? { name: guestName, email: guestEmail, cpf: guestCpf, phone: guestPhone.trim() || undefined }
+            : undefined
         })
       });
 
@@ -321,7 +270,6 @@ export default function EventDetails() {
 
       if (!res.ok) throw new Error(paymentResponse.erro || 'Falha ao processar o pedido');
 
-      // 5. Se a API retornar que é gratuito, finaliza aqui
       if (paymentResponse.is_free) {
         toast.success('Inscrição confirmada com sucesso!', { id: toastId });
         setShowConfirmModal(false);
@@ -329,18 +277,8 @@ export default function EventDetails() {
         return;
       }
 
-      // 6. Se for pago, prossegue para exibir o PIX
-      const { error: updateError } = await supabase.from('tickets').update({
-        pix_qr_code: paymentResponse.qr_code,
-        pix_qr_code_base64: paymentResponse.qr_code_base64
-      }).eq('id', createdTicket.id);
-
-      if (updateError) {
-        console.error("ALERTA: Falha ao salvar o QR Code no banco:", updateError);
-      }
-
       setPixData(paymentResponse);
-      setPendingTicket({ ...createdTicket, expires_at: isoExpiration });
+      setPendingTicket({ id: paymentResponse.ticketId, expires_at: paymentResponse.expires_at });
       setShowConfirmModal(false);
 
       toast.success('PIX gerado! Realize o pagamento em até 30 minutos.', { id: toastId });
