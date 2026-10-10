@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from "react";
 import { supabase } from "../../lib/supabase";
+import { safeNextPath } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import SmartModal, { DialogConfig } from "../../components/SmartModal";
@@ -14,7 +15,7 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams?.get('next');
+  const next = safeNextPath(searchParams?.get('next'));
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");

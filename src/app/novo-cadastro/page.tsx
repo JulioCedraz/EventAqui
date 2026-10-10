@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
+import { safeNextPath } from "@/lib/utils";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -55,7 +56,7 @@ export default function SignupPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const urlNext = params.get('next');
+    const urlNext = safeNextPath(params.get('next'));
 
     if (urlNext) {
       setNextUrl(urlNext);
