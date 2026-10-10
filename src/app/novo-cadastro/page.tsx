@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { safeNextPath } from "@/lib/utils";
+import { confirmationRedirectUrl, safeNextPath } from "@/lib/utils";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,6 +12,7 @@ import PersonalDataFields, {
   basePersonalDataSchema, 
   refinePersonalData 
 } from "../../components/PersonalDataFields";
+import SignupConfirmationCard from "../../components/SignupConfirmationCard";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +32,7 @@ type SignupFormValues = z.infer<typeof signupSchema>;
 export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
+  const [sentTo, setSentTo] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [nextUrl, setNextUrl] = useState("");
 
@@ -69,7 +70,6 @@ export default function SignupPage() {
   const onSubmit = async (data: SignupFormValues) => {
     setIsLoading(true);
     setErrorMsg("");
-    setSuccessMsg("");
 
     try {
       const isoBirthDate = data.birthDate ? data.birthDate.split('/').reverse().join('-') : null;
@@ -98,14 +98,12 @@ export default function SignupPage() {
             cnpj: data.cnpj,
           };
 
-      const redirectUrl = nextUrl ? `${window.location.origin}${nextUrl}` : `${window.location.origin}/login`;
-
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
           data: userMetaData,
-          emailRedirectTo: redirectUrl,
+          emailRedirectTo: confirmationRedirectUrl(nextUrl),
         },
       });
 
@@ -116,8 +114,7 @@ export default function SignupPage() {
         return;
       }
 
-      setSuccessMsg("Quase lá! Enviamos um link de confirmação para o seu e-mail. Clique nele para ativar a conta.");
-      form.setValue("password", "");
+      setSentTo(data.email);
     } catch (err: any) {
       console.error("Erro bruto do cadastro:", err);
 
@@ -144,6 +141,25 @@ export default function SignupPage() {
     }
   };
 
+  const handleCorrectEmail = () => {
+    setSentTo(null);
+    // Aguarda o formulário voltar à tela para focar o campo
+    setTimeout(() => form.setFocus("email"), 0);
+  };
+
+  if (sentTo) {
+    return (
+      <main className="min-h-screen bg-gray-50 dark:bg-background flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden transition-colors">
+        <SignupConfirmationCard
+          email={sentTo}
+          redirectTo={confirmationRedirectUrl(nextUrl)}
+          isGuestClaim={nextUrl.startsWith("/resgatar/")}
+          onCorrectEmail={handleCorrectEmail}
+        />
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-background flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden transition-colors">
       <Card className="w-full max-w-md mx-auto shadow-xl shadow-blue-900/5 dark:shadow-none rounded-3xl border-gray-100 dark:border-border dark:bg-card animate-in fade-in zoom-in-95 slide-in-from-bottom-8 duration-500 ease-out transition-colors">
@@ -161,11 +177,6 @@ export default function SignupPage() {
             {errorMsg && (
               <div className="bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 text-sm p-3 rounded-xl text-center font-medium animate-in fade-in slide-in-from-top-2 transition-colors">
                 {errorMsg}
-              </div>
-            )}
-            {successMsg && (
-              <div className="bg-green-50 dark:bg-emerald-500/10 border border-green-100 dark:border-emerald-500/20 text-green-600 dark:text-emerald-400 text-sm p-3 rounded-xl text-center font-medium animate-in fade-in slide-in-from-top-2 transition-colors">
-                {successMsg}
               </div>
             )}
 
