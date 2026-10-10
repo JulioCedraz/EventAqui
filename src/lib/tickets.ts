@@ -3,16 +3,14 @@ import { supabaseAdmin } from './supabase-admin';
 import { sendGuestInviteEmail, sendTicketApprovedEmail } from './mail';
 import { SITE_URL } from './site';
 
-// eventId precisa chegar já validado como UUID (vai para o filtro .or).
 export async function findCoupon(code: string, eventId: string) {
   const pattern = code.trim().replace(/[\\%_]/g, '\\$&');
 
   const { data } = await supabaseAdmin
     .from('coupons')
     .select('*')
+    .eq('event_id', eventId)
     .ilike('code', pattern)
-    .or(`event_id.eq.${eventId},event_id.is.null`)
-    .order('event_id', { ascending: true, nullsFirst: false })
     .limit(1)
     .maybeSingle();
 

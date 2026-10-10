@@ -90,9 +90,9 @@ git commit -m "fix(payment): compute ticket price on the server
 
 Migration com breaking change:
 
-**Target Files:** `supabase/migrations/04_hardening_rls.sql`, `src/types/database.types.ts`
+**Target Files:** `supabase/migrations/00_schema_base.sql`, `src/types/database.types.ts`
 ```bash
-git add supabase/migrations/04_hardening_rls.sql src/types/database.types.ts
+git add supabase/migrations/00_schema_base.sql src/types/database.types.ts
 git commit -m "fix(db): restrict guest data to buyer and claimer
 
 - Public read policy exposed guest CPF, email and phone to anonymous users.
