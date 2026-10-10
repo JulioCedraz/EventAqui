@@ -19,7 +19,7 @@ export function applyDiscount(baseAmount: number, coupon: Discount | null): numb
 
 // Retorna a mensagem de erro, ou null quando o cupom pode ser usado.
 export function getCouponError(coupon: Coupon, eventId: string, quantity: number): string | null {
-  if (coupon.event_id && coupon.event_id !== eventId) return 'Este cupom não é válido para este evento.';
+  if (coupon.event_id !== eventId) return 'Este cupom não é válido para este evento.';
   if (coupon.is_casadinha_only && quantity < 2) return 'Este cupom é válido exclusivamente para ingressos do tipo Casadinha (2x).';
   if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) return 'Este cupom já expirou.';
   if (coupon.max_uses !== null && (coupon.used_count ?? 0) >= coupon.max_uses) return 'Este cupom atingiu o limite de utilizações.';

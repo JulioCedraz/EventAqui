@@ -49,7 +49,7 @@ CREATE TABLE public.events (
 CREATE TABLE public.coupons (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     code text NOT NULL,
-    event_id uuid REFERENCES public.events(id) ON DELETE CASCADE,
+    event_id uuid NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
     producer_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
     discount_type text CHECK (discount_type IN ('percentage', 'fixed')) NOT NULL,
     discount_value numeric(10, 2) NOT NULL,
@@ -410,7 +410,7 @@ CREATE POLICY "Events - Exclusão" ON public.events FOR DELETE USING (
   public.get_user_role() = 'admin' OR producer_id = auth.uid()
 );
 
--- COUPONS: validação pública passa pela API. Cupons sem evento são exclusivos do admin.
+-- COUPONS: todo cupom pertence a um evento; a validação pública passa pela API.
 CREATE POLICY "Admins podem tudo nos cupons" ON public.coupons
 FOR ALL
 TO authenticated

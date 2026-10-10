@@ -71,7 +71,7 @@ export type Database = {
         Row: {
           id: string;
           code: string;
-          event_id: string | null;
+          event_id: string;
           producer_id: string | null;
           discount_type: "percentage" | "fixed";
           discount_value: number;
@@ -84,7 +84,7 @@ export type Database = {
         Insert: {
           id?: string;
           code: string;
-          event_id?: string | null;
+          event_id: string;
           producer_id?: string | null;
           discount_type: "percentage" | "fixed";
           discount_value: number;
@@ -97,7 +97,7 @@ export type Database = {
         Update: {
           id?: string;
           code?: string;
-          event_id?: string | null;
+          event_id?: string;
           producer_id?: string | null;
           discount_type?: "percentage" | "fixed";
           discount_value?: number;
