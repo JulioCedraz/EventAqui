@@ -49,17 +49,23 @@ git commit -m "<type>(<scope>): <subject>
 - Nos demais casos, só quando o porquê não é óbvio pelo assunto. Se o assunto basta, omita o corpo.
 - Foco no porquê. O diff já mostra o que mudou.
 - Bullets com `- `, quebra de linha em ~72 colunas, linha em branco após o assunto.
-- Breaking change: incluir a linha `BREAKING CHANGE: <o que quem usa precisa fazer>`.
+- Breaking change: incluir a linha `BREAKING CHANGE: <o que passou a se comportar diferente>`.
 
 ### Proibido na mensagem
 - "This commit", "I", "we", "now", "currently".
 - Repetir o nome do arquivo quando o escopo já o indica.
 - Emoji.
+- Instruções de deploy ou de ordem de execução (ex.: "aplique só depois do deploy"). Elas vão apenas na conversa com o usuário.
 
 ## 5. Regras de shell
 A mensagem vai entre aspas duplas. Dentro dela:
 - Para destacar nomes, valores ou variáveis, use aspas simples: `'buyer_email'`.
 - Proibido: apóstrofo (escreva "does not", nunca "doesn't"), crase, `$` e `!`. Eles quebram o comando no Bash ou no PowerShell.
+
+## 6. Descrição de PR e comentários no código
+- Descrição de PR: em inglês e em português, descrevendo o que mudou e por quê.
+- Ordem de deploy, migrations a rodar e passos manuais ficam fora do PR, dos commits e dos comentários. Vão apenas na conversa com o usuário.
+- Comentários no código: só para o porquê que não é óbvio. Não comente o que o código já diz.
 
 ## Exemplos
 

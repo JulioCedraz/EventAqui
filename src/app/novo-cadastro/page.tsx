@@ -42,17 +42,15 @@ export default function SignupPage() {
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
-      profileType: 'PF',
       email: '',
       password: '',
       firstName: '', lastName: '', cpf: '', birthDate: '', phone: '',
       semester: '', enrollmentNumber: '', university: '', customUniversity: '',
-      course: '', customCourse: '', companyName: '', tradingName: '', cnpj: ''
+      course: '', customCourse: ''
     },
     mode: "onBlur"
   });
 
-  const profileType = form.watch('profileType');
   const { errors } = form.formState;
 
   useEffect(() => {
@@ -76,27 +74,18 @@ export default function SignupPage() {
       const finalUniversity = data.university === "Outra" ? data.customUniversity : data.university;
       const finalCourse = data.course === "Outro" ? data.customCourse : data.course;
 
-      const userMetaData = data.profileType === 'PF' 
-        ? {
-            profile_type: 'PF',
-            first_name: data.firstName,
-            last_name: data.lastName,
-            full_name: `${data.firstName} ${data.lastName}`,
-            cpf: data.cpf,
-            birth_date: isoBirthDate,
-            phone: data.phone,
-            semester: data.semester,
-            enrollment_number: data.enrollmentNumber,
-            university: finalUniversity,
-            course: finalCourse,
-          }
-        : {
-            profile_type: 'PJ',
-            company_name: data.companyName,
-            trading_name: data.tradingName,
-            full_name: data.tradingName || data.companyName,
-            cnpj: data.cnpj,
-          };
+      const userMetaData = {
+        first_name: data.firstName,
+        last_name: data.lastName,
+        full_name: `${data.firstName} ${data.lastName}`,
+        cpf: data.cpf,
+        birth_date: isoBirthDate,
+        phone: data.phone,
+        semester: data.semester,
+        enrollment_number: data.enrollmentNumber,
+        university: finalUniversity,
+        course: finalCourse,
+      };
 
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: data.email,
@@ -213,38 +202,6 @@ export default function SignupPage() {
 
             <div className="animate-in fade-in slide-in-from-top-4 duration-500 delay-100 fill-mode-both space-y-6">
               
-              {/* TOGGLE PF/PJ */}
-              <div className="flex bg-gray-100 dark:bg-slate-900/50 p-1 rounded-xl border border-gray-200 dark:border-slate-800 transition-colors">
-                <button
-                  type="button"
-                  onClick={() => {
-                    form.setValue('profileType', 'PF');
-                    form.clearErrors();
-                  }}
-                  className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${
-                    profileType === 'PF' 
-                      ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' 
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                  }`}
-                >
-                  Pessoa Física
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    form.setValue('profileType', 'PJ');
-                    form.clearErrors();
-                  }}
-                  className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${
-                    profileType === 'PJ' 
-                      ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' 
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                  }`}
-                >
-                  Empresa (CNPJ)
-                </button>
-              </div>
-
               <PersonalDataFields form={form} />
 
             </div>
