@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
 export async function POST(request: Request) {
   try {
@@ -33,12 +34,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const ticketId = body.ticketId || body.id; 
+    const body = await request.json().catch(() => null);
+    const parsedId = z.uuid().safeParse(body?.ticketId || body?.id);
 
-    if (!ticketId) {
-      return NextResponse.json({ error: 'ID do ingresso ausente.' }, { status: 400 });
+    if (!parsedId.success) {
+      return NextResponse.json({ error: 'ID do ingresso ausente ou inválido.' }, { status: 400 });
     }
+
+    const ticketId = parsedId.data;
 
     const { data: ticket, error: ticketError } = await supabase
       .from('tickets')
