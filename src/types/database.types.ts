@@ -344,6 +344,18 @@ export type Database = {
         };
         Returns: boolean;
       };
+      is_ticket_manager: {
+        Args: {
+          p_event_id: string;
+        };
+        Returns: boolean;
+      };
+      increment_coupon_usage: {
+        Args: {
+          p_coupon_id: string;
+        };
+        Returns: undefined;
+      };
     };
     Enums: {
       [_ in never]: never;

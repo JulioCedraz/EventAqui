@@ -1,6 +1,7 @@
+import 'server-only';
 import nodemailer from 'nodemailer';
 
-export const transporter = nodemailer.createTransport({
+const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: process.env.GMAIL_USER,
@@ -8,6 +9,90 @@ export const transporter = nodemailer.createTransport({
   },
 });
 
-export const generateQrCodeUrl = (text: string) => {
-  return `https://quickchart.io/qr?text=${text}&margin=2&size=300`;
-};
+const FROM = '"EventAqui" <eventaqui@gmail.com>';
+
+// Todo dado vindo de usuário ou do banco passa por aqui antes de entrar no HTML.
+export function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+const qrCodeUrl = (text: string) =>
+  `https://quickchart.io/qr?text=${encodeURIComponent(text)}&margin=2&size=300`;
+
+function ticketCard(ticketId: string) {
+  const id = escapeHtml(ticketId);
+  return `
+    <img src="${qrCodeUrl(ticketId)}" alt="QR Code do Ingresso" style="width: 250px; height: 250px; margin: 20px auto; border-radius: 8px; border: 1px solid #ddd;" />
+    <p style="font-size: 12px; color: #888;">Código do ingresso (caso o leitor falhe):</p>
+    <div style="background-color: #f3f4f6; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 14px; font-weight: bold; letter-spacing: 1px;">
+      ${id}
+    </div>`;
+}
+
+export function sendTicketApprovedEmail(to: string, eventTitle: string, ticketId: string) {
+  const title = escapeHtml(eventTitle);
+  return transporter.sendMail({
+    from: FROM,
+    to,
+    subject: `🎫 Seu ingresso para ${eventTitle} está garantido!`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333; text-align: center; border: 1px solid #eaeaea; border-radius: 12px; overflow: hidden;">
+        <div style="background-color: #2563eb; padding: 30px; color: white;">
+          <h1 style="margin: 0; font-size: 24px;">Ingresso Aprovado!</h1>
+        </div>
+        <div style="padding: 30px;">
+          <p style="font-size: 16px;">Seu ingresso para <strong>${title}</strong> já está disponível.</p>
+          <p style="font-size: 14px; color: #666;">Apresente o QR Code abaixo na portaria do evento:</p>
+          ${ticketCard(ticketId)}
+        </div>
+      </div>`,
+  });
+}
+
+export function sendGuestInviteEmail(to: string, guestName: string, eventTitle: string, magicLink: string) {
+  const title = escapeHtml(eventTitle);
+  const name = escapeHtml(guestName);
+  const link = escapeHtml(magicLink);
+  return transporter.sendMail({
+    from: FROM,
+    to,
+    subject: `🎁 Você ganhou um ingresso para ${eventTitle}!`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333; text-align: center; border: 1px solid #eaeaea; border-radius: 12px;">
+        <div style="padding: 30px;">
+          <h2 style="color: #2563eb;">Olá, ${name}!</h2>
+          <p>Você acaba de ganhar um ingresso <strong>Casadinha</strong> para <strong>${title}</strong>.</p>
+          <p>Para emitir o seu QR Code oficial no seu nome, vincule este ingresso ao seu perfil gratuitamente clicando abaixo:</p>
+          <a href="${link}" style="display: inline-block; background-color: #10b981; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0;">
+            Resgatar Meu Ingresso
+          </a>
+          <p style="font-size: 12px; color: #888;">Link alternativo: <br/> ${link}</p>
+        </div>
+      </div>`,
+  });
+}
+
+export function sendGuestClaimedEmail(to: string, name: string, eventTitle: string, ticketId: string) {
+  const title = escapeHtml(eventTitle);
+  return transporter.sendMail({
+    from: FROM,
+    to,
+    subject: `✅ Seu ingresso para ${eventTitle} foi resgatado!`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; text-align: center; border: 1px solid #eaeaea; border-radius: 12px; overflow: hidden;">
+        <div style="background-color: #10b981; padding: 30px; color: white;">
+          <h1 style="margin: 0; font-size: 24px;">Ingresso Resgatado!</h1>
+        </div>
+        <div style="padding: 30px; color: #333;">
+          <p style="font-size: 16px;">Tudo certo, <strong>${escapeHtml(name)}</strong>!</p>
+          <p>Seu ingresso para <strong>${title}</strong> já está no seu nome.</p>
+          ${ticketCard(ticketId)}
+        </div>
+      </div>`,
+  });
+}

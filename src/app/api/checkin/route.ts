@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
 export async function POST(request: Request) {
   try {
@@ -33,20 +34,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const ticketId = body.ticketId || body.id; 
+    const body = await request.json().catch(() => null);
+    const parsedId = z.uuid().safeParse(body?.ticketId || body?.id);
 
-    if (!ticketId) {
-      return NextResponse.json({ error: 'ID do ingresso ausente.' }, { status: 400 });
+    if (!parsedId.success) {
+      return NextResponse.json({ error: 'ID do ingresso ausente ou inválido.' }, { status: 400 });
     }
+
+    const ticketId = parsedId.data;
 
     const { data: ticket, error: ticketError } = await supabase
       .from('tickets')
       .select(`
-        id, 
-        is_used, 
-        payment_status, 
-        buyer_name, 
+        id,
+        event_id,
+        is_used,
+        payment_status,
+        buyer_name,
         buyer_email,
         user_id,
         events ( title )
@@ -56,6 +60,13 @@ export async function POST(request: Request) {
 
     if (ticketError || !ticket) {
       return NextResponse.json({ error: 'Ingresso não encontrado.' }, { status: 404 });
+    }
+
+    // Autoriza antes de expor qualquer dado do portador do ingresso
+    const { data: canManage } = await supabase.rpc('is_ticket_manager', { p_event_id: ticket.event_id });
+
+    if (!canManage) {
+      return NextResponse.json({ error: 'Você não é o produtor ou agente autorizado deste evento.' }, { status: 403 });
     }
 
     const { data: profile } = await supabase

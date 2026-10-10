@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
+import { safeNextPath } from "@/lib/utils";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,7 +33,6 @@ export default function SignupPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState("customer");
   const [nextUrl, setNextUrl] = useState("");
 
   // ==========================================
@@ -56,13 +56,8 @@ export default function SignupPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const urlRole = params.get('role');
-    const urlNext = params.get('next');
-    
-    if (urlRole && ['admin', 'producer', 'agent'].includes(urlRole)) {
-      setRole(urlRole);
-    }
-    
+    const urlNext = safeNextPath(params.get('next'));
+
     if (urlNext) {
       setNextUrl(urlNext);
     }
@@ -88,7 +83,6 @@ export default function SignupPage() {
             last_name: data.lastName,
             full_name: `${data.firstName} ${data.lastName}`,
             cpf: data.cpf,
-            role: role,
             birth_date: isoBirthDate,
             phone: data.phone,
             semester: data.semester,
@@ -102,7 +96,6 @@ export default function SignupPage() {
             trading_name: data.tradingName,
             full_name: data.tradingName || data.companyName,
             cnpj: data.cnpj,
-            role: role, 
           };
 
       const redirectUrl = nextUrl ? `${window.location.origin}${nextUrl}` : `${window.location.origin}/login`;
