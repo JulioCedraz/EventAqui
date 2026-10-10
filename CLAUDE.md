@@ -28,6 +28,7 @@ Plataforma de venda de ingressos e gestão de portaria.
 - Reaproveite fluxos existentes somente se forem seguros. Se não forem, corrija o fluxo antes de reaproveitá-lo.
 
 ## Banco de dados
-- Toda mudança de schema ou policy vira uma nova migration numerada em `supabase/migrations/`. Nunca editar uma migration já aplicada.
+- `supabase/migrations/00_schema_base.sql` é o estado completo do banco, usado só para criar um projeto Supabase novo. Produção já está nesse estado.
+- Toda mudança de schema ou policy vira uma nova migration numerada a partir de `01_`. Nunca editar uma migration já aplicada.
 - Funções `SECURITY DEFINER`: sempre definir `search_path`. Não usar `current_user` para identificar quem chama (dentro da função ele é o dono); use `auth.uid()` ou `auth.role()`.
 - Papel de usuário nunca é lido de `raw_user_meta_data` em triggers de cadastro.
