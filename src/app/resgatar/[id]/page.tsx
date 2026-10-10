@@ -207,7 +207,7 @@ export default function ResgatarIngresso() {
                 
                 <div className="flex flex-col gap-3">
                   <Button 
-                    onClick={() => router.push(`/cadastro?next=/resgatar/${id}`)} 
+                    onClick={() => router.push(`/novo-cadastro?next=/resgatar/${id}`)} 
                     className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg rounded-xl shadow-md shadow-blue-600/20"
                   >
                     <UserPlus className="w-5 h-5 mr-2" /> Criar Conta Grátis
