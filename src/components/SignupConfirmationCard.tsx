@@ -16,7 +16,7 @@ interface SignupConfirmationCardProps {
 export default function SignupConfirmationCard({ email, redirectTo, isGuestClaim, onCorrectEmail }: SignupConfirmationCardProps) {
   const titleRef = useRef<HTMLHeadingElement>(null);
 
-  // Leva o usuário ao topo e anuncia a mudança para leitores de tela
+  // O foco no título anuncia a troca de tela para leitores de tela
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     titleRef.current?.focus();

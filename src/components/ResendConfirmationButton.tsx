@@ -10,7 +10,6 @@ const COOLDOWN_SECONDS = 60;
 interface ResendConfirmationButtonProps {
   email: string;
   redirectTo: string;
-  // Começa em espera quando o e-mail acabou de ser enviado (ex.: logo após o cadastro)
   startWithCooldown?: boolean;
   className?: string;
 }

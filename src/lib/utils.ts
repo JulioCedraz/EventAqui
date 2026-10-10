@@ -11,9 +11,7 @@ export function safeNextPath(next?: string | null) {
   return next
 }
 
-// Destino do link de confirmação de cadastro (somente no navegador).
-// Resgate de convidado volta logado ao convite; os demais casos vão ao login.
-// "confirmado=1" fica na query porque o Supabase apaga o hash da URL ao ler o token.
+// Usa window: só no navegador. "confirmado=1" vai na query porque o Supabase apaga o hash da URL ao ler o token.
 export function confirmationRedirectUrl(next?: string | null) {
   const origin = window.location.origin
   if (next?.startsWith('/resgatar/')) return `${origin}${next}`

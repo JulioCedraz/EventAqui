@@ -39,7 +39,6 @@ export default function ResgatarIngresso() {
   const [linkExpired, setLinkExpired] = useState(false);
   const [resendEmail, setResendEmail] = useState('');
 
-  // Link de confirmação expirado ou já usado: o Supabase devolve o erro na URL
   useEffect(() => {
     const hashParams = new URLSearchParams(window.location.hash.slice(1));
     const queryParams = new URLSearchParams(window.location.search);

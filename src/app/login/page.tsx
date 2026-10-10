@@ -67,8 +67,7 @@ function LoginContent() {
     setIsModalProcessing(false);
   };
 
-  // Chegada pelo link de confirmação do cadastro: confirma, mas não deixa a pessoa logada.
-  // Ela entra digitando a senha, para não restar dúvida se já está conectada.
+  // Não mantém a sessão criada pelo link de confirmação: a pessoa entra digitando a senha.
   useEffect(() => {
     const queryParams = new URLSearchParams(window.location.search);
     if (queryParams.get("confirmado") !== "1") return;
@@ -87,7 +86,6 @@ function LoginContent() {
         return;
       }
 
-      // Encerra só neste navegador a sessão criada pelo link
       await supabase.auth.signOut({ scope: "local" });
       setEmail(session.user.email ?? "");
       setSuccessMsg("E-mail confirmado! Digite sua senha para entrar.");
