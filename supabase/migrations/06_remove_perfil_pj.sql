@@ -1,6 +1,5 @@
 -- =========================================================
 -- 06 - REMOVE O PERFIL PESSOA JURÍDICA (PJ)
--- Pré-requisito: código sem PJ já em produção.
 -- Aborta sem alterar nada se algum perfil tiver dados de PJ.
 -- =========================================================
 
@@ -25,7 +24,6 @@ BEGIN
 END;
 $$;
 
--- Cadastro sem os campos de PJ
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger
 LANGUAGE plpgsql
