@@ -100,7 +100,7 @@ export default function MyTickets() {
       console.error('Error fetching tickets:', error);
       toast.error('Erro ao carregar os seus ingressos.');
     } else if (ticketsData) {
-      // 1. Busca se esse usuário foi convidado em alguma casadinha
+      // Convidado que resgatou herda o cupom do ingresso original da casadinha
       const { data: guestsData } = await supabase
         .from('guests')
         .select(`
@@ -111,7 +111,6 @@ export default function MyTickets() {
         `)
         .eq('claimed_by_user_id', session.user.id);
 
-      // 2. Mapeia os cupons herdados da casadinha
       const guestCouponMap = new Map();
       if (guestsData) {
         guestsData.forEach((g: any) => {
@@ -121,7 +120,6 @@ export default function MyTickets() {
         });
       }
 
-      // 3. Aplica o cupom herdado apenas nos ingressos resgatados
       const enrichedTickets = ticketsData.map((t: any) => {
         let appliedCoupon = t.coupons;
         let isInherited = false;
@@ -269,7 +267,6 @@ export default function MyTickets() {
     <main className="min-h-screen bg-gray-50 dark:bg-background py-10 px-4 sm:px-6 lg:px-8 relative transition-colors">
       <SmartModal dialog={dialog} onClose={() => setDialog(null)} isProcessing={isModalProcessing} />
 
-      {/* MODAL DE EDIÇÃO DO CONVIDADO */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 dark:bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
           <Card className="max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden rounded-3xl border-0 dark:bg-card">
@@ -383,12 +380,9 @@ export default function MyTickets() {
               return (
                 <Card key={ticket.id} className="overflow-hidden rounded-2xl shadow-sm border-gray-200 dark:border-border dark:bg-card transition-all flex flex-col">
                   
-                  {/* ========================================== */}
-                  {/* 1. INGRESSO DO TITULAR (COMPRADOR/CONVIDADO) */}
-                  {/* ========================================== */}
+                  {/* Ingresso do titular */}
                   <div className="flex flex-col md:flex-row h-full relative">
                     
-                    {/* Info do Evento e Recibo (Esquerda) */}
                     <div className="flex-1 p-6 md:p-8 flex flex-col justify-between z-10">
                       <div className="mb-6">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
@@ -405,7 +399,6 @@ export default function MyTickets() {
                             <Badge variant="destructive" className="bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20 font-bold transition-colors w-fit">Cancelado</Badge>
                           )}
                           
-                          {/* Alerta de Expiração para ingressos pendentes */}
                           {ticket.payment_status === 'pending' && ticket.expires_at && (
                             <span className="text-sm font-bold text-red-600 dark:text-red-400 flex items-center gap-1">
                               <Clock className="w-3.5 h-3.5" /> 
@@ -427,7 +420,6 @@ export default function MyTickets() {
                       </div>
 
                       <div className="space-y-4 mt-auto z-10">
-                        {/* Detalhes da Compra / Recibo */}
                         <div className="bg-gray-50/80 dark:bg-slate-900/50 p-4 sm:p-5 rounded-2xl border border-gray-100 dark:border-slate-800/80 transition-colors">
                           <h4 className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                             <Receipt className="w-3.5 h-3.5" /> Detalhes do Pedido {isCasadinha && '(Pacote Casadinha)'}
@@ -483,7 +475,6 @@ export default function MyTickets() {
                     {/* Divisória tracejada vertical (Mobile) */}
                     <div className="md:hidden h-px border-b-2 border-dashed border-gray-200 dark:border-slate-800 mx-6"></div>
                     
-                    {/* Ações / QR Code do Titular (Direita) */}
                     <div className="p-6 md:p-8 bg-gray-50/50 dark:bg-slate-900/30 md:w-[320px] flex flex-col justify-center items-center text-center transition-colors z-10">
                       
                       {ticket.payment_status === 'approved' && !ticket.is_used && (
@@ -551,9 +542,7 @@ export default function MyTickets() {
                     </div>
                   </div>
 
-                  {/* ========================================== */}
-                  {/* 2. INGRESSO DO CONVIDADO (CASADINHA)       */}
-                  {/* ========================================== */}
+                  {/* Ingresso do convidado (casadinha) */}
                   {isCasadinha && guest && ticket.payment_status !== 'cancelled' && (
                     <>
                       {/* Divisória Horizontal Rasgada (Separação visual de ingressos) */}
@@ -565,7 +554,6 @@ export default function MyTickets() {
 
                       <div className={`flex flex-col md:flex-row relative z-10 ${guest.is_claimed ? 'bg-emerald-50/40 dark:bg-emerald-950/10' : 'bg-blue-50/40 dark:bg-blue-950/10'} transition-colors`}>
                         
-                        {/* Dados do Convidado (Esquerda) */}
                         <div className="flex-1 p-6 md:p-8 flex flex-col justify-center">
                           <div className="flex items-center justify-between mb-4">
                             <h4 className="text-lg font-bold flex items-center gap-2 text-gray-900 dark:text-gray-100">
@@ -629,7 +617,6 @@ export default function MyTickets() {
                         {/* Divisória tracejada vertical (Mobile) */}
                         <div className="md:hidden h-px border-b-2 border-dashed border-gray-300 dark:border-slate-700 mx-6"></div>
 
-                        {/* Esqueleto QR Code do Convidado (Direita) */}
                         <div className="p-6 md:p-8 md:w-[320px] flex flex-col justify-center items-center text-center transition-colors">
                           {guest.is_claimed ? (
                             <div className="w-full flex flex-col items-center animate-in zoom-in-95">

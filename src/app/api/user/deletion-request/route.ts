@@ -29,7 +29,6 @@ export async function POST(request: Request) {
       auth: { autoRefreshToken: false, persistSession: false }
     });
 
-    // Descobrir a role do usuário (Producer ou Customer)
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('role')
@@ -42,9 +41,7 @@ export async function POST(request: Request) {
 
     const todayIso = new Date().toISOString();
 
-    // FLUXO DO PRODUTOR (PRODUCER)
     if (profile.role === 'producer') {
-      // Verifica se o produtor tem eventos futuros ativos
       const { data: activeEvents, error: eventsError } = await supabaseAdmin
         .from('events')
         .select('id')
@@ -62,8 +59,6 @@ export async function POST(request: Request) {
       }
     }
 
-    // FLUXO DO CLIENTE / GERAL (CUSTOMER)
-    // Verifica se o usuário tem ingressos válidos e ainda sem uso.
     const { data: futureTickets, error: ticketsError } = await supabaseAdmin
       .from('tickets')
       .select('id, events!inner(event_date)')
@@ -82,7 +77,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // AGENDAMENTO DA EXCLUSÃO (SOFT DELETE)
+    // Soft delete: a exclusão definitiva ocorre após 30 dias de carência
     const deletionDate = new Date();
     deletionDate.setDate(deletionDate.getDate() + 30);
 

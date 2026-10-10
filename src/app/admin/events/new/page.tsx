@@ -36,7 +36,6 @@ function EventForm() {
   const [isLoadingEvent, setIsLoadingEvent] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   
-  // Estados do Evento
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [eventDate, setEventDate] = useState('');
@@ -48,7 +47,6 @@ function EventForm() {
   const [image, setImage] = useState<File | null>(null);
   const [imageError, setImageError] = useState('');
 
-  // Estados dos Cupons
   const [coupons, setCoupons] = useState<LocalCoupon[]>([]);
   const [couponsToDelete, setCouponsToDelete] = useState<string[]>([]);
   const [showCouponForm, setShowCouponForm] = useState(false);
@@ -57,7 +55,6 @@ function EventForm() {
   const [dialog, setDialog] = useState<DialogConfig | null>(null);
   const [isModalProcessing, setIsModalProcessing] = useState(false);
   
-  // Campos do formulário de Cupom
   const [cCode, setCCode] = useState('');
   const [cType, setCType] = useState<'fixed'|'percentage'>('fixed');
   const [cValue, setCValue] = useState('');
@@ -98,7 +95,6 @@ function EventForm() {
       setAuthorized(true);
       setIsCheckingAuth(false);
 
-      // Se existir um ID na URL, busca os dados para edição
       if (editId) {
         setIsLoadingEvent(true);
         
@@ -185,7 +181,6 @@ function EventForm() {
     setImage(file);
   };
 
-  // Funções de Gestão dos Cupons
   const handleAddCoupon = async () => {
     if (!cCode.trim() || !cValue) {
       toast.error('Código e Valor são obrigatórios para criar um cupom.');
@@ -236,7 +231,6 @@ function EventForm() {
       setCoupons([...coupons, insertedCoupon]);
       toast.success('Cupom ativado com sucesso!');
       
-      // Dispara o balão e some após 6 segundos
       setShowTooltipFor(insertedCoupon.id);
       setTimeout(() => setShowTooltipFor(null), 6000);
 
@@ -439,9 +433,6 @@ function EventForm() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* ======================================= */}
-          {/* CARTÃO 1: INFORMAÇÕES DO EVENTO         */}
-          {/* ======================================= */}
           <Card className={`shadow-md border-0 transition-all duration-300 rounded-3xl overflow-hidden ${editId ? 'ring-2 ring-blue-500/50 shadow-blue-500/10' : 'dark:border dark:border-border'}`}>
             <CardHeader className="border-b border-gray-100 dark:border-border pb-6 transition-colors">
               <CardTitle className="text-xl font-bold flex items-center gap-2 transition-colors">
@@ -592,9 +583,6 @@ function EventForm() {
             </CardContent>
           </Card>
 
-          {/* ======================================= */}
-          {/* CARTÃO 2: CUPONS DE DESCONTO            */}
-          {/* ======================================= */}
           {!isFree && (
             <Card className="shadow-md border-0 transition-all duration-300 rounded-3xl overflow-hidden dark:border dark:border-border">
               <CardHeader className="border-b border-gray-100 dark:border-border pb-6 flex flex-row items-center justify-between transition-colors">
@@ -615,7 +603,6 @@ function EventForm() {
               </CardHeader>
               <CardContent className="pt-6">
                 
-                {/* Lista de Cupons Ativos */}
                 {coupons.length > 0 && (
                   <div className="space-y-3 mb-6">
                     {coupons.map(coupon => (
@@ -682,7 +669,6 @@ function EventForm() {
                   </div>
                 )}
 
-                {/* Formulário Interativo de Novo Cupom */}
                 {showCouponForm && (
                   <div className="p-5 rounded-2xl border border-blue-100 dark:border-blue-900/50 bg-blue-50/30 dark:bg-blue-900/10 space-y-5 animate-in fade-in slide-in-from-top-2">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -762,7 +748,6 @@ function EventForm() {
                   </div>
                 )}
 
-                {/* Mensagem Vazia */}
                 {!showCouponForm && coupons.length === 0 && (
                   <div className="text-center py-6">
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -774,9 +759,6 @@ function EventForm() {
             </Card>
           )}
 
-          {/* ======================================= */}
-          {/* BOTÕES DE AÇÃO PRINCIPAIS               */}
-          {/* ======================================= */}
           <div className="pt-2 flex flex-col-reverse sm:flex-row justify-end gap-3 transition-colors">
             <Link href="/admin/events" className="w-full sm:w-auto">
               <Button type="button" variant="outline" className="w-full sm:w-auto h-12 px-6 rounded-xl font-bold">

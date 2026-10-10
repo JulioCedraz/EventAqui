@@ -96,14 +96,12 @@ export default function Header() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             
-            {/* LOGO */}
             <div className="shrink-0">
               <Link href="/" className="text-2xl font-extrabold text-blue-600 dark:text-blue-500 tracking-tighter hover:opacity-80 transition-opacity">
                 EventAqui
               </Link>
             </div>
 
-            {/* NAVEGAÇÃO CENTRAL (DESKTOP) */}
             <nav className="hidden min-[570px]:flex flex-1 justify-center items-center gap-0.5 mx-2">
               {!loading && user && (
                 <>
@@ -138,10 +136,8 @@ export default function Header() {
               )}
             </nav>
 
-            {/* AÇÕES DIREITA */}
             <div className="flex items-center gap-2 ml-auto">
               
-              {/* THEME TOGGLE BUTTON */}
               {mounted ? (
                 <Button
                   variant="ghost"
@@ -180,7 +176,6 @@ export default function Header() {
                 </>
               )}
 
-              {/* BOTÃO MENU MOBILE */}
               <Button 
                 id="mobile-menu-toggle"
                 variant="ghost" 
@@ -195,7 +190,6 @@ export default function Header() {
         </div>
       </div>
 
-      {/* MENU MOBILE (CAMADA INFERIOR) */}
       <div 
         ref={menuRef}
         className={`absolute top-full left-0 w-full z-10 border-b border-gray-100 dark:border-border bg-white dark:bg-background shadow-lg transition-all duration-300 ease-in-out min-[740px]:hidden ${

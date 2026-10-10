@@ -138,7 +138,6 @@ export default function PersonalDataFields({ form, hasCpfInitially = false }: Pe
 
   return (
     <div className="space-y-5 animate-in fade-in slide-in-from-top-4 duration-300">
-      {/* NOME E SOBRENOME */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="firstName">Nome</Label>
@@ -162,7 +161,6 @@ export default function PersonalDataFields({ form, hasCpfInitially = false }: Pe
         </div>
       </div>
 
-      {/* CPF E DATA DE NASCIMENTO */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="cpf">CPF</Label>
@@ -199,7 +197,6 @@ export default function PersonalDataFields({ form, hasCpfInitially = false }: Pe
         </div>
       </div>
 
-      {/* TELEFONE E MATRÍCULA */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
         <div className="space-y-2">
           <Label htmlFor="phone">Telefone (WhatsApp)</Label>
@@ -231,7 +228,6 @@ export default function PersonalDataFields({ form, hasCpfInitially = false }: Pe
         </div>
       </div>
 
-      {/* UNIVERSIDADE E CURSO */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="university">Instituição de Ensino</Label>

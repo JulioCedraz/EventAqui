@@ -40,7 +40,6 @@ export default function EventCard({ id, title, description, event_date, price, i
     >
       <Card className="h-full flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-blue-200 dark:hover:border-blue-800">
         
-        {/* Imagem do Evento */}
         <div className="relative w-full aspect-video bg-muted overflow-hidden">
           {image_url ? (
             <img 
@@ -55,14 +54,12 @@ export default function EventCard({ id, title, description, event_date, price, i
           )}
         </div>
 
-        {/* Cabeçalho do Card (Título) */}
         <CardHeader className="p-4 sm:p-5 pb-3">
           <CardTitle className="text-lg font-bold leading-tight line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {title}
           </CardTitle>
         </CardHeader>
 
-        {/* Corpo do Card (Data e Descrição) */}
         <CardContent className="p-4 sm:p-5 pt-0 flex flex-col grow gap-3">
           <div className="flex items-center text-sm font-medium text-muted-foreground">
             <CalendarDays className="w-4 h-4 mr-2 shrink-0 text-gray-400 dark:text-gray-500 transition-colors" />
@@ -76,7 +73,6 @@ export default function EventCard({ id, title, description, event_date, price, i
           )}
         </CardContent>
 
-        {/* Rodapé do Card (Preço) */}
         <CardFooter className="p-4 sm:p-5 pt-0 mt-auto">
           <div className="flex items-center font-extrabold text-lg">
             <Ticket className={`w-5 h-5 mr-2 transition-colors ${isFree ? 'text-green-500 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'}`} />

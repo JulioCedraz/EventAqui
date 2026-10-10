@@ -105,7 +105,6 @@ export async function POST(request: Request) {
       }
     }
 
-    // Gratuito (evento sem custo ou cupom de 100%): aprova direto no servidor.
     if (amount === 0) {
       await approveTicket(ticket.id);
       return NextResponse.json({ ticketId: ticket.id, is_free: true, status: 'approved' });

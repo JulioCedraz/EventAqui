@@ -20,7 +20,6 @@ function AdminHubContent() {
   const [authorized, setAuthorized] = useState(false);
   const [userName, setUserName] = useState('');
   
-  // Estados do Mercado Pago
   const [isAlreadyConnected, setIsAlreadyConnected] = useState(false);
 
   useEffect(() => {

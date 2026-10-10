@@ -127,7 +127,6 @@ export default function HelpCenterPage() {
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-background flex flex-col transition-colors">
       
-      {/* HERO SECTION - Busca */}
       <section className="bg-blue-600 dark:bg-blue-950/50 text-white py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden transition-colors">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl opacity-10 pointer-events-none">
           <div className="absolute -top-24 -right-24 w-96 h-96 bg-white dark:bg-blue-400 rounded-full blur-3xl transition-colors"></div>
@@ -154,10 +153,8 @@ export default function HelpCenterPage() {
         </div>
       </section>
 
-      {/* ÁREA INTERATIVA */}
       <div ref={interactiveAreaRef} className="flex-1">
         
-        {/* CATEGORIAS RÁPIDAS (Cards) */}
         {!searchQuery && (
           <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-20 mb-8 sm:mb-16 w-full animate-in fade-in duration-500">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -189,7 +186,6 @@ export default function HelpCenterPage() {
           </section>
         )}
 
-        {/* PERGUNTAS FREQUENTES (FAQ) */}
         <section ref={faqSectionRef} className={`max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 mb-20 w-full ${searchQuery ? 'mt-12' : 'scroll-mt-18'}`}>
           <div className="text-center mb-8 sm:mb-10">
             <h2 className="text-2xl font-extrabold text-gray-900 dark:text-gray-100 transition-colors">
@@ -255,7 +251,6 @@ export default function HelpCenterPage() {
 
       </div>
 
-      {/* CALL TO ACTION - CONTATO */}
       <section className="bg-white dark:bg-background border-t border-gray-200 dark:border-border py-16 mt-auto transition-colors">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 mb-6 transition-colors">

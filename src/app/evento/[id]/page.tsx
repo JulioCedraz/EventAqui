@@ -245,7 +245,6 @@ export default function EventDetails() {
          return;
        }
 
-      // O servidor cria o ingresso, calcula o preço e gera o PIX
       const res = await fetch('/api/payment', {
         method: 'POST',
         headers: {
@@ -364,7 +363,6 @@ export default function EventDetails() {
         isProcessing={isModalProcessing} 
       />
 
-      {/* MODAL DE RESUMO DO PEDIDO */}
       {showConfirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 dark:bg-black/80 backdrop-blur-sm animate-in fade-in duration-200 transition-colors">
           <Card className="max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden rounded-3xl border-0 dark:bg-card transition-colors">
@@ -465,11 +463,9 @@ export default function EventDetails() {
         </div>
       )}
 
-      {/* CONTEÚDO PRINCIPAL DA PÁGINA */}
       <div className="max-w-4xl mx-auto">
         <Card className="rounded-3xl shadow-lg overflow-hidden border-0 bg-white dark:bg-card transition-colors">
           
-          {/* CAPA DO EVENTO */}
           {event.image_url ? (
             <div className="w-full relative bg-muted">
               <img 
@@ -506,7 +502,6 @@ export default function EventDetails() {
               {event.description}
             </p>
             
-            {/* INFORMAÇÕES DO EVENTO */}
             <div className="bg-gray-50 dark:bg-slate-900/50 rounded-2xl p-6 md:p-8 mb-10 border border-gray-100 dark:border-slate-800/50 flex flex-col md:flex-row gap-6 md:gap-12 transition-colors">
               <div className="flex items-start gap-4 flex-1">
                 <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-500/10 flex items-center justify-center shrink-0 mt-1 transition-colors">
@@ -538,7 +533,6 @@ export default function EventDetails() {
               </div>
             </div>
 
-            {/* ÁREA DE PAGAMENTO / AÇÕES */}
             {pixData ? (
               <Card className="bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/50 shadow-sm animate-in zoom-in-95 duration-500 transition-colors">
                 <CardContent className="p-8 text-center flex flex-col items-center">
@@ -651,7 +645,6 @@ export default function EventDetails() {
                   </Badge>
                 )}
 
-                {/* TIPO DE INGRESSO (INDIVIDUAL OU CASADINHA) */}
                 <div className="flex bg-gray-100 dark:bg-slate-900/50 p-1.5 rounded-2xl border border-gray-200 dark:border-slate-800 transition-colors">
                   <button
                     type="button"
@@ -679,7 +672,6 @@ export default function EventDetails() {
                   </button>
                 </div>
 
-                {/* FORMULÁRIO DO CONVIDADO (CASADINHA) */}
                 {isCasadinha && (
                   <div className="bg-white dark:bg-slate-900/50 p-6 rounded-2xl border border-blue-100 dark:border-blue-900/30 animate-in fade-in slide-in-from-top-4 transition-colors">
                     <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
@@ -735,7 +727,6 @@ export default function EventDetails() {
                   </div>
                 )}
 
-                {/* CAMPO DE CUPOM DE DESCONTO */}
                 {!isFreeEvent && (
                   <div className="bg-white dark:bg-slate-900/50 p-4 rounded-2xl border border-gray-200 dark:border-slate-800 transition-colors">
                     {appliedCoupon ? (
@@ -773,7 +764,6 @@ export default function EventDetails() {
                   </div>
                 )}
 
-                {/* BLOCO DE TOTAL A PAGAR */}
                 <div className={`flex flex-col md:flex-row justify-between items-center gap-3 md:gap-0 p-6 rounded-2xl border transition-colors ${
                   isFreeEvent || finalPrice === 0 
                     ? 'bg-emerald-50/50 border-emerald-100 dark:bg-emerald-500/10 dark:border-emerald-500/20' 

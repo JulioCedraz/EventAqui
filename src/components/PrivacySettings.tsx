@@ -18,7 +18,6 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
   const [isDangerZoneExpanded, setIsDangerZoneExpanded] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   
-  // Estados de Segurança e Fluxo
   const [authProvider, setAuthProvider] = useState<string>('email');
   const [currentPassword, setCurrentPassword] = useState('');
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -45,7 +44,6 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
     setPasswordError('');
     
     try {
-      // Step-Up Authentication (Verificação de Identidade)
       if (authProvider === 'email') {
         if (!currentPassword) {
           setPasswordError('A senha atual é obrigatória.');
@@ -63,13 +61,8 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
           setIsSendingToken(false);
           return;
         }
-      } else {
-        // [FUTURO] Preparado para Login Social (OAuth)
-        // const { error: oauthError } = await supabase.auth.signInWithOAuth({ provider: authProvider as any });
-        // if (oauthError) throw new Error('Erro na reautenticação social.');
       }
 
-      // Disparo do Código de Segurança (OTP)
       const { error } = await supabase.auth.reauthenticate();
       if (error) throw new Error('Erro ao enviar o código de segurança. Tente novamente.');
       
@@ -91,7 +84,6 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
     setIsDeleting(true);
 
     try {
-      // Confirmação do OTP via Supabase
       const { error: verifyError } = await supabase.auth.updateUser({
         nonce: deleteToken,
         data: { lgpd_deletion_requested: true } 
@@ -113,14 +105,7 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
 
       const data = await response.json();
       
-      // Tratamento especial se o usuário cliente tiver ingressos ou se for um produtor e tiver eventos ativos (Regra de Negócio do Backend)
-      if (!response.ok) {
-        if (data.code === 'CUSTOMER_HAS_TICKETS' || data.code === 'PRODUCER_ACTIVE_EVENTS') {
-           // Implementar o modal de confirmação de perda de ingressos aqui, em breve.
-           throw new Error(data.error); 
-        }
-        throw new Error(data.error || 'Erro interno ao processar a solicitação.');
-      }
+      if (!response.ok) throw new Error(data.error || 'Erro interno ao processar a solicitação.');
 
       await supabase.auth.signOut();
       toast.success(data.message || 'Conta agendada para exclusão com sucesso.');
@@ -202,7 +187,6 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
                   Para agendar a exclusão da sua conta (efetivada em 30 dias), confirme sua identidade. Enviaremos um código de segurança para o seu e-mail logo em seguida.
                 </p>
 
-                {/* Bloco de Step-Up Authentication */}
                 {authProvider === 'email' ? (
                   <div className="mb-6">
                     <div className="relative">

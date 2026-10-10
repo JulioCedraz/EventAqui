@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MailCheck, ArrowRight, X, CheckCircle2 } from 'lucide-react';
 
-// Criamos tipos para gerenciar os diferentes estados do Modal
 type ModalState = 'none' | 'pending' | 'success';
 
 export default function EmailConfirmationHandler() {
@@ -12,15 +11,13 @@ export default function EmailConfirmationHandler() {
   const router = useRouter();
 
   useEffect(() => {
-    // Captura os parâmetros da URL
     const hash = window.location.hash;
 
-    // Primeira etapa
+    // Troca de e-mail: o 1º link volta com 'Confirmation link accepted'; o 2º, com type=email_change
     if (hash && hash.includes('message=Confirmation+link+accepted')) {
       setModalState('pending');
       window.history.replaceState(null, '', window.location.pathname);
     } 
-    // Segunda etapa
     else if (hash && hash.includes('type=email_change')) {
       setModalState('success');
       // Limpa a URL da mesma forma para não deixar rastros do token de acesso
@@ -30,7 +27,6 @@ export default function EmailConfirmationHandler() {
 
   const handleSuccessContinue = () => {
     setModalState('none');
-    // Redireciona o usuário para a página onde ele vê os dados dele
     router.push('/profile'); 
   };
 
@@ -40,7 +36,6 @@ export default function EmailConfirmationHandler() {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 dark:bg-black/80 backdrop-blur-sm animate-in fade-in duration-200 transition-colors">
       <div className="bg-white dark:bg-card rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 relative animate-in zoom-in-95 duration-300 transition-colors border dark:border-border">
         
-        {/* Botão de Fechar */}
         <button 
           onClick={() => setModalState('none')}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 bg-gray-50 hover:bg-gray-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 p-2 rounded-full transition-colors"
@@ -48,9 +43,6 @@ export default function EmailConfirmationHandler() {
           <X className="w-5 h-5" />
         </button>
 
-        {/* ------------------------------------------ */}
-        {/* MODAL DE ESTADO PENDENTE (Primeira etapa)  */}
-        {/* ------------------------------------------ */}
         {modalState === 'pending' && (
           <>
             <div className="flex flex-col items-center text-center mb-6 mt-2">
@@ -83,9 +75,6 @@ export default function EmailConfirmationHandler() {
           </>
         )}
 
-        {/* ------------------------------------------ */}
-        {/* MODAL DE SUCESSO (Segunda etapa)           */}
-        {/* ------------------------------------------ */}
         {modalState === 'success' && (
           <>
             <div className="flex flex-col items-center text-center mb-6 mt-2">

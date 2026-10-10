@@ -47,8 +47,6 @@ export default function ManageEventsPage() {
       .select("*")
       .order("created_at", { ascending: false });
 
-    // Admin vê tudo.
-    // Filtra os eventos criados pelo id do produtor logado.
     if (!context.isAdmin) {
       query = query.eq("producer_id", context.uid);
     }
@@ -135,18 +133,17 @@ export default function ManageEventsPage() {
     }
   };
 
-  // Função auxiliar para formatar a data com dia da semana e horário
   const formatEventDate = (dateString: string) => {
     if (!dateString) return "Sem data definida";
     
     const dateObj = new Date(dateString);
     
-    // 1. Strings para o Formato Curto (Mobile)
+    // Formato curto (mobile)
     const shortWeekday = dateObj.toLocaleDateString("pt-BR", { weekday: "short" });
     const capShortWeekday = shortWeekday.charAt(0).toUpperCase() + shortWeekday.slice(1).replace(".", "");
     const shortDate = dateObj.toLocaleDateString("pt-BR");
     
-    // 2. Strings para o Formato Longo (Desktop)
+    // Formato longo (desktop)
     const longWeekday = dateObj.toLocaleDateString("pt-BR", { weekday: "long" });
     const capLongWeekday = longWeekday.charAt(0).toUpperCase() + longWeekday.slice(1);
     const longDate = dateObj.toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" });
@@ -189,7 +186,6 @@ export default function ManageEventsPage() {
       />
 
       <div className="w-full max-w-5xl space-y-8">
-        {/* CABEÇALHO E BOTÃO DE NOVO EVENTO */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-1 pb-1">
           <div>
             <Link
@@ -213,7 +209,6 @@ export default function ManageEventsPage() {
           </Link>
         </div>
 
-        {/* LISTA DE EVENTOS PUBLICADOS */}
         <Card className="shadow-md border-0 dark:border dark:border-border rounded-3xl overflow-hidden transition-colors">
           <CardHeader className="bg-white dark:bg-card border-b border-gray-100 dark:border-border pb-6 transition-colors">
             <div>
@@ -246,7 +241,6 @@ export default function ManageEventsPage() {
                     className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-5 hover:bg-gray-50/80 dark:hover:bg-slate-800/50 transition-colors group bg-white dark:bg-transparent"
                   >
                     <div className="flex items-start sm:items-center gap-4">
-                      {/* Miniatura da Capa */}
                       <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-gray-100 dark:bg-slate-800 shrink-0 overflow-hidden border border-gray-200 dark:border-slate-700 flex items-center justify-center mt-1 sm:mt-0 transition-colors">
                         {evt.image_url ? (
                           <img
