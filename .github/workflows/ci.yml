@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   checks:
-    name: Typecheck, lint e build
+    name: Typecheck, lint, testes e build
     runs-on: ubuntu-latest
     env:
       NEXT_TELEMETRY_DISABLED: 1
@@ -30,4 +30,5 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
+      - run: npm test
       - run: npm run build

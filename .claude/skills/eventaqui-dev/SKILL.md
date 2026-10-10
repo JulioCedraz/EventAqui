@@ -13,10 +13,12 @@ As regras de stack, segurança, escopo e banco estão no `CLAUDE.md` da raiz. Es
 
 ## 1. Definição de pronto
 Antes de propor qualquer commit, rode e reporte o resultado:
-- `npx tsc --noEmit`
-- `npm run lint`
+- `npm run typecheck`
+- `npm run lint` (0 erros; avisos não bloqueiam)
+- `npm test`
 
 Se algum falhar, corrija ou informe o erro. Não proponha commit com erro.
+Regra de negócio nova ou alterada em `src/lib` ganha teste no `*.test.ts` ao lado do arquivo.
 
 ## 2. Divisão em commits
 - Um commit = uma mudança lógica. Pode envolver vários arquivos (ex.: migration + rota).
