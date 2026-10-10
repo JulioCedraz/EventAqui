@@ -1,5 +1,6 @@
 import 'server-only';
 import nodemailer from 'nodemailer';
+import QRCode from 'qrcode';
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -21,20 +22,29 @@ export function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
-const qrCodeUrl = (text: string) =>
-  `https://quickchart.io/qr?text=${encodeURIComponent(text)}&margin=2&size=300`;
+const QR_CID = 'ingresso-qrcode';
+
+// Imagem anexada ao e-mail (CID): o ID do ingresso não passa por terceiros
+// e o QR aparece mesmo sem internet ou com imagens externas bloqueadas.
+async function ticketQrAttachment(ticketId: string) {
+  return {
+    filename: 'ingresso-qrcode.png',
+    content: await QRCode.toBuffer(ticketId, { margin: 2, width: 300 }),
+    cid: QR_CID,
+  };
+}
 
 function ticketCard(ticketId: string) {
   const id = escapeHtml(ticketId);
   return `
-    <img src="${qrCodeUrl(ticketId)}" alt="QR Code do Ingresso" style="width: 250px; height: 250px; margin: 20px auto; border-radius: 8px; border: 1px solid #ddd;" />
+    <img src="cid:${QR_CID}" alt="QR Code do Ingresso" style="width: 250px; height: 250px; margin: 20px auto; border-radius: 8px; border: 1px solid #ddd;" />
     <p style="font-size: 12px; color: #888;">Código do ingresso (caso o leitor falhe):</p>
     <div style="background-color: #f3f4f6; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 14px; font-weight: bold; letter-spacing: 1px;">
       ${id}
     </div>`;
 }
 
-export function sendTicketApprovedEmail(to: string, eventTitle: string, ticketId: string) {
+export async function sendTicketApprovedEmail(to: string, eventTitle: string, ticketId: string) {
   const title = escapeHtml(eventTitle);
   return transporter.sendMail({
     from: FROM,
@@ -51,6 +61,7 @@ export function sendTicketApprovedEmail(to: string, eventTitle: string, ticketId
           ${ticketCard(ticketId)}
         </div>
       </div>`,
+    attachments: [await ticketQrAttachment(ticketId)],
   });
 }
 
@@ -77,7 +88,7 @@ export function sendGuestInviteEmail(to: string, guestName: string, eventTitle: 
   });
 }
 
-export function sendGuestClaimedEmail(to: string, name: string, eventTitle: string, ticketId: string) {
+export async function sendGuestClaimedEmail(to: string, name: string, eventTitle: string, ticketId: string) {
   const title = escapeHtml(eventTitle);
   return transporter.sendMail({
     from: FROM,
@@ -94,5 +105,6 @@ export function sendGuestClaimedEmail(to: string, name: string, eventTitle: stri
           ${ticketCard(ticketId)}
         </div>
       </div>`,
+    attachments: [await ticketQrAttachment(ticketId)],
   });
 }
