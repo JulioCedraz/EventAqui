@@ -124,7 +124,7 @@ export default function OrdersPage() {
           }
         });
 
-        let profilesMap: Record<string, any> = {};
+        const profilesMap: Record<string, any> = {};
         if (userIds.length > 0) {
           const { data: profilesData } = await supabase
             .from('profiles')
@@ -195,7 +195,7 @@ export default function OrdersPage() {
   };
 
   const filteredOrders = useMemo(() => {
-    let result = orders.filter(order => {
+    const result = orders.filter(order => {
       const matchEvent = selectedEventId === 'all' || order.event_id === selectedEventId;
       const matchStatus = selectedStatus === 'all' || order.payment_status === selectedStatus;
       const matchCoupon = selectedCouponFilter === 'all' 
