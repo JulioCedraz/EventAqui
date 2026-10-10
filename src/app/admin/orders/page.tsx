@@ -57,7 +57,6 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [events, setEvents] = useState<EventSummary[]>([]);
   
-  // Estados dos Filtros
   const [selectedEventId, setSelectedEventId] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedCouponFilter, setSelectedCouponFilter] = useState<string>('all');
@@ -111,7 +110,7 @@ export default function OrdersPage() {
       if (!ticketsError && ticketsData) {
         const userIds = Array.from(new Set(ticketsData.map((t: any) => t.user_id).filter(Boolean)));
         
-        // 1. Busca os convidados para mapear os cupons das casadinhas desmembradas
+        // Convidados que resgataram herdam o cupom do ingresso original da casadinha
         const { data: guestsData } = await supabase.from('guests').select('guest_email, ticket_id');
         const originalTicketsMap = new Map();
         ticketsData.forEach((t: any) => originalTicketsMap.set(t.id, t));
@@ -125,7 +124,6 @@ export default function OrdersPage() {
           }
         });
 
-        // 2. Busca os perfis acadêmicos
         let profilesMap: Record<string, any> = {};
         if (userIds.length > 0) {
           const { data: profilesData } = await supabase
@@ -140,7 +138,6 @@ export default function OrdersPage() {
           }
         }
 
-        // 3. Aplica a Herança do Cupom
         const enrichedOrders = ticketsData.map((t: any) => {
           let appliedCoupon = t.coupons;
           let isInherited = false;
@@ -181,7 +178,6 @@ export default function OrdersPage() {
     checkAuthAndFetchData();
   }, [router]);
 
-  // Função auxiliar para calcular o valor final com desconto do cupom
   const calculateOrderTotal = (order: Order) => {
     const basePrice = (order.events?.price || 0) * (order.quantity || 1);
     if (!order.coupons) return basePrice;
@@ -198,7 +194,6 @@ export default function OrdersPage() {
     return Math.max(0, final);
   };
 
-  // Filtra e Ordena os pedidos 
   const filteredOrders = useMemo(() => {
     let result = orders.filter(order => {
       const matchEvent = selectedEventId === 'all' || order.event_id === selectedEventId;
@@ -267,7 +262,6 @@ export default function OrdersPage() {
     <main className="bg-gray-50 dark:bg-background py-10 px-4 sm:px-6 lg:px-8 min-h-screen flex flex-col items-center transition-colors">
       <div className="w-full max-w-7xl space-y-8">
         
-        {/* CABEÇALHO E FILTROS */}
         <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-4 pt-1 pb-1">
           <div className="mb-2 xl:mb-0">
             <Link href="/admin" className="text-sm font-medium text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 flex items-center transition-colors w-fit mb-2">
@@ -278,7 +272,6 @@ export default function OrdersPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full xl:w-auto">
-            {/* FILTRO DE ORDENAÇÃO */}
             <div className="relative flex items-center w-full">
               <ArrowDownAZ className="w-4 h-4 absolute left-3 text-gray-400 dark:text-gray-500 transition-colors" />
               <select
@@ -294,7 +287,6 @@ export default function OrdersPage() {
               </div>
             </div>
 
-            {/* FILTRO DE USO DE CUPOM */}
             <div className="relative flex items-center w-full">
               <Tag className="w-4 h-4 absolute left-3 text-gray-400 dark:text-gray-500 transition-colors" />
               <select
@@ -311,7 +303,6 @@ export default function OrdersPage() {
               </div>
             </div>
 
-            {/* FILTRO DE STATUS */}
             <div className="relative flex items-center w-full">
               <Filter className="w-4 h-4 absolute left-3 text-gray-400 dark:text-gray-500 transition-colors" />
               <select
@@ -329,7 +320,6 @@ export default function OrdersPage() {
               </div>
             </div>
 
-            {/* FILTRO DE EVENTOS */}
             <div className="relative flex items-center w-full">
               <Ticket className="w-4 h-4 absolute left-3 text-gray-400 dark:text-gray-500 transition-colors" />
               <select
@@ -349,7 +339,6 @@ export default function OrdersPage() {
           </div>
         </div>
 
-        {/* CARDS DE KPI */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
           <Card className="shadow-sm border-0 dark:border dark:border-border rounded-2xl overflow-hidden relative transition-colors">
             <div className="absolute top-0 right-0 p-4 opacity-10 dark:opacity-20 transition-opacity"><TrendingUp className="w-24 h-24 text-emerald-600 dark:text-emerald-500" /></div>
@@ -388,7 +377,6 @@ export default function OrdersPage() {
           </Card>
         </div>
 
-        {/* TABELA DE PEDIDOS */}
         <Card className="shadow-sm border-0 dark:border dark:border-border rounded-3xl overflow-hidden transition-colors">
           <CardHeader className="bg-white dark:bg-card border-b border-gray-100 dark:border-border pb-4 transition-colors">
             <CardTitle className="text-lg font-bold flex items-center gap-2 transition-colors">

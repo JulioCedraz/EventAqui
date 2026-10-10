@@ -27,18 +27,13 @@ import {
   Unlock, Eye, EyeOff 
 } from "lucide-react";
 
-// ==========================================
-// 1. EXTENSÃO DO SCHEMA BASE PARA O PERFIL
-// ==========================================
 const profileSchema = basePersonalDataSchema.extend({
   email: z.string().email("Formato de e-mail inválido"),
   newPassword: z.string().optional(),
   confirmNewPassword: z.string().optional()
 }).superRefine((data, ctx) => {
-  // Validações bases (CPF, Telefone, etc)
   refinePersonalData(data, ctx);
   
-  // Validações de alteração de senha
   if (data.newPassword && data.newPassword.length < 6) {
     ctx.addIssue({ path: ['newPassword'], message: "A nova senha deve ter no mínimo 6 caracteres", code: z.ZodIssueCode.custom });
   }
@@ -59,11 +54,9 @@ function ProfileContent() {
   const [userId, setUserId] = useState<string | null>(null);
   const [dialog, setDialog] = useState<DialogConfig | null>(null);
   
-  // Estados de Segurança 
   const [isSecurityUnlocked, setIsSecurityUnlocked] = useState(isInvite);
   const [isVerifyingPassword, setIsVerifyingPassword] = useState(false);
   
-  // Estados Visuais e Auxiliares
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -72,9 +65,6 @@ function ProfileContent() {
   const [hasCpfInitially, setHasCpfInitially] = useState(false);
   const [role, setRole] = useState<'admin' | 'producer' | 'agent' | 'customer' | null>(null);
 
-  // ==========================================
-  // 2. CONFIGURAÇÃO DO REACT HOOK FORM
-  // ==========================================
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     mode: "onBlur",
@@ -179,9 +169,6 @@ function ProfileContent() {
     }
   };
 
-  // ==========================================
-  // 3. EXECUÇÃO DA ATUALIZAÇÃO (SÓ RODA SE VÁLIDO)
-  // ==========================================
   const handleUpdateProfile = form.handleSubmit((data: ProfileFormValues) => {
     if (isInvite && !data.newPassword) {
       toast.error('Por favor, defina uma senha para concluir o seu cadastro.');
@@ -289,7 +276,6 @@ function ProfileContent() {
 
       <div className="max-w-3xl mx-auto space-y-8">
         
-        {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-3">
@@ -309,7 +295,6 @@ function ProfileContent() {
 
         <form onSubmit={handleUpdateProfile} className="space-y-8">
           
-          {/* CONTEINER 1: DADOS PESSOAIS */}
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 ml-1 transition-colors">Meus Dados</h2>
             <Card className="shadow-lg border-gray-100 dark:border-border dark:bg-card rounded-3xl overflow-hidden transition-colors">
@@ -320,14 +305,12 @@ function ProfileContent() {
             </Card>
           </div>
 
-          {/* CONTEINER 2: SEGURANÇA */}
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 ml-1 transition-colors">Segurança e Acesso</h2>
             <Card className="shadow-lg border-gray-100 dark:border-border dark:bg-card rounded-3xl overflow-hidden min-h-45 transition-colors">
               <CardContent className="p-6 sm:p-8">
                 
                 {!isSecurityUnlocked ? (
-                  // CREDENCIAIS SEGURAS
                   <div key="locked" className="flex flex-col items-center justify-center space-y-5 animate-in fade-in zoom-in-95 duration-500 py-6">
                     <div className="w-16 h-16 bg-blue-50 dark:bg-blue-500/10 rounded-full flex items-center justify-center transition-colors">
                       <LockKeyhole className="w-8 h-8 text-blue-500 dark:text-blue-400 transition-colors" />
@@ -367,7 +350,6 @@ function ProfileContent() {
                     </div>
                   </div>
                 ) : (
-                  // CREDENCIAIS ABERTAS AO USUÁRIO
                   <div key="unlocked" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="flex items-center gap-2 mb-4 pb-4 border-b border-gray-100 dark:border-slate-800 transition-colors">
                       <Unlock className="w-5 h-5 text-emerald-500 dark:text-emerald-400 transition-colors" />
@@ -445,7 +427,6 @@ function ProfileContent() {
             </Card>
           </div>
 
-          {/* BOTÕES DE RODAPÉ */}
           <div className="pt-4 flex flex-col-reverse sm:flex-row items-center justify-end gap-3">
             <Button
               type="button" variant="ghost"

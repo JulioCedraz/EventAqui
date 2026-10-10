@@ -141,7 +141,6 @@ export default function CheckinPage() {
     <main className="bg-gray-50 dark:bg-background py-10 px-4 sm:px-6 lg:px-8 min-h-screen flex flex-col items-center transition-colors">
       <div className="w-full max-w-2xl space-y-6">
         
-        {/* Navegação e Título */}
         <div className="flex flex-col gap-2">
           <Link href="/admin" className="text-sm font-medium text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 flex items-center transition-colors w-fit">
             <ArrowLeft className="w-4 h-4 mr-1" />
@@ -157,7 +156,6 @@ export default function CheckinPage() {
           </CardHeader>
           
           <CardContent className="space-y-6">
-            {/* Controle da Câmera */}
             <Button
               variant={isScanning ? "destructive" : "default"}
               onClick={() => setIsScanning(!isScanning)}
@@ -170,7 +168,6 @@ export default function CheckinPage() {
               )}
             </Button>
 
-            {/* Componente do Scanner */}
             {isScanning && (
               <div className="p-4 border-2 border-blue-100 dark:border-blue-900/30 rounded-2xl bg-white dark:bg-slate-900/50 animate-in zoom-in-95 transition-colors">
                 <div className="w-full max-w-sm mx-auto overflow-hidden rounded-xl border border-gray-100 dark:border-slate-800 shadow-inner transition-colors">
@@ -207,7 +204,6 @@ export default function CheckinPage() {
               </div>
             )}
 
-            {/* Formulário de ID Manual */}
             <form onSubmit={handleCheckin} className="space-y-4">
               <Input
                 ref={inputRef}
@@ -229,7 +225,6 @@ export default function CheckinPage() {
           </CardContent>
         </Card>
 
-        {/* Card Responsivo e Dinâmico do Resultado */}
         {result.status && (
           <Card className={`overflow-hidden border-2 animate-in slide-in-from-bottom-4 shadow-xl transition-colors ${
             result.status === 'success' ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-400 dark:border-emerald-900/50' : 
@@ -252,7 +247,6 @@ export default function CheckinPage() {
                 {result.message}
               </h2>
 
-              {/* Retorno de dados do usuário */}
               {result.userData && (
                 <div className="w-full bg-white dark:bg-slate-900/60 rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 dark:border-border text-left mt-2 transition-colors">
                   <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100 dark:border-slate-800 transition-colors">

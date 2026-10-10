@@ -17,7 +17,7 @@ export async function findCoupon(code: string, eventId: string) {
   return data;
 }
 
-// Incremento atômico no banco (migration 05): evita perder contagens concorrentes.
+// Incremento atômico no banco: evita perder contagens concorrentes.
 async function incrementCouponUsage(couponId: string) {
   const { error } = await supabaseAdmin.rpc('increment_coupon_usage', { p_coupon_id: couponId });
   if (error) console.error(`Falha ao contar uso do cupom ${couponId}:`, error);

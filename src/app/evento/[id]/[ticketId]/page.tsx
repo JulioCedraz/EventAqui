@@ -191,7 +191,6 @@ export default function ResumePaymentPage() {
     <main className="min-h-screen bg-gray-50 dark:bg-background py-12 px-4 sm:px-6 lg:px-8 flex justify-center items-start transition-colors">
       <Card className="max-w-xl w-full border-gray-200 dark:border-border dark:bg-card shadow-xl overflow-hidden rounded-3xl animate-in fade-in slide-in-from-bottom-4 transition-colors">
         
-        {/* Cabeçalho do Pagamento */}
         <div className="bg-blue-600 dark:bg-blue-900/40 border-b border-transparent dark:border-blue-900/50 p-8 text-center transition-colors">
           <div className="mx-auto w-12 h-12 bg-blue-500/50 dark:bg-blue-500/20 rounded-full flex items-center justify-center mb-4 transition-colors shadow-inner">
             <QrCode className="w-6 h-6 text-white dark:text-blue-400" />
@@ -209,7 +208,6 @@ export default function ResumePaymentPage() {
 
         <CardContent className="p-6 md:p-8">
           
-          {/* Banner de Urgência */}
           <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl p-4 flex items-start gap-3 mb-8 shadow-sm transition-colors">
             <Clock className="w-5 h-5 text-amber-600 dark:text-amber-500 mt-0.5 animate-pulse shrink-0" />
             <div>
@@ -220,7 +218,6 @@ export default function ResumePaymentPage() {
             </div>
           </div>
 
-          {/* Resumo do Pedido */}
           <div className="bg-gray-50/80 dark:bg-slate-900/50 p-5 rounded-2xl border border-gray-100 dark:border-slate-800/80 mb-8 transition-colors">
             <h4 className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-1.5">
               <Receipt className="w-3.5 h-3.5" /> Resumo do Pedido
@@ -265,7 +262,6 @@ export default function ResumePaymentPage() {
             </div>
           </div>
 
-          {/* Instruções de Pagamento */}
           {pixData && (
             <div className="text-center flex flex-col items-center">
               

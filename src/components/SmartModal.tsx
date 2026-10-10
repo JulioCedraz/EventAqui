@@ -61,7 +61,6 @@ export default function SmartModal({ dialog, onClose, isProcessing = false }: Sm
     <div className="fixed inset-0 z-100 flex items-center justify-center p-4 sm:p-6 bg-black/60 dark:bg-black/80 backdrop-blur-sm animate-in fade-in transition-colors">
       <div className="bg-white dark:bg-card border border-transparent dark:border-border rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-10 text-center transform transition-all scale-in-95">
         
-        {/* Renderização de Erro Interno do Modal */}
         {dialog.modalError && (
           <div className="bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 text-sm sm:text-base p-3 rounded-xl mb-5 font-medium animate-in fade-in slide-in-from-top-2 transition-colors">
             {dialog.modalError}
@@ -74,7 +73,6 @@ export default function SmartModal({ dialog, onClose, isProcessing = false }: Sm
         
         <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-gray-100 mb-4 transition-colors">{dialog.title}</h3>
 
-        {/* Renderização condicional do conteúdo baseada no tipo */}
         {dialog.type === 'cpf_conflict' ? (
           <>
             <p className="text-sm sm:text-base leading-relaxed text-gray-600 dark:text-gray-300 mb-3 text-center transition-colors">
@@ -107,7 +105,6 @@ export default function SmartModal({ dialog, onClose, isProcessing = false }: Sm
           <p className="text-sm sm:text-base leading-relaxed text-gray-500 dark:text-gray-400 mb-8 transition-colors">{dialog.message}</p>
         )}
 
-        {/* Botões */}
         <div className="flex sm:flex-row gap-3 sm:gap-4 justify-center">
           {showCancelButton && (
             <Button

@@ -83,7 +83,6 @@ export default function ResgatarIngresso() {
     setClaiming(true);
 
     try {
-      // O servidor valida o convidado, emite o ingresso e envia o QR Code por e-mail
       const res = await fetch(`/api/guests/${id}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${session.access_token}` }
@@ -102,9 +101,6 @@ export default function ResgatarIngresso() {
     }
   };
 
-  // ==========================================
-  // ESTADOS VISUAIS (Loading e Erro)
-  // ==========================================
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background transition-colors">
@@ -133,9 +129,6 @@ export default function ResgatarIngresso() {
     );
   }
 
-  // ==========================================
-  // VARIÁVEIS DE EXIBIÇÃO
-  // ==========================================
   const event = guest.event;
   const buyerName = guest.buyerName || 'Alguém';
   const isClaimed = guest.isClaimed;
@@ -144,12 +137,10 @@ export default function ResgatarIngresso() {
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-background flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative transition-colors">
       
-      {/* Background Decorativo */}
       <div className="absolute top-0 left-0 w-full h-96 bg-blue-600 dark:bg-blue-900 rounded-b-[4rem] md:rounded-b-[8rem] z-0"></div>
 
       <div className="max-w-xl w-full z-10 space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-500">
         
-        {/* CABEÇALHO */}
         <div className="text-center text-white mb-8">
           <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl border border-white/30">
             <Gift className="w-10 h-10 text-white" />
@@ -166,7 +157,6 @@ export default function ResgatarIngresso() {
 
         <Card className="rounded-3xl shadow-xl overflow-hidden border-0 dark:bg-card">
           
-          {/* CARD DO EVENTO */}
           <div className="bg-slate-50 dark:bg-slate-900/50 p-6 md:p-8 border-b border-gray-100 dark:border-slate-800">
             <div className="flex flex-col sm:flex-row gap-5 items-start sm:items-center">
               {event?.image_url ? (
