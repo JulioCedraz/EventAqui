@@ -10,3 +10,13 @@ export function safeNextPath(next?: string | null) {
   if (!next || !next.startsWith('/') || next.startsWith('//') || next.startsWith('/\\')) return null
   return next
 }
+
+// Usa window: só no navegador. "confirmado=1" vai na query porque o Supabase apaga o hash da URL ao ler o token.
+export function confirmationRedirectUrl(next?: string | null) {
+  const origin = window.location.origin
+  if (next?.startsWith('/resgatar/')) return `${origin}${next}`
+
+  const params = new URLSearchParams({ confirmado: '1' })
+  if (next) params.set('next', next)
+  return `${origin}/login?${params.toString()}`
+}

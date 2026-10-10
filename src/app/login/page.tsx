@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { supabase } from "../../lib/supabase";
-import { safeNextPath } from "@/lib/utils";
+import { confirmationRedirectUrl, safeNextPath } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import SmartModal, { DialogConfig } from "../../components/SmartModal";
+import ResendConfirmationButton from "../../components/ResendConfirmationButton";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +25,7 @@ function LoginContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const passwordRef = useRef<HTMLInputElement>(null);
   
   const [dialog, setDialog] = useState<DialogConfig | null>(null);
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
@@ -65,24 +67,31 @@ function LoginContent() {
     setIsModalProcessing(false);
   };
 
-  const handleResendConfirmation = async () => {
-    setIsLoading(true);
-    setErrorMsg("");
-    setSuccessMsg("");
+  // Não mantém a sessão criada pelo link de confirmação: a pessoa entra digitando a senha.
+  useEffect(() => {
+    const queryParams = new URLSearchParams(window.location.search);
+    if (queryParams.get("confirmado") !== "1") return;
 
-    const { error: resendError } = await supabase.auth.resend({
-      type: "signup",
-      email: email,
-    });
+    const hashParams = new URLSearchParams(window.location.hash.slice(1));
+    const linkError = hashParams.get("error_code") || queryParams.get("error_code");
 
-    if (resendError) {
-      setErrorMsg("Erro ao reenviar: " + resendError.message);
-    } else {
-      setSuccessMsg("Novo link enviado com sucesso! Verifique também a pasta de Spam.");
-      setNeedsConfirmation(false);
-    }
-    setIsLoading(false);
-  };
+    (async () => {
+      // getSession aguarda o Supabase terminar de ler o token do link
+      const { data: { session } } = await supabase.auth.getSession();
+      window.history.replaceState(null, "", window.location.pathname + (next ? `?next=${encodeURIComponent(next)}` : ""));
+
+      if (linkError || !session) {
+        setNeedsConfirmation(true);
+        setErrorMsg("Este link de confirmação expirou ou já foi usado. Digite seu e-mail e peça um novo link.");
+        return;
+      }
+
+      await supabase.auth.signOut({ scope: "local" });
+      setEmail(session.user.email ?? "");
+      setSuccessMsg("E-mail confirmado! Digite sua senha para entrar.");
+      passwordRef.current?.focus();
+    })();
+  }, [next]);
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -98,9 +107,9 @@ function LoginContent() {
       });
 
       if (signInError) {
-        if (signInError.message.includes("Email not confirmed")) {
+        if (signInError.code === "email_not_confirmed" || signInError.message.includes("Email not confirmed")) {
           setNeedsConfirmation(true);
-          throw new Error("Precisa confirmar seu e-mail antes de entrar. Verifique sua caixa de entrada ou Spam!");
+          throw new Error("Seu e-mail ainda não foi confirmado. Abra o link que enviamos ou peça um novo abaixo.");
         }
         throw new Error("E-mail ou senha incorretos.");
       }
@@ -162,22 +171,15 @@ function LoginContent() {
         <CardContent>
           <form className="space-y-5" onSubmit={handleSubmit}>
             {errorMsg && (
-              <div className="bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 text-sm p-3 rounded-xl text-center font-medium animate-in fade-in slide-in-from-top-2 transition-colors">
+              <div role="alert" className="bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 text-sm p-3 rounded-xl text-center font-medium animate-in fade-in slide-in-from-top-2 transition-colors">
                 {errorMsg}
-                {needsConfirmation && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleResendConfirmation}
-                    className="mt-3 w-full border-red-200 text-red-700 bg-red-100 hover:bg-red-200 dark:bg-red-500/20 dark:border-red-800/50 dark:text-red-300 dark:hover:bg-red-500/30 transition-colors"
-                  >
-                    Reenviar link de confirmação
-                  </Button>
-                )}
               </div>
             )}
+            {needsConfirmation && (
+              <ResendConfirmationButton email={email} redirectTo={confirmationRedirectUrl(next)} />
+            )}
             {successMsg && (
-              <div className="bg-green-50 dark:bg-emerald-500/10 border border-green-100 dark:border-emerald-500/20 text-green-600 dark:text-emerald-400 text-sm p-3 rounded-xl text-center font-medium animate-in fade-in slide-in-from-top-2 transition-colors">
+              <div role="status" className="bg-green-50 dark:bg-emerald-500/10 border border-green-100 dark:border-emerald-500/20 text-green-600 dark:text-emerald-400 text-sm p-3 rounded-xl text-center font-medium animate-in fade-in slide-in-from-top-2 transition-colors">
                 {successMsg}
               </div>
             )}
@@ -212,6 +214,7 @@ function LoginContent() {
               <div className="relative">
                 <Input
                   id="password"
+                  ref={passwordRef}
                   type={showPassword ? "text" : "password"}
                   required
                   value={password}
