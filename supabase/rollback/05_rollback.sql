@@ -17,6 +17,7 @@ BEGIN;
 -- (antes das funções, porque dependem delas)
 -- =========================================================
 DROP POLICY IF EXISTS "Tickets - Cancelamento pelo comprador" ON public.tickets;
+DROP POLICY IF EXISTS "Tickets - Exclusão pelo comprador" ON public.tickets;
 DROP POLICY IF EXISTS "Guests - Leitura" ON public.guests;
 DROP POLICY IF EXISTS "Cupons - Leitura pelo comprador" ON public.coupons;
 

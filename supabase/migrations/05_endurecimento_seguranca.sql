@@ -227,6 +227,12 @@ CREATE POLICY "Tickets - Cancelamento pelo comprador" ON public.tickets FOR UPDA
   user_id = auth.uid() AND payment_status = 'cancelled'
 );
 
+-- O comprador remove do histórico apenas pedidos cancelados.
+DROP POLICY IF EXISTS "Tickets - Exclusão pelo comprador" ON public.tickets;
+CREATE POLICY "Tickets - Exclusão pelo comprador" ON public.tickets FOR DELETE USING (
+  user_id = auth.uid() AND payment_status = 'cancelled'
+);
+
 -- Pelo app, só muda: is_used (gestor do evento) e pending -> cancelled.
 CREATE OR REPLACE FUNCTION public.protect_ticket_fields()
 RETURNS trigger
