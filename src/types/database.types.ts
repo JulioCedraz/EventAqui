@@ -180,10 +180,6 @@ export type Database = {
           created_at: string | number | Date | null;
           status: string | null;
           deletion_scheduled_at: string | null;
-          profile_type: 'PF' | 'PJ' | null;
-          cnpj: string | null;
-          company_name: string | null;
-          trading_name: string | null;
           mp_access_token: string | null;
           mp_refresh_token: string | null;
           mp_user_id: string | null;
@@ -205,10 +201,6 @@ export type Database = {
           course?: string | null;
           status?: string | null;
           deletion_scheduled_at?: string | null;
-          profile_type?: 'PF' | 'PJ' | null;
-          cnpj?: string | null;
-          company_name?: string | null;
-          trading_name?: string | null;
           mp_access_token?: string | null;
           mp_refresh_token?: string | null;
           mp_user_id?: string | null;
@@ -230,10 +222,6 @@ export type Database = {
           course?: string | null;
           status?: string | null;
           deletion_scheduled_at?: string | null;
-          profile_type?: 'PF' | 'PJ' | null;
-          cnpj?: string | null;
-          company_name?: string | null;
-          trading_name?: string | null;
           mp_access_token?: string | null;
           mp_refresh_token?: string | null;
           mp_user_id?: string | null;
