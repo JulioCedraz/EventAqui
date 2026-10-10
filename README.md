@@ -19,7 +19,6 @@ O **EventAqui** é um sistema web completo e responsivo desenhado para promover 
 
 ### Para o Produtor de Eventos
 * **Hub Administrativo:** Dashboard centralizado com atalhos rápidos e interface fluida.
-* **Contas Corporativas (PJ):** Suporte nativo para cadastro de empresas (CNPJ, Razão Social e Nome Fantasia), priorizando dinamicamente a exibição do nome corporativo em toda a plataforma.
 * **Recebimentos Diretos (Conta Bancária):** Conexão OAuth 2.0 segura com o Mercado Pago. O produtor vincula a própria conta para receber o valor das vendas instantaneamente via PIX.
 * **Dashboard de Vendas:** Acompanhamento financeiro avançado com KPIs de receita bruta, quantidade de ingressos vendidos e valores aguardando PIX, além de filtros dinâmicos por evento e tabela responsiva de transações.
 * **Gestão de Eventos (CRUD):** Áreas isoladas e dedicadas para listagem, criação e edição de eventos, com suporte a upload de imagens de capa.

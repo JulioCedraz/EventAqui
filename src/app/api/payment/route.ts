@@ -65,12 +65,11 @@ export async function POST(request: Request) {
 
     const { data: profile } = await supabaseAdmin
       .from('profiles')
-      .select('first_name, last_name, trading_name, company_name')
+      .select('first_name, last_name')
       .eq('id', user.id)
       .single();
 
-    const buyerName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ')
-      || profile?.trading_name || profile?.company_name || 'Usuário';
+    const buyerName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || 'Usuário';
 
     const { data: ticket, error: ticketError } = await supabaseAdmin
       .from('tickets')

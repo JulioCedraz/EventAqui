@@ -35,7 +35,7 @@ const profileSchema = basePersonalDataSchema.extend({
   newPassword: z.string().optional(),
   confirmNewPassword: z.string().optional()
 }).superRefine((data, ctx) => {
-  // Validações bases (CPF, CNPJ, Telefone, etc)
+  // Validações bases (CPF, Telefone, etc)
   refinePersonalData(data, ctx);
   
   // Validações de alteração de senha
@@ -79,16 +79,15 @@ function ProfileContent() {
     resolver: zodResolver(profileSchema),
     mode: "onBlur",
     defaultValues: {
-      profileType: 'PF', email: '', newPassword: '', confirmNewPassword: '',
+      email: '', newPassword: '', confirmNewPassword: '',
       firstName: '', lastName: '', cpf: '', birthDate: '', phone: '',
       semester: '', enrollmentNumber: '', university: '', customUniversity: '',
-      course: '', customCourse: '', companyName: '', tradingName: '', cnpj: ''
+      course: '', customCourse: ''
     }
   });
 
   const { errors, isDirty } = form.formState;
   const currentEmailValue = form.watch("email");
-  const profileType = form.watch("profileType");
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -138,7 +137,6 @@ function ProfileContent() {
         }
 
         form.reset({
-          profileType: profileData.profile_type || 'PF',
           email: userEmail,
           firstName: profileData.first_name || '',
           lastName: profileData.last_name || '',
@@ -151,9 +149,6 @@ function ProfileContent() {
           customUniversity: customUnivValue,
           course: courseValue,
           customCourse: customCourseValue,
-          companyName: profileData.company_name || '',
-          tradingName: profileData.trading_name || '',
-          cnpj: profileData.cnpj || '',
           newPassword: '',
           confirmNewPassword: ''
         });
@@ -219,10 +214,8 @@ function ProfileContent() {
       if (data.email !== originalEmail) authUpdates.email = data.email;
       if (data.newPassword) authUpdates.password = data.newPassword;
       
-      if (data.profileType === 'PF' && (data.firstName || data.lastName)) {
+      if (data.firstName || data.lastName) {
         authUpdates.data = { full_name: `${data.firstName} ${data.lastName}`.trim() };
-      } else if (data.profileType === 'PJ' && (data.companyName || data.tradingName)) {
-        authUpdates.data = { full_name: (data.tradingName || data.companyName).trim() };
       }
 
       if (Object.keys(authUpdates).length > 0) {
@@ -236,7 +229,6 @@ function ProfileContent() {
         const finalCourse = data.course === "Outro" ? data.customCourse : data.course;
         
         const profileUpdates: any = {
-          profile_type: data.profileType,
           first_name: data.firstName || null,
           last_name: data.lastName || null,
           cpf: data.cpf || null,
@@ -246,9 +238,6 @@ function ProfileContent() {
           enrollment_number: data.enrollmentNumber || null,
           university: finalUniversity || null,
           course: finalCourse || null,
-          company_name: data.companyName || null,
-          trading_name: data.tradingName || null,
-          cnpj: data.cnpj || null,
         };
 
         const { error: profileUpdateError } = await supabase.from('profiles').update(profileUpdates).eq('id', userId);
@@ -320,38 +309,12 @@ function ProfileContent() {
 
         <form onSubmit={handleUpdateProfile} className="space-y-8">
           
-          {/* CONTEINER 1: DADOS PESSOAIS / EMPRESARIAIS */}
+          {/* CONTEINER 1: DADOS PESSOAIS */}
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 ml-1 transition-colors">Meus Dados</h2>
             <Card className="shadow-lg border-gray-100 dark:border-border dark:bg-card rounded-3xl overflow-hidden transition-colors">
               <CardContent className="p-6 sm:p-8 space-y-6">
                 
-                {/* TOGGLE PF/PJ */}
-                <div className="flex bg-gray-100 dark:bg-slate-900/50 p-1 rounded-xl border border-gray-200 dark:border-slate-800 transition-colors mb-6">
-                  <button
-                    type="button"
-                    onClick={() => form.setValue('profileType', 'PF', { shouldDirty: true, shouldValidate: true })}
-                    className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${
-                      profileType === 'PF' 
-                        ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' 
-                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                    }`}
-                  >
-                    Pessoa Física
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => form.setValue('profileType', 'PJ', { shouldDirty: true, shouldValidate: true })}
-                    className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${
-                      profileType === 'PJ' 
-                        ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' 
-                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                    }`}
-                  >
-                    Empresa (CNPJ)
-                  </button>
-                </div>
-
                 <PersonalDataFields form={form} hasCpfInitially={hasCpfInitially} />
               </CardContent>
             </Card>
