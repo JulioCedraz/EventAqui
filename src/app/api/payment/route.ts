@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getRequestUser } from '@/lib/auth';
 import { applyDiscount, getCouponError } from '@/lib/pricing';
-import { approveTicket, cancelTicket, findCoupon } from '@/lib/tickets';
+import { approveTicket, cancelTicket, countSpots, findCoupon, getActiveTickets } from '@/lib/tickets';
 import { SITE_URL } from '@/lib/site';
 
 const PIX_EXPIRATION_MINUTES = 30;
@@ -19,9 +19,6 @@ const bodySchema = z.object({
     phone: z.string().trim().max(20).optional(),
   }).optional(),
 }).refine((body) => !body.isCasadinha || body.guest, { message: 'Dados do convidado obrigatórios.' });
-
-const isActive = (ticket: { payment_status: string | null; expires_at: string | null }) =>
-  ticket.payment_status === 'approved' || !ticket.expires_at || new Date(ticket.expires_at) > new Date();
 
 const fail = (erro: string, status: number) => NextResponse.json({ erro }, { status });
 
@@ -44,22 +41,14 @@ export async function POST(request: Request) {
 
     if (!event) return fail('Evento não encontrado.', 404);
 
-    // Ingressos que ainda ocupam vaga: aprovados ou pendentes dentro do prazo do PIX.
-    const { data: occupied } = await supabaseAdmin
-      .from('tickets')
-      .select('user_id, quantity, payment_status, expires_at')
-      .eq('event_id', eventId)
-      .in('payment_status', ['approved', 'pending']);
-
-    const activeTickets = (occupied ?? []).filter(isActive);
+    const activeTickets = await getActiveTickets(eventId);
 
     if (activeTickets.some((ticket) => ticket.user_id === user.id)) {
       return fail('Você já possui um pedido ativo para este evento.', 409);
     }
 
-    if (event.total_spots !== null) {
-      const sold = activeTickets.reduce((sum, ticket) => sum + (ticket.quantity ?? 1), 0);
-      if (sold + quantity > event.total_spots) return fail('Ingressos esgotados.', 409);
+    if (event.total_spots !== null && countSpots(activeTickets) + quantity > event.total_spots) {
+      return fail('Ingressos esgotados.', 409);
     }
 
     let coupon = null;

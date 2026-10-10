@@ -65,6 +65,23 @@ export async function approveTicket(ticketId: string): Promise<boolean> {
   return true;
 }
 
+// Ingressos que ocupam vaga: aprovados ou pendentes dentro do prazo do PIX.
+export async function getActiveTickets(eventId: string) {
+  const { data } = await supabaseAdmin
+    .from('tickets')
+    .select('user_id, quantity, payment_status, expires_at')
+    .eq('event_id', eventId)
+    .in('payment_status', ['approved', 'pending']);
+
+  const now = new Date();
+  return (data ?? []).filter((ticket) =>
+    ticket.payment_status === 'approved' || !ticket.expires_at || new Date(ticket.expires_at) > now
+  );
+}
+
+export const countSpots = (tickets: { quantity: number | null }[]) =>
+  tickets.reduce((sum, ticket) => sum + (ticket.quantity ?? 1), 0);
+
 export async function cancelTicket(ticketId: string) {
   await supabaseAdmin
     .from('tickets')

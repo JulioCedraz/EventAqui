@@ -73,15 +73,11 @@ export default function EventDetails() {
       if (eventError) throw eventError;
       setEvent(eventData);
 
-      const { data: ticketsData } = await supabase
-        .from('tickets')
-        .select('quantity')
-        .eq('event_id', id)
-        .in('payment_status', ['approved', 'pending']);
-      
-      if (ticketsData) {
-        const count = ticketsData.reduce((acc, curr) => acc + (curr.quantity || 1), 0);
-        setSoldTickets(count);
+      // O RLS só mostra os ingressos do próprio usuário: o total vem do servidor
+      const spotsRes = await fetch(`/api/events/${id}/spots`);
+      if (spotsRes.ok) {
+        const { sold } = await spotsRes.json();
+        setSoldTickets(sold);
       }
 
       const { data: { session } } = await supabase.auth.getSession();
