@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { confirmationRedirectUrl } from '@/lib/utils';
+import ResendConfirmationButton from '@/components/ResendConfirmationButton';
+import { Input } from "@/components/ui/input";
 import { useParams, useRouter } from 'next/navigation';
 import type { Session } from '@supabase/supabase-js';
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,6 +36,18 @@ export default function ResgatarIngresso() {
   const [claiming, setClaiming] = useState(false);
   const [guest, setGuest] = useState<GuestInvite | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [linkExpired, setLinkExpired] = useState(false);
+  const [resendEmail, setResendEmail] = useState('');
+
+  // Link de confirmação expirado ou já usado: o Supabase devolve o erro na URL
+  useEffect(() => {
+    const hashParams = new URLSearchParams(window.location.hash.slice(1));
+    const queryParams = new URLSearchParams(window.location.search);
+    if (!hashParams.get('error_code') && !queryParams.get('error_code')) return;
+
+    setLinkExpired(true);
+    window.history.replaceState(null, '', window.location.pathname);
+  }, []);
 
   useEffect(() => {
     const fetchSessionAndGuest = async () => {
@@ -204,6 +219,29 @@ export default function ResgatarIngresso() {
                 <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-sm mx-auto">
                   Para emitir o seu ingresso no seu nome, você precisa acessar a plataforma.
                 </p>
+
+                {linkExpired && (
+                  <div className="mb-8 text-left bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 p-4 rounded-xl space-y-3 animate-in fade-in transition-colors">
+                    <div role="alert" className="flex gap-3 items-start">
+                      <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                      <p className="text-sm text-amber-800 dark:text-amber-200">
+                        <strong>Seu link de confirmação expirou ou já foi usado.</strong> Digite o e-mail que você cadastrou para receber um novo link. Ao confirmar, você volta direto para cá.
+                      </p>
+                    </div>
+                    <Input
+                      type="email"
+                      aria-label="E-mail cadastrado"
+                      placeholder="seu@email.com"
+                      value={resendEmail}
+                      onChange={(e) => setResendEmail(e.target.value.trim())}
+                      className="py-5 rounded-xl bg-white dark:bg-background"
+                    />
+                    <ResendConfirmationButton email={resendEmail} redirectTo={confirmationRedirectUrl(`/resgatar/${id}`)} />
+                    <p className="text-xs text-amber-700 dark:text-amber-300">
+                      Se você já confirmou o e-mail, use &quot;Já tenho uma conta&quot; abaixo.
+                    </p>
+                  </div>
+                )}
                 
                 <div className="flex flex-col gap-3">
                   <Button 
