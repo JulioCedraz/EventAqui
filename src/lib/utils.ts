@@ -11,6 +11,10 @@ export function safeNextPath(next?: string | null) {
   return next
 }
 
+export function formatBRL(value: number) {
+  return `R$ ${value.toFixed(2).replace('.', ',')}`
+}
+
 // Erros do Supabase são objetos com "message", não instâncias de Error
 export function getErrorMessage(error: unknown, fallback: string) {
   if (typeof error === 'object' && error !== null && 'message' in error) {

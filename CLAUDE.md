@@ -32,3 +32,13 @@ Plataforma de venda de ingressos e gestão de portaria.
 - Toda mudança de schema ou policy atualiza o `00_schema_base.sql`. O SQL de alteração para produção é entregue na conversa, não em arquivo novo, e o usuário aplica no SQL Editor.
 - Funções `SECURITY DEFINER`: sempre definir `search_path`. Não usar `current_user` para identificar quem chama (dentro da função ele é o dono); use `auth.uid()` ou `auth.role()`.
 - Papel de usuário nunca é lido de `raw_user_meta_data` em triggers de cadastro.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

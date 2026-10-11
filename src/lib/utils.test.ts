@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { confirmationRedirectUrl, getErrorMessage, safeNextPath } from './utils';
+import { confirmationRedirectUrl, formatBRL, getErrorMessage, safeNextPath } from './utils';
 
 describe('safeNextPath', () => {
   it('accepts internal paths', () => {
@@ -55,5 +55,13 @@ describe('getErrorMessage', () => {
     expect(getErrorMessage('text', 'fallback')).toBe('fallback');
     expect(getErrorMessage({ message: '' }, 'fallback')).toBe('fallback');
     expect(getErrorMessage({ code: 'x' }, 'fallback')).toBe('fallback');
+  });
+});
+
+describe('formatBRL', () => {
+  it('formats with two decimals and a comma', () => {
+    expect(formatBRL(50)).toBe('R$ 50,00');
+    expect(formatBRL(12.5)).toBe('R$ 12,50');
+    expect(formatBRL(0)).toBe('R$ 0,00');
   });
 });
