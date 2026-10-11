@@ -47,7 +47,7 @@ export default function ResetPasswordPage() {
         router.push("/login");
       }, 2000);
 
-    } catch (err: any) {
+    } catch (err) {
       console.error("Erro ao redefinir a senha:", err);
       toast.error("Ocorreu um erro ao redefinir sua senha. O link pode ter expirado. Solicite novamente.");
     } finally {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { getErrorMessage } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
@@ -71,8 +72,8 @@ export default function ReactivationGuard() {
       setIsPendingDeletion(false);
       router.refresh();
       
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Não foi possível reativar a conta. Tente novamente.'));
       setIsReactivating(false);
     }
   };

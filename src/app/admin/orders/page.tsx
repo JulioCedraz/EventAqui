@@ -11,6 +11,10 @@ import {
   Loader2, ArrowLeft, TrendingUp, Ticket, Clock, 
   Search, Filter, CheckCircle2, XCircle, AlertCircle, Tag, ArrowDownAZ 
 } from "lucide-react";
+import type { Tables } from '@/types/database.types';
+import type { CouponSummary } from '@/types/tickets';
+
+type OrderProfile = Pick<Tables<'profiles'>, 'id' | 'cpf' | 'phone' | 'university' | 'course' | 'semester' | 'enrollment_number'>;
 
 type Order = {
   id: string;
@@ -108,14 +112,14 @@ export default function OrdersPage() {
       const { data: ticketsData, error: ticketsError } = await query;
 
       if (!ticketsError && ticketsData) {
-        const userIds = Array.from(new Set(ticketsData.map((t: any) => t.user_id).filter(Boolean)));
+        const userIds = Array.from(new Set(ticketsData.map((t) => t.user_id).filter(Boolean)));
         
         // Convidados que resgataram herdam o cupom do ingresso original da casadinha
         const { data: guestsData } = await supabase.from('guests').select('guest_email, ticket_id');
-        const originalTicketsMap = new Map();
-        ticketsData.forEach((t: any) => originalTicketsMap.set(t.id, t));
+        const originalTicketsMap = new Map<string, (typeof ticketsData)[number]>();
+        ticketsData.forEach((t) => originalTicketsMap.set(t.id, t));
 
-        const guestCouponMap = new Map();
+        const guestCouponMap = new Map<string, CouponSummary>();
         guestsData?.forEach(guest => {
           const parentTicket = originalTicketsMap.get(guest.ticket_id);
           if (parentTicket && parentTicket.coupons) {
@@ -124,7 +128,7 @@ export default function OrdersPage() {
           }
         });
 
-        const profilesMap: Record<string, any> = {};
+        const profilesMap: Record<string, OrderProfile> = {};
         if (userIds.length > 0) {
           const { data: profilesData } = await supabase
             .from('profiles')
@@ -138,7 +142,7 @@ export default function OrdersPage() {
           }
         }
 
-        const enrichedOrders = ticketsData.map((t: any) => {
+        const enrichedOrders = ticketsData.map((t) => {
           let appliedCoupon = t.coupons;
           let isInherited = false;
 
@@ -161,7 +165,7 @@ export default function OrdersPage() {
         setOrders(enrichedOrders as unknown as Order[]);
         
         const uniqueEventsMap = new Map<string, string>();
-        ticketsData.forEach((ticket: any) => {
+        ticketsData.forEach((ticket) => {
           if (ticket.events && ticket.event_id) {
             uniqueEventsMap.set(ticket.event_id, ticket.events.title);
           }

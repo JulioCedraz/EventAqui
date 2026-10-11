@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { confirmationRedirectUrl, safeNextPath } from './utils';
+import { confirmationRedirectUrl, getErrorMessage, safeNextPath } from './utils';
 
 describe('safeNextPath', () => {
   it('accepts internal paths', () => {
@@ -41,5 +41,19 @@ describe('confirmationRedirectUrl', () => {
   it('returns guests straight to the redeem page', () => {
     withOrigin('https://eventaqui.app');
     expect(confirmationRedirectUrl('/resgatar/abc')).toBe('https://eventaqui.app/resgatar/abc');
+  });
+});
+
+describe('getErrorMessage', () => {
+  it('reads the message of Error instances and Supabase error objects', () => {
+    expect(getErrorMessage(new Error('boom'), 'fallback')).toBe('boom');
+    expect(getErrorMessage({ message: 'duplicate key', code: '23505' }, 'fallback')).toBe('duplicate key');
+  });
+
+  it('falls back when there is no usable message', () => {
+    expect(getErrorMessage(null, 'fallback')).toBe('fallback');
+    expect(getErrorMessage('text', 'fallback')).toBe('fallback');
+    expect(getErrorMessage({ message: '' }, 'fallback')).toBe('fallback');
+    expect(getErrorMessage({ code: 'x' }, 'fallback')).toBe('fallback');
   });
 });

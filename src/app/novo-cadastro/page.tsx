@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { confirmationRedirectUrl, safeNextPath } from "@/lib/utils";
+import { confirmationRedirectUrl, getErrorMessage, safeNextPath } from "@/lib/utils";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -95,24 +95,9 @@ export default function SignupPage() {
       }
 
       setSentTo(data.email);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Erro bruto do cadastro:", err);
-
-      let finalMessage = "Ocorreu um erro inesperado ao criar a conta. Tente novamente.";
-
-      if (typeof err === "string") {
-        finalMessage = err;
-      } else if (err?.message && typeof err.message === "string") {
-        finalMessage = err.message;
-      } else if (err?.error_description && typeof err.error_description === "string") {
-        finalMessage = err.error_description;
-      }
-
-      if (finalMessage === "{}" || finalMessage === "[object Object]") {
-        finalMessage = "Não foi possível validar os dados no servidor. Verifique suas informações e tente novamente.";
-      }
-
-      setErrorMsg(finalMessage);
+      setErrorMsg(getErrorMessage(err, "Ocorreu um erro inesperado ao criar a conta. Tente novamente."));
     } finally {
       setIsLoading(false);
     }

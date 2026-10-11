@@ -2,13 +2,14 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import type { Database } from '@/types/database.types';
 
 export async function POST(request: Request) {
   try {
     const cookieStore = await cookies();
     const authHeader = request.headers.get('Authorization');
 
-    const supabase = createServerClient(
+    const supabase = createServerClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
               cookiesToSet.forEach(({ name, value, options }) =>
                 cookieStore.set(name, value, options)
               );
-            } catch (error) {}
+            } catch {}
           },
         },
         global: {
@@ -83,7 +84,7 @@ export async function POST(request: Request) {
       course: profile?.course || 'Não informado',
       semester: profile?.semester || 'N/A',
       enrollment_number: profile?.enrollment_number || 'N/A',
-      event: (ticket.events as any)?.title
+      event: ticket.events?.title
     };
 
     if (ticket.payment_status !== 'approved') {
@@ -117,7 +118,7 @@ export async function POST(request: Request) {
       userData: userDataObj
     });
 
-  } catch (err: any) {
+  } catch {
     return NextResponse.json({ error: 'Erro interno no servidor.' }, { status: 500 });
   }
 }

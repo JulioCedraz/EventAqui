@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
+import { getErrorMessage } from '@/lib/utils';
 import { supabase } from '../../../../lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -13,6 +14,7 @@ import SmartModal, { DialogConfig } from '../../../../components/SmartModal';
 import { 
   Loader2, Calendar, Pencil, CheckCircle2, ArrowLeft, Tag, Plus, Trash2, Share2 
 } from "lucide-react";
+import type { TablesInsert } from '@/types/database.types';
 
 interface LocalCoupon {
   id: string;
@@ -48,7 +50,6 @@ function EventForm() {
   const [imageError, setImageError] = useState('');
 
   const [coupons, setCoupons] = useState<LocalCoupon[]>([]);
-  const [couponsToDelete, setCouponsToDelete] = useState<string[]>([]);
   const [showCouponForm, setShowCouponForm] = useState(false);
   const [isSavingCoupon, setIsSavingCoupon] = useState(false);
   const [showTooltipFor, setShowTooltipFor] = useState<string | null>(null);
@@ -332,7 +333,7 @@ function EventForm() {
         image_url = publicUrlData.publicUrl;
       }
 
-      const payload: any = {
+      const payload: TablesInsert<'events'> = {
         title,
         description,
         event_date: hasNoDate ? null : new Date(eventDate).toISOString(),
@@ -365,10 +366,6 @@ function EventForm() {
       }
 
       if (targetEventId && !isFree) {
-        if (couponsToDelete.length > 0) {
-          await supabase.from('coupons').delete().in('id', couponsToDelete);
-        }
-
         const couponsToInsert = coupons
           .filter(c => c.isNew)
           .map(c => ({
@@ -393,8 +390,8 @@ function EventForm() {
       
       router.push('/admin/events');
 
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao processar requisição');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Erro ao processar requisição'));
     } finally {
       setLoading(false);
     }
@@ -685,7 +682,7 @@ function EventForm() {
                         <Label>Tipo de Desconto</Label>
                         <select 
                           value={cType} 
-                          onChange={e => setCType(e.target.value as any)} 
+                          onChange={e => setCType(e.target.value as 'fixed' | 'percentage')} 
                           className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         >
                           <option value="percentage">Porcentagem (%)</option>

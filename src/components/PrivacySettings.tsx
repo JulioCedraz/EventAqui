@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getErrorMessage } from '@/lib/utils';
 import { supabase } from '../lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
@@ -68,8 +69,8 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
       
       setIsTokenSent(true);
       toast.success('Código de segurança enviado para o seu e-mail.');
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Não foi possível enviar o código. Tente novamente.'));
     } finally {
       setIsSendingToken(false);
     }
@@ -111,8 +112,8 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
       toast.success(data.message || 'Conta agendada para exclusão com sucesso.');
       router.push('/login');
 
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Não foi possível concluir a exclusão. Tente novamente.'));
       setIsDeleting(false);
     }
   };

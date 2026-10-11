@@ -14,6 +14,7 @@ import {
   CheckCircle2, QrCode, Ticket, Tag,
   Receipt, User, Calendar, ArrowLeft
 } from "lucide-react";
+import type { TicketWithEvent } from '@/types/tickets';
 
 type Event = Database['public']['Tables']['events']['Row'];
 
@@ -28,7 +29,7 @@ export default function ResumePaymentPage() {
   const [pixData, setPixData] = useState<{ qr_code: string; qr_code_base64: string } | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [eventDetails, setEventDetails] = useState<Event | null>(null);
-  const [ticketDetails, setTicketDetails] = useState<any>(null);
+  const [ticketDetails, setTicketDetails] = useState<TicketWithEvent | null>(null);
   const [timeLeft, setTimeLeft] = useState<string>('Calculando...');
   const [isExpired, setIsExpired] = useState(false);
   const [copiedPix, setCopiedPix] = useState(false);
@@ -117,7 +118,7 @@ export default function ResumePaymentPage() {
       toast.success('Código PIX copiado com sucesso!');
       
       setTimeout(() => setCopiedPix(false), 2000);
-    } catch (error) {
+    } catch {
       toast.error('Erro ao copiar. Por favor, selecione e copie o código manualmente.');
     }
   };

@@ -90,7 +90,9 @@ export const basePersonalDataSchema = z.object({
   enrollmentNumber: z.string().optional()
 });
 
-export const refinePersonalData = (data: any, ctx: z.RefinementCtx) => {
+export type PersonalDataValues = z.infer<typeof basePersonalDataSchema>;
+
+export const refinePersonalData = (data: PersonalDataValues, ctx: z.RefinementCtx) => {
   if (!data.firstName || data.firstName.trim().length < 2) {
     ctx.addIssue({ path: ['firstName'], message: "Nome é obrigatório", code: z.ZodIssueCode.custom });
   }
@@ -124,12 +126,14 @@ export const refinePersonalData = (data: any, ctx: z.RefinementCtx) => {
   }
 };
 
-interface PersonalDataFieldsProps {
-  form: UseFormReturn<any>;
+interface PersonalDataFieldsProps<T extends PersonalDataValues> {
+  form: UseFormReturn<T>;
   hasCpfInitially?: boolean;
 }
 
-export default function PersonalDataFields({ form, hasCpfInitially = false }: PersonalDataFieldsProps) {
+export default function PersonalDataFields<T extends PersonalDataValues>({ form: parentForm, hasCpfInitially = false }: PersonalDataFieldsProps<T>) {
+  // O formulário do pai tem campos extras (e-mail, senha); aqui só os pessoais são usados
+  const form = parentForm as unknown as UseFormReturn<PersonalDataValues>;
   const university = form.watch('university');
   const course = form.watch('course');
   

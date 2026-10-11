@@ -7,11 +7,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { Menu, X, UserCircle, Ticket, LogOut, ShieldAlert, ScanBarcode, Sun, Moon } from "lucide-react";
+import type { User } from '@supabase/supabase-js';
 
 export default function Header() {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [hasPanelAccess, setHasPanelAccess] = useState(false);
   const [hasScannerAccess, setHasScannerAccess] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -38,7 +39,7 @@ export default function Header() {
   }, [isMenuOpen]);
 
   useEffect(() => {
-    const checkRoles = async (currentUser: any) => {
+    const checkRoles = async (currentUser: User | null | undefined) => {
       if (!currentUser?.id) {
         setHasPanelAccess(false);
         setHasScannerAccess(false);

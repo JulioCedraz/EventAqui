@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getErrorMessage } from '@/lib/utils';
 import { supabase } from '../../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -116,8 +117,8 @@ export default function ManageAgentsPage() {
       toast.success(result.message || 'Agente adicionado e convite enviado!');
       setNewEmail('');
       fetchAgents();
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao autorizar agente.');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Erro ao autorizar agente.'));
     } finally {
       setIsAdding(false);
     }
@@ -165,8 +166,8 @@ export default function ManageAgentsPage() {
 
       toast.success(result.message || 'Acesso revogado com sucesso.');
       fetchAgents();
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao revogar acesso do agente.');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Erro ao revogar acesso do agente.'));
     } finally {
       setIsModalProcessing(false);
       setDialog(null);

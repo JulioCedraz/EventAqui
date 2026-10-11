@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from "react";
+import { getErrorMessage } from '@/lib/utils';
 import { supabase } from "../../../lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -105,8 +106,8 @@ export default function ManageProducersPage() {
       toast.success(result.message || "Produtor autorizado e convite enviado com sucesso!");
       setNewEmail("");
       fetchProducers();
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao autorizar produtor.");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Erro ao autorizar produtor."));
     } finally {
       setIsAdding(false);
     }
@@ -154,8 +155,8 @@ export default function ManageProducersPage() {
 
       toast.success(result.message || "Acesso revogado com sucesso.");
       fetchProducers();
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao revogar acesso do produtor.");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Erro ao revogar acesso do produtor."));
     } finally {
       setIsModalProcessing(false);
       setDialog(null);

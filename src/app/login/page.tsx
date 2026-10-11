@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, Suspense } from "react";
 import { supabase } from "../../lib/supabase";
-import { confirmationRedirectUrl, safeNextPath } from "@/lib/utils";
+import { confirmationRedirectUrl, safeNextPath, getErrorMessage } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import SmartModal, { DialogConfig } from "../../components/SmartModal";
@@ -124,8 +124,8 @@ function LoginContent() {
       } else {
         router.push(next || "/tickets");
       }
-    } catch (err: any) {
-      setErrorMsg(err.message);
+    } catch (err) {
+      setErrorMsg(getErrorMessage(err, "Não foi possível entrar. Tente novamente."));
     } finally {
       setIsLoading(false);
     }

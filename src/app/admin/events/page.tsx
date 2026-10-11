@@ -25,13 +25,14 @@ import {
   ArrowLeft,
   PlusCircle,
 } from "lucide-react";
+import type { Tables } from '@/types/database.types';
 
 export default function ManageEventsPage() {
   const router = useRouter();
 
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [authorized, setAuthorized] = useState(false);
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<Tables<'events'>[]>([]);
   const [dialog, setDialog] = useState<DialogConfig | null>(null);
   const [isModalProcessing, setIsModalProcessing] = useState(false);
   const [userContext, setUserContext] = useState<{
@@ -123,7 +124,7 @@ export default function ManageEventsPage() {
 
       toast.success("Evento excluído com sucesso.");
       fetchEvents();
-    } catch (error: any) {
+    } catch {
       toast.error(
         "Erro ao excluir evento. Verifique se há ingressos vinculados a ele.",
       );
