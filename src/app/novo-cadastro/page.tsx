@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import { confirmationRedirectUrl, getErrorMessage, safeNextPath } from "@/lib/utils";
 import Link from "next/link";
@@ -26,12 +27,12 @@ const signupSchema = basePersonalDataSchema.extend({
 
 type SignupFormValues = z.infer<typeof signupSchema>;
 
-export default function SignupPage() {
+function SignupContent() {
+  const nextUrl = safeNextPath(useSearchParams()?.get("next")) ?? "";
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [nextUrl, setNextUrl] = useState("");
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -46,15 +47,6 @@ export default function SignupPage() {
   });
 
   const { errors } = form.formState;
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const urlNext = safeNextPath(params.get('next'));
-
-    if (urlNext) {
-      setNextUrl(urlNext);
-    }
-  }, []);
 
   const onSubmit = async (data: SignupFormValues) => {
     setIsLoading(true);
@@ -236,5 +228,19 @@ export default function SignupPage() {
         </CardFooter>
       </Card>
     </main>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 dark:bg-background flex items-center justify-center">
+          <Loader2 className="h-10 w-10 animate-spin text-blue-600 dark:text-blue-500" />
+        </div>
+      }
+    >
+      <SignupContent />
+    </Suspense>
   );
 }

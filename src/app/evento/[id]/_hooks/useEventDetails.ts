@@ -61,6 +61,8 @@ export function useEventDetails(id: string | undefined) {
   }, [id]);
 
   useEffect(() => {
+    // Na montagem loading já é true: o setLoading(true) síncrono não re-renderiza
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
   }, [refresh]);
 
