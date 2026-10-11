@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { eqValue, fakeDb } from '@/test/fake-supabase';
 import { getRequestUser, getUserRole } from '@/lib/auth';
+import { hashDeletionCode } from '@/lib/deletion-code';
 import { GET, POST } from './route';
 
 vi.mock('@/lib/supabase-admin', async () => ({ supabaseAdmin: (await import('@/test/fake-supabase')).fakeDb.client }));
@@ -9,8 +10,16 @@ vi.mock('@/lib/auth', () => ({ getRequestUser: vi.fn(), getUserRole: vi.fn() }))
 const USER = { id: '11111111-1111-4111-8111-111111111111', email: 'alice@x.com' };
 
 const check = () => GET(new Request('http://localhost/api/user/deletion-request'));
-const request = (body: unknown = {}) =>
-  POST(new Request('http://localhost/api/user/deletion-request', { method: 'POST', body: JSON.stringify(body) }));
+const CODE = '123456';
+const storedCode = (overrides = {}) => ({
+  code_hash: hashDeletionCode(USER.id, CODE),
+  attempts: 0,
+  expires_at: new Date(Date.now() + 60_000).toISOString(),
+  ...overrides,
+});
+
+const request = (body: Record<string, unknown> = {}) =>
+  POST(new Request('http://localhost/api/user/deletion-request', { method: 'POST', body: JSON.stringify({ code: CODE, ...body }) }));
 
 beforeEach(() => {
   fakeDb.reset();
@@ -21,6 +30,7 @@ beforeEach(() => {
   fakeDb.on('events', 'select', { data: [] });
   fakeDb.on('tickets', 'select', { data: [] });
   fakeDb.on('guests', 'select', { data: [] });
+  fakeDb.on('account_deletion_codes', 'select', { data: storedCode() });
 });
 
 describe('GET /api/user/deletion-request', () => {
@@ -52,13 +62,53 @@ describe('GET /api/user/deletion-request', () => {
 });
 
 describe('POST /api/user/deletion-request', () => {
-  it('schedules the deletion of an account without future tickets', async () => {
+  it('schedules the deletion and consumes the code', async () => {
     const res = await request();
 
     expect(res.status).toBe(200);
     const [update] = fakeDb.find('profiles', 'update');
     expect(update.payload).toMatchObject({ status: 'pending_deletion' });
     expect(eqValue(update, 'id')).toBe(USER.id);
+    expect(fakeDb.find('account_deletion_codes', 'delete')).toHaveLength(1);
+  });
+
+  it('rejects a wrong code and counts the attempt', async () => {
+    const res = await request({ code: '654321' });
+
+    expect(res.status).toBe(400);
+    expect((await res.json()).code).toBe('INVALID_CODE');
+    const [attempt] = fakeDb.find('account_deletion_codes', 'update');
+    expect(attempt.payload).toEqual({ attempts: 1 });
+    expect(fakeDb.find('profiles', 'update')).toHaveLength(0);
+  });
+
+  it('rejects an expired code', async () => {
+    fakeDb.on('account_deletion_codes', 'select', { data: storedCode({ expires_at: new Date(Date.now() - 1000).toISOString() }) });
+
+    expect((await request()).status).toBe(400);
+    expect(fakeDb.find('profiles', 'update')).toHaveLength(0);
+  });
+
+  it('rejects the right code after too many attempts', async () => {
+    fakeDb.on('account_deletion_codes', 'select', { data: storedCode({ attempts: 5 }) });
+
+    expect((await request()).status).toBe(400);
+    expect(fakeDb.find('profiles', 'update')).toHaveLength(0);
+  });
+
+  it('rejects when no code was requested', async () => {
+    fakeDb.on('account_deletion_codes', 'select', { data: null });
+
+    expect((await request()).status).toBe(400);
+    expect(fakeDb.find('profiles', 'update')).toHaveLength(0);
+  });
+
+  it('keeps the code when the user still has to confirm the tickets', async () => {
+    fakeDb.on('tickets', 'select', { data: [{ id: 't1' }] });
+
+    expect((await request()).status).toBe(400);
+    expect(fakeDb.find('account_deletion_codes', 'delete')).toHaveLength(0);
+    expect(fakeDb.find('account_deletion_codes', 'update')).toHaveLength(0);
   });
 
   it('requires confirmation to abandon future tickets', async () => {
@@ -90,6 +140,7 @@ describe('POST /api/user/deletion-request', () => {
 
   it('rejects an invalid body', async () => {
     expect((await request({ confirmTicketAbandonment: 'yes' })).status).toBe(400);
+    expect((await request({ code: '12345' })).status).toBe(400);
   });
 
   it('requires an authenticated user', async () => {

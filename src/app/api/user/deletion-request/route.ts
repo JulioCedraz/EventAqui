@@ -2,8 +2,37 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getRequestUser, getUserRole } from '@/lib/auth';
+import { DELETION_CODE_MAX_ATTEMPTS, deletionCodeMatches } from '@/lib/deletion-code';
 
-const bodySchema = z.object({ confirmTicketAbandonment: z.boolean().default(false) });
+const bodySchema = z.object({
+  code: z.string().regex(/^\d{6}$/),
+  confirmTicketAbandonment: z.boolean().default(false),
+});
+
+// Confere o código enviado por e-mail. Errar demais invalida o código.
+async function checkDeletionCode(userId: string, code: string) {
+  const { data: stored, error } = await supabaseAdmin
+    .from('account_deletion_codes')
+    .select('code_hash, attempts, expires_at')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!stored || new Date(stored.expires_at) < new Date() || stored.attempts >= DELETION_CODE_MAX_ATTEMPTS) {
+    return 'Código inválido ou expirado. Peça um novo código.';
+  }
+
+  if (!deletionCodeMatches(userId, code, stored.code_hash)) {
+    await supabaseAdmin
+      .from('account_deletion_codes')
+      .update({ attempts: stored.attempts + 1 })
+      .eq('user_id', userId);
+    return 'Código incorreto. Verifique seu e-mail e tente novamente.';
+  }
+
+  await supabaseAdmin.from('account_deletion_codes').delete().eq('user_id', userId);
+  return null;
+}
 
 const PRODUCER_BLOCKED_MESSAGE = 'Você possui eventos ativos ou futuros. Encerre seus eventos, processe os repasses/estornos e contate o administrador para encerrar sua conta.';
 
@@ -80,6 +109,9 @@ export async function POST(request: Request) {
         error: 'Você possui ingressos para eventos futuros. Confirme que abre mão deles para excluir a conta.'
       }, { status: 400 });
     }
+
+    const codeError = await checkDeletionCode(user.id, parsed.data.code);
+    if (codeError) return NextResponse.json({ code: 'INVALID_CODE', error: codeError }, { status: 400 });
 
     // Soft delete: a exclusão definitiva ocorre após 30 dias de carência
     const deletionDate = new Date();

@@ -108,3 +108,22 @@ export async function sendGuestClaimedEmail(to: string, name: string, eventTitle
     attachments: [await ticketQrAttachment(ticketId)],
   });
 }
+
+export function sendAccountDeletionCodeEmail(to: string, code: string) {
+  return transporter.sendMail({
+    from: FROM,
+    to,
+    subject: 'Código para excluir sua conta EventAqui',
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333; text-align: center; border: 1px solid #eaeaea; border-radius: 12px;">
+        <div style="padding: 30px;">
+          <h2 style="color: #dc2626;">Exclusão de conta</h2>
+          <p>Use o código abaixo para confirmar a exclusão da sua conta. Ele vale por 10 minutos.</p>
+          <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 28px; font-weight: bold; letter-spacing: 6px; margin: 20px 0;">
+            ${escapeHtml(code)}
+          </div>
+          <p style="font-size: 13px; color: #888;">Se você não pediu a exclusão, ignore este e-mail e troque sua senha.</p>
+        </div>
+      </div>`,
+  });
+}

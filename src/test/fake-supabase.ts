@@ -1,4 +1,4 @@
-type Operation = 'select' | 'insert' | 'update' | 'delete' | 'rpc';
+type Operation = 'select' | 'insert' | 'update' | 'upsert' | 'delete' | 'rpc';
 
 export type FakeQuery = {
   table: string;
@@ -22,6 +22,7 @@ class FakeQueryBuilder implements PromiseLike<Result> {
   select(columns?: string) { this.query.columns = columns; return this; }
   insert(payload: unknown) { this.query.operation = 'insert'; this.query.payload = payload; return this; }
   update(payload: unknown) { this.query.operation = 'update'; this.query.payload = payload; return this; }
+  upsert(payload: unknown) { this.query.operation = 'upsert'; this.query.payload = payload; return this; }
   delete() { this.query.operation = 'delete'; return this; }
 
   eq(...args: unknown[]) { return this.filter('eq', ...args); }
