@@ -78,7 +78,7 @@ export type Database = {
           event_date: string | null
           id: string
           image_url: string | null
-          price: number | null
+          price: number
           producer_id: string | null
           title: string
           total_spots: number | null
@@ -89,7 +89,7 @@ export type Database = {
           event_date?: string | null
           id?: string
           image_url?: string | null
-          price?: number | null
+          price?: number
           producer_id?: string | null
           title: string
           total_spots?: number | null
@@ -100,7 +100,7 @@ export type Database = {
           event_date?: string | null
           id?: string
           image_url?: string | null
-          price?: number | null
+          price?: number
           producer_id?: string | null
           title?: string
           total_spots?: number | null
@@ -347,7 +347,7 @@ export type Database = {
       is_ticket_manager: { Args: { p_event_id: string }; Returns: boolean }
     }
     Enums: {
-      user_role: "admin" | "producer" | "agent" | "customer"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -474,8 +474,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      user_role: ["admin", "producer", "agent", "customer"],
-    },
+    Enums: {},
   },
 } as const

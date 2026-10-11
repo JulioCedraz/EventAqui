@@ -40,7 +40,7 @@ CREATE TABLE public.events (
     title text NOT NULL,
     description text,
     event_date timestamp with time zone,
-    price numeric(10, 2) DEFAULT 0.00,
+    price numeric(10, 2) NOT NULL DEFAULT 0.00,
     total_spots integer DEFAULT 0,
     image_url text,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now())
