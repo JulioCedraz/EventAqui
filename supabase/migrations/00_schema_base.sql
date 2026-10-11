@@ -506,7 +506,7 @@ SELECT cron.schedule(
     DELETE FROM auth.users
     WHERE email_confirmed_at IS NULL
     AND created_at < NOW() - INTERVAL '21 hours';
-  $
+  $$
 );
 
 -- Exclusão definitiva das contas cuja carência de 30 dias acabou.
@@ -517,7 +517,7 @@ RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
-AS $
+AS $$
 DECLARE
   v_ids uuid[];
 BEGIN
@@ -548,7 +548,7 @@ BEGIN
   -- Cascata: perfil, convites ainda não resgatados e cupons do usuário
   DELETE FROM auth.users WHERE id = ANY (v_ids);
 END;
-$;
+$$;
 
 REVOKE EXECUTE ON FUNCTION public.purge_deleted_accounts() FROM PUBLIC, anon, authenticated;
 
@@ -556,7 +556,7 @@ REVOKE EXECUTE ON FUNCTION public.purge_deleted_accounts() FROM PUBLIC, anon, au
 SELECT cron.schedule(
   'purge-deleted-accounts',
   '0 6 * * *',
-  $ SELECT public.purge_deleted_accounts(); $
+  $$ SELECT public.purge_deleted_accounts(); $$
 );
 
 COMMIT;
