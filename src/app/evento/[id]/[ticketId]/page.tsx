@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../../lib/supabase';
+import { cancelTicket } from '@/lib/api-client';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Database } from '../../../../types/database.types';
@@ -75,7 +76,7 @@ export default function ResumePaymentPage() {
 
       if (nowTime > limitTime) {
         setIsExpired(true);
-        await supabase.from('tickets').update({ payment_status: 'cancelled' }).eq('id', ticketId);
+        await cancelTicket(ticketId).catch((error) => console.error('Falha ao cancelar PIX expirado:', error));
         setLoading(false);
       } else {
         setPixData({
@@ -90,7 +91,7 @@ export default function ResumePaymentPage() {
           if (distance <= 0) {
             clearInterval(intervalId);
             setIsExpired(true);
-            supabase.from('tickets').update({ payment_status: 'cancelled' }).eq('id', ticketId);
+            cancelTicket(ticketId).catch((error) => console.error('Falha ao cancelar PIX expirado:', error));
           } else {
             const minutes = String(Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
             const seconds = String(Math.floor((distance % (1000 * 60)) / 1000)).padStart(2, '0');

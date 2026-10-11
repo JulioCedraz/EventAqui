@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fakeDb } from '@/test/fake-supabase';
+import { eqValue, fakeDb } from '@/test/fake-supabase';
 import { getRequestUser } from '@/lib/auth';
 import { sendGuestClaimedEmail } from '@/lib/mail';
-import { GET, POST } from './route';
+import { GET, PATCH, POST } from './route';
 
 vi.mock('@/lib/supabase-admin', async () => ({ supabaseAdmin: (await import('@/test/fake-supabase')).fakeDb.client }));
 vi.mock('@/lib/auth', () => ({ getRequestUser: vi.fn() }));
@@ -120,5 +120,64 @@ describe('POST /api/guests/[id]', () => {
       { is_claimed: true, claimed_by_user_id: GUEST_USER.id },
       { is_claimed: false, claimed_by_user_id: null },
     ]);
+  });
+});
+
+describe('PATCH /api/guests/[id]', () => {
+  const BUYER = { id: '11111111-1111-4111-8111-111111111111', email: 'alice@x.com' };
+  const editable = { id: GUEST_ID, buyer_id: BUYER.id, is_claimed: false, has_been_edited: false };
+  const validBody = { name: 'Carlos Dias', email: 'carlos@x.com', cpf: '123.456.789-09', phone: '' };
+
+  const patch = (body: unknown = validBody) =>
+    PATCH(new Request(`http://localhost/api/guests/${GUEST_ID}`, { method: 'PATCH', body: JSON.stringify(body) }), context);
+
+  beforeEach(() => {
+    vi.mocked(getRequestUser).mockResolvedValue(BUYER as never);
+    fakeDb.on('guests', 'select', { data: editable });
+  });
+
+  it('updates the guest once and marks it as edited', async () => {
+    const res = await patch();
+
+    expect(res.status).toBe(200);
+    const [update] = fakeDb.find('guests', 'update');
+    expect(update.payload).toEqual({
+      guest_name: 'Carlos Dias', guest_email: 'carlos@x.com', guest_cpf: '123.456.789-09', guest_phone: null, has_been_edited: true,
+    });
+    expect(eqValue(update, 'has_been_edited')).toBe(false);
+    expect(eqValue(update, 'is_claimed')).toBe(false);
+  });
+
+  it('requires an authenticated user', async () => {
+    vi.mocked(getRequestUser).mockResolvedValue(null);
+    expect((await patch()).status).toBe(401);
+  });
+
+  it('rejects an invalid CPF or email', async () => {
+    expect((await patch({ ...validBody, cpf: '123.456.789-00' })).status).toBe(400);
+    expect((await patch({ ...validBody, email: 'carlos' })).status).toBe(400);
+    expect(fakeDb.find('guests', 'update')).toHaveLength(0);
+  });
+
+  it('hides a guest of another buyer', async () => {
+    fakeDb.on('guests', 'select', { data: { ...editable, buyer_id: 'someone-else' } });
+
+    expect((await patch()).status).toBe(404);
+    expect(fakeDb.find('guests', 'update')).toHaveLength(0);
+  });
+
+  it('refuses a second edit or an edit after the claim', async () => {
+    fakeDb.on('guests', 'select', { data: { ...editable, has_been_edited: true } });
+    expect((await patch()).status).toBe(409);
+
+    fakeDb.on('guests', 'select', { data: { ...editable, is_claimed: true } });
+    expect((await patch()).status).toBe(409);
+
+    expect(fakeDb.find('guests', 'update')).toHaveLength(0);
+  });
+
+  it('refuses when a concurrent edit wins the update', async () => {
+    fakeDb.on('guests', 'update', { data: null });
+    expect((await patch()).status).toBe(409);
   });
 });
