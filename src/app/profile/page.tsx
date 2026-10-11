@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { getErrorMessage } from '@/lib/utils';
 import { supabase } from '../../lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
@@ -80,7 +80,7 @@ function ProfileContent() {
   });
 
   const { errors, isDirty } = form.formState;
-  const currentEmailValue = form.watch("email");
+  const currentEmailValue = useWatch({ control: form.control, name: "email" });
 
   useEffect(() => {
     const loadProfile = async () => {
