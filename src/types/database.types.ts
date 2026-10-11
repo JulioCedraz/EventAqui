@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_deletion_codes: {
+        Row: {
+          attempts: number
+          code_hash: string
+          created_at: string
+          expires_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          code_hash: string
+          created_at?: string
+          expires_at: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          code_hash?: string
+          created_at?: string
+          expires_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_deletion_codes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupons: {
         Row: {
           code: string
@@ -345,6 +377,7 @@ export type Database = {
       is_end_user_request: { Args: never; Returns: boolean }
       is_guest_claimer: { Args: { p_ticket_id: string }; Returns: boolean }
       is_ticket_manager: { Args: { p_event_id: string }; Returns: boolean }
+      purge_deleted_accounts: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

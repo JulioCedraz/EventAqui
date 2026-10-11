@@ -91,6 +91,15 @@ CREATE TABLE public.guests (
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- Código de confirmação da exclusão de conta. Sem policies: só o servidor (service role) acessa.
+CREATE TABLE public.account_deletion_codes (
+    user_id uuid PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
+    code_hash text NOT NULL,
+    attempts integer NOT NULL DEFAULT 0,
+    expires_at timestamp with time zone NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
 CREATE INDEX idx_profiles_producer_id ON public.profiles(producer_id);
 CREATE INDEX idx_profiles_deletion_queue ON public.profiles(deletion_scheduled_at) WHERE status = 'pending_deletion';
 CREATE INDEX idx_events_producer_id ON public.events(producer_id);
@@ -373,6 +382,7 @@ ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.guests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.account_deletion_codes ENABLE ROW LEVEL SECURITY;
 
 -- PROFILES: o perfil é criado pelo trigger de cadastro
 CREATE POLICY "Profiles - Leitura" ON public.profiles FOR SELECT USING (
@@ -482,7 +492,7 @@ CREATE POLICY "Capas - Exclusão (Admin/Dono)" ON storage.objects FOR DELETE TO 
 );
 
 -- =========================================================
--- 6. CRON: remove contas não confirmadas após 21 horas
+-- 6. CRON
 -- =========================================================
 
 CREATE EXTENSION IF NOT EXISTS pg_cron;
@@ -494,7 +504,57 @@ SELECT cron.schedule(
     DELETE FROM auth.users
     WHERE email_confirmed_at IS NULL
     AND created_at < NOW() - INTERVAL '21 hours';
-  $$
+  $
+);
+
+-- Exclusão definitiva das contas cuja carência de 30 dias acabou.
+-- Ingressos futuros deixam de valer; o histórico fica para o produtor, sem identificar a pessoa.
+-- Ingressos já resgatados por convidados pertencem a eles e não são tocados.
+CREATE FUNCTION public.purge_deleted_accounts()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $
+DECLARE
+  v_ids uuid[];
+BEGIN
+  SELECT array_agg(id) INTO v_ids
+  FROM public.profiles
+  WHERE status = 'pending_deletion' AND deletion_scheduled_at <= now();
+
+  IF v_ids IS NULL THEN
+    RETURN;
+  END IF;
+
+  UPDATE public.tickets t
+  SET payment_status = 'cancelled'
+  FROM public.events e
+  WHERE e.id = t.event_id
+    AND t.user_id = ANY (v_ids)
+    AND t.payment_status IN ('approved', 'pending')
+    AND e.event_date >= now();
+
+  UPDATE public.tickets
+  SET buyer_name = 'Usuário removido', buyer_email = 'removido@eventaqui.invalid'
+  WHERE user_id = ANY (v_ids);
+
+  UPDATE public.guests
+  SET guest_name = 'Usuário removido', guest_email = 'removido@eventaqui.invalid', guest_cpf = '', guest_phone = NULL
+  WHERE claimed_by_user_id = ANY (v_ids);
+
+  -- Cascata: perfil, convites ainda não resgatados e cupons do usuário
+  DELETE FROM auth.users WHERE id = ANY (v_ids);
+END;
+$;
+
+REVOKE EXECUTE ON FUNCTION public.purge_deleted_accounts() FROM PUBLIC, anon, authenticated;
+
+-- 06:00 UTC = 03:00 em Brasília
+SELECT cron.schedule(
+  'purge-deleted-accounts',
+  '0 6 * * *',
+  $ SELECT public.purge_deleted_accounts(); $
 );
 
 COMMIT;

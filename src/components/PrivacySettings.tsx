@@ -65,45 +65,28 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
         return;
       }
 
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password: currentPassword
-      });
-
-      if (signInError) {
-        setPasswordError('Senha incorreta. Tente novamente.');
-        return;
-      }
-
-      const { error } = await supabase.auth.reauthenticate();
-      if (error) throw new Error('Erro ao enviar o código de segurança. Tente novamente.');
+      await callApi(`${DELETION_API}/code`, 'POST', { password: currentPassword });
 
       setDeleteStep('token');
       toast.success('Código de segurança enviado para o seu e-mail.');
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Não foi possível enviar o código. Tente novamente.'));
+      setPasswordError(getErrorMessage(err, 'Não foi possível enviar o código. Tente novamente.'));
     } finally {
       setIsSendingToken(false);
     }
   };
 
   const handleDeleteAccount = async () => {
-    if (!deleteToken || deleteToken.length < 6) {
-      toast.error('Por favor, digite o código válido (até 8 dígitos).');
+    if (deleteToken.length !== 6) {
+      toast.error('Digite o código de 6 dígitos enviado para o seu e-mail.');
       return;
     }
 
     setIsDeleting(true);
 
     try {
-      const { error: verifyError } = await supabase.auth.updateUser({
-        nonce: deleteToken,
-        data: { lgpd_deletion_requested: true }
-      });
-
-      if (verifyError) throw new Error('Código inválido ou expirado. Verifique seu e-mail e tente novamente.');
-
       const data = await callApi<{ message?: string }>(DELETION_API, 'POST', {
+        code: deleteToken,
         confirmTicketAbandonment: (impact?.futureTickets ?? 0) > 0,
       });
 
@@ -296,8 +279,8 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
 
                 <Input
                   type="text"
-                  maxLength={8}
-                  placeholder="00000000"
+                  maxLength={6}
+                  placeholder="000000"
                   value={deleteToken}
                   onChange={(e) => setDeleteToken(e.target.value.replace(/\D/g, ''))}
                   className="w-full text-center text-3xl tracking-[0.2em] font-extrabold py-8 rounded-xl focus-visible:ring-red-500 dark:focus-visible:ring-red-400 mb-8 bg-gray-50 dark:bg-slate-900/50 dark:border-slate-700/50 transition-colors"
@@ -315,7 +298,7 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
                   <Button 
                     variant="destructive"
                     onClick={handleDeleteAccount} 
-                    disabled={isDeleting || deleteToken.length < 6}
+                    disabled={isDeleting || deleteToken.length !== 6}
                     className="flex-1 font-bold h-12 rounded-xl"
                   >
                     {isDeleting ? (
