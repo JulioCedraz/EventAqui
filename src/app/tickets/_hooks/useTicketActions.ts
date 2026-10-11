@@ -2,24 +2,24 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
 import type { DialogConfig } from '@/components/SmartModal';
+import { getErrorMessage } from '@/lib/utils';
+import { callApi, cancelTicket } from '@/lib/api-client';
 
 export function useTicketActions(onChanged: () => Promise<void>) {
   const [dialog, setDialog] = useState<DialogConfig | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const runAction = async (action: () => PromiseLike<{ error: unknown }>, successMsg: string, errorMsg: string) => {
+  const runAction = async (action: () => Promise<void>, successMsg: string, errorMsg: string) => {
     setIsProcessing(true);
     try {
-      const { error } = await action();
-      if (error) throw error;
+      await action();
       await onChanged();
       toast.success(successMsg);
       setDialog(null);
     } catch (error) {
       console.error(errorMsg, error);
-      toast.error(errorMsg);
+      toast.error(getErrorMessage(error, errorMsg));
     } finally {
       setIsProcessing(false);
     }
@@ -33,7 +33,7 @@ export function useTicketActions(onChanged: () => Promise<void>) {
       message: 'Tem certeza que deseja cancelar este pedido? O ingresso pendente será invalidado.',
       confirmText: 'Sim, cancelar',
       onConfirm: () => runAction(
-        () => supabase.from('tickets').update({ payment_status: 'cancelled' }).eq('id', ticketId),
+        () => cancelTicket(ticketId),
         'Pedido cancelado com sucesso.',
         'Não foi possível cancelar o pedido. Tente novamente.'
       )
@@ -48,7 +48,7 @@ export function useTicketActions(onChanged: () => Promise<void>) {
       message: 'Tem certeza que deseja excluir este pedido? Esta ação é irreversível e removerá o ingresso do seu histórico.',
       confirmText: 'Excluir',
       onConfirm: () => runAction(
-        () => supabase.from('tickets').delete().eq('id', ticketId),
+        () => callApi(`/api/tickets/${ticketId}`, 'DELETE'),
         'Pedido excluído do histórico.',
         'Não foi possível excluir o pedido. Tente novamente.'
       )

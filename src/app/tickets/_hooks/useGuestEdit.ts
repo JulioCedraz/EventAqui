@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
+import { getErrorMessage } from '@/lib/utils';
+import { callApi } from '@/lib/api-client';
 import type { Guest, GuestEditForm } from '../types';
 
 const EMPTY_FORM: GuestEditForm = { id: '', name: '', email: '', cpf: '', phone: '' };
@@ -35,25 +36,19 @@ export function useGuestEdit(onSaved: () => void) {
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('guests')
-        .update({
-          guest_name: form.name.trim(),
-          guest_email: form.email.trim(),
-          guest_cpf: form.cpf.trim(),
-          guest_phone: form.phone.trim() || null,
-          has_been_edited: true
-        })
-        .eq('id', form.id);
-
-      if (error) throw error;
+      await callApi(`/api/guests/${form.id}`, 'PATCH', {
+        name: form.name,
+        email: form.email,
+        cpf: form.cpf,
+        phone: form.phone
+      });
 
       toast.success('Dados do convidado atualizados com sucesso!');
       setIsOpen(false);
       onSaved();
     } catch (error) {
       console.error('Erro ao atualizar convidado:', error);
-      toast.error('Erro ao atualizar. Tente novamente.');
+      toast.error(getErrorMessage(error, 'Erro ao atualizar. Tente novamente.'));
     } finally {
       setIsSubmitting(false);
     }
