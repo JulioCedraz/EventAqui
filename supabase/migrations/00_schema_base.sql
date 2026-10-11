@@ -108,6 +108,8 @@ CREATE INDEX idx_coupons_code ON public.coupons(code);
 CREATE INDEX idx_tickets_event_id ON public.tickets(event_id);
 CREATE INDEX idx_tickets_user_id ON public.tickets(user_id);
 CREATE INDEX idx_guests_ticket_id ON public.guests(ticket_id);
+CREATE INDEX idx_guests_buyer_id ON public.guests(buyer_id);
+CREATE INDEX idx_guests_claimed_by_user_id ON public.guests(claimed_by_user_id);
 
 -- =========================================================
 -- 2. FUNÇÕES DE AUTORIZAÇÃO
