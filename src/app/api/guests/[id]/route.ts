@@ -4,6 +4,7 @@ import type { User } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getRequestUser } from '@/lib/auth';
 import { sendGuestClaimedEmail } from '@/lib/mail';
+import { validateCPF } from '@/lib/cpf';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -22,7 +23,14 @@ type GuestWithTicket = {
   } | null;
 };
 
-const onlyDigits = (value?: string | null) => (value ?? '').replace(/\D/g, '');
+const editSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  email: z.string().trim().pipe(z.email().max(254)),
+  cpf: z.string().trim().refine(validateCPF),
+  phone: z.string().trim().max(20).optional(),
+});
+
+const onlyDigits =(value?: string | null) => (value ?? '').replace(/\D/g, '');
 const normalizeEmail = (value?: string | null) => (value ?? '').trim().toLowerCase();
 
 function maskEmail(email: string) {
@@ -141,5 +149,58 @@ export async function POST(request: Request, { params }: RouteContext) {
   } catch (error) {
     console.error('Erro no resgate do convidado:', error);
     return NextResponse.json({ error: 'Erro interno ao resgatar o ingresso.' }, { status: 500 });
+  }
+}
+
+// Edição única dos dados do convidado, só pelo comprador e antes do resgate.
+export async function PATCH(request: Request, { params }: RouteContext) {
+  try {
+    const user = await getRequestUser(request);
+    if (!user) return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
+
+    const id = (await params).id;
+    if (!z.uuid().safeParse(id).success) return NextResponse.json({ error: 'Convite não encontrado.' }, { status: 404 });
+
+    const parsed = editSchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) return NextResponse.json({ error: 'Dados inválidos. Confira nome, e-mail e CPF.' }, { status: 400 });
+
+    const { data: guest } = await supabaseAdmin
+      .from('guests')
+      .select('id, buyer_id, is_claimed, has_been_edited')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (!guest || guest.buyer_id !== user.id) {
+      return NextResponse.json({ error: 'Convite não encontrado.' }, { status: 404 });
+    }
+    if (guest.is_claimed || guest.has_been_edited) {
+      return NextResponse.json({ error: 'Os dados deste convidado não podem mais ser alterados.' }, { status: 409 });
+    }
+
+    const { name, email, cpf, phone } = parsed.data;
+
+    // Filtros repetidos no update: duas edições concorrentes não passam juntas.
+    const { data: updated, error } = await supabaseAdmin
+      .from('guests')
+      .update({
+        guest_name: name,
+        guest_email: email,
+        guest_cpf: cpf,
+        guest_phone: phone || null,
+        has_been_edited: true,
+      })
+      .eq('id', guest.id)
+      .eq('is_claimed', false)
+      .eq('has_been_edited', false)
+      .select('id')
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!updated) return NextResponse.json({ error: 'Os dados deste convidado não podem mais ser alterados.' }, { status: 409 });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Erro ao editar convidado:', error);
+    return NextResponse.json({ error: 'Erro interno ao atualizar o convidado.' }, { status: 500 });
   }
 }
