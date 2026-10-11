@@ -89,7 +89,9 @@ export async function POST(request: Request) {
     const { error: profileError } = await supabaseAdmin.from('profiles').update(rolePayload).eq('id', userId);
     if (profileError) throw profileError;
 
-    await supabaseAdmin.auth.admin.updateUserById(userId, { user_metadata: rolePayload });
+    // Cópia no token para as telas do admin; o usuário não edita app_metadata.
+    const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(userId, { app_metadata: rolePayload });
+    if (authUpdateError) throw authUpdateError;
 
     if (existingUser) {
       return NextResponse.json({
