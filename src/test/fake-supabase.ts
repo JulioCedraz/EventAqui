@@ -27,6 +27,7 @@ class FakeQueryBuilder implements PromiseLike<Result> {
   eq(...args: unknown[]) { return this.filter('eq', ...args); }
   neq(...args: unknown[]) { return this.filter('neq', ...args); }
   in(...args: unknown[]) { return this.filter('in', ...args); }
+  gte(...args: unknown[]) { return this.filter('gte', ...args); }
   ilike(...args: unknown[]) { return this.filter('ilike', ...args); }
   or(...args: unknown[]) { return this.filter('or', ...args); }
   order(...args: unknown[]) { return this.filter('order', ...args); }

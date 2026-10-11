@@ -1,73 +1,84 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { getErrorMessage } from '@/lib/utils';
+import { callApi } from '@/lib/api-client';
 import { supabase } from '../lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { ShieldAlert, ChevronDown, AlertTriangle, LockKeyhole, Loader2, Trash2, Eye, EyeOff } from "lucide-react";
+import { ShieldAlert, ChevronDown, AlertTriangle, LockKeyhole, Loader2, Trash2, Eye, EyeOff, Ticket } from "lucide-react";
 
 interface PrivacySettingsProps {
   email: string;
 }
 
+type DeletionImpact = { producerBlocked: boolean; futureTickets: number; guests: number };
+type DeleteStep = 'abandon' | 'password' | 'token';
+
+const DELETION_API = '/api/user/deletion-request';
+
 export default function PrivacySettings({ email }: PrivacySettingsProps) {
   const router = useRouter();
 
   const [isDangerZoneExpanded, setIsDangerZoneExpanded] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  
-  const [authProvider, setAuthProvider] = useState<string>('email');
+  const [deleteStep, setDeleteStep] = useState<DeleteStep | null>(null);
+  const [isCheckingImpact, setIsCheckingImpact] = useState(false);
+  const [impact, setImpact] = useState<DeletionImpact | null>(null);
+
   const [currentPassword, setCurrentPassword] = useState('');
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
-  
+
   const [deleteToken, setDeleteToken] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSendingToken, setIsSendingToken] = useState(false);
-  const [isTokenSent, setIsTokenSent] = useState(false);
 
-  useEffect(() => {
-    const fetchProvider = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (data.user) {
-        const provider = data.user.app_metadata.provider || 'email';
-        setAuthProvider(provider);
+  // Consulta os bloqueios antes de pedir senha e código, para o usuário não gastar o código à toa
+  const handleStartDeletion = async () => {
+    setIsCheckingImpact(true);
+    try {
+      const result = await callApi<DeletionImpact>(DELETION_API, 'GET');
+
+      if (result.producerBlocked) {
+        toast.error('Você possui eventos ativos ou futuros. Encerre seus eventos, processe os repasses/estornos e contate o administrador para encerrar sua conta.');
+        return;
       }
-    };
-    fetchProvider();
-  }, []);
+
+      setImpact(result);
+      setDeleteStep(result.futureTickets > 0 ? 'abandon' : 'password');
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Não foi possível verificar sua conta. Tente novamente.'));
+    } finally {
+      setIsCheckingImpact(false);
+    }
+  };
 
   const handleSendDeleteToken = async () => {
     setIsSendingToken(true);
     setPasswordError('');
-    
+
     try {
-      if (authProvider === 'email') {
-        if (!currentPassword) {
-          setPasswordError('A senha atual é obrigatória.');
-          setIsSendingToken(false);
-          return;
-        }
+      if (!currentPassword) {
+        setPasswordError('A senha atual é obrigatória.');
+        return;
+      }
 
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password: currentPassword
-        });
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: currentPassword
+      });
 
-        if (signInError) {
-          setPasswordError('Senha incorreta. Tente novamente.');
-          setIsSendingToken(false);
-          return;
-        }
+      if (signInError) {
+        setPasswordError('Senha incorreta. Tente novamente.');
+        return;
       }
 
       const { error } = await supabase.auth.reauthenticate();
       if (error) throw new Error('Erro ao enviar o código de segurança. Tente novamente.');
-      
-      setIsTokenSent(true);
+
+      setDeleteStep('token');
       toast.success('Código de segurança enviado para o seu e-mail.');
     } catch (err) {
       toast.error(getErrorMessage(err, 'Não foi possível enviar o código. Tente novamente.'));
@@ -87,29 +98,17 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
     try {
       const { error: verifyError } = await supabase.auth.updateUser({
         nonce: deleteToken,
-        data: { lgpd_deletion_requested: true } 
+        data: { lgpd_deletion_requested: true }
       });
 
       if (verifyError) throw new Error('Código inválido ou expirado. Verifique seu e-mail e tente novamente.');
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Sessão expirada. Faça login novamente.");
-
-      const response = await fetch('/api/user/deletion-request', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({})
+      const data = await callApi<{ message?: string }>(DELETION_API, 'POST', {
+        confirmTicketAbandonment: (impact?.futureTickets ?? 0) > 0,
       });
 
-      const data = await response.json();
-      
-      if (!response.ok) throw new Error(data.error || 'Erro interno ao processar a solicitação.');
-
       await supabase.auth.signOut();
-      toast.success(data.message || 'Conta agendada para exclusão com sucesso.');
+      toast.success(data?.message || 'Conta agendada para exclusão com sucesso.');
       router.push('/login');
 
     } catch (err) {
@@ -119,8 +118,8 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
   };
 
   const closeModal = () => {
-    setIsDeleteModalOpen(false);
-    setIsTokenSent(false);
+    setDeleteStep(null);
+    setImpact(null);
     setDeleteToken('');
     setCurrentPassword('');
     setPasswordError('');
@@ -161,21 +160,66 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
             
             <Button
               variant="destructive"
-              onClick={() => setIsDeleteModalOpen(true)}
+              onClick={handleStartDeletion}
+              disabled={isCheckingImpact}
               className="w-full sm:w-auto font-bold shadow-sm"
             >
-              <Trash2 className="w-4 h-4 mr-2" />
+              {isCheckingImpact ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4 mr-2" />
+              )}
               Desejo excluir minha conta
             </Button>
           </div>
         )}
       </div>
 
-      {isDeleteModalOpen && (
+      {deleteStep && (
         <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/60 dark:bg-black/80 backdrop-blur-sm p-4 animate-in fade-in transition-colors">
           <div className="bg-white dark:bg-card border border-transparent dark:border-border rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-300 transition-colors">
             
-            {!isTokenSent ? (
+            {deleteStep === 'abandon' && impact && (
+              <>
+                <div className="flex items-center gap-4 mb-5">
+                  <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center shrink-0 transition-colors">
+                    <Ticket className="w-6 h-6 text-red-600 dark:text-red-500" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 leading-tight transition-colors">Ingressos Futuros</h3>
+                </div>
+
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-6 leading-relaxed text-justify space-y-3 transition-colors">
+                  <p>
+                    Você tem <b className="dark:text-gray-300">{impact.futureTickets} {impact.futureTickets === 1 ? 'ingresso' : 'ingressos'}</b> para eventos futuros. Ao excluir a conta, você abre mão {impact.futureTickets === 1 ? 'dele' : 'deles'}, <b className="dark:text-gray-300">sem direito a reembolso</b>.
+                  </p>
+                  {impact.guests > 0 && (
+                    <p>
+                      {impact.guests === 1 ? 'O convidado que você cadastrou' : `Os ${impact.guests} convidados que você cadastrou`} nesses ingressos também {impact.guests === 1 ? 'perderá' : 'perderão'} o acesso.
+                    </p>
+                  )}
+                  <p>Se reativar a conta dentro de 30 dias, os ingressos continuam com você.</p>
+                </div>
+
+                <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
+                  <Button
+                    variant="secondary"
+                    onClick={closeModal}
+                    className="flex-1 min-h-14 text-base font-bold rounded-xl"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => setDeleteStep('password')}
+                    className="flex-1 min-h-14 text-base font-bold rounded-xl"
+                  >
+                    Abrir mão e continuar
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {deleteStep === 'password' && (
               <>
                 <div className="flex items-center gap-4 mb-5">
                   <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center shrink-0 transition-colors">
@@ -188,38 +232,30 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
                   Para agendar a exclusão da sua conta (efetivada em 30 dias), confirme sua identidade. Enviaremos um código de segurança para o seu e-mail logo em seguida.
                 </p>
 
-                {authProvider === 'email' ? (
-                  <div className="mb-6">
-                    <div className="relative">
-                      <Input
-                        type={showCurrentPassword ? "text" : "password"}
-                        placeholder="Digite sua senha atual"
-                        value={currentPassword}
-                        onChange={(e) => {
-                          setCurrentPassword(e.target.value);
-                          setPasswordError('');
-                        }}
-                        className={`h-12 rounded-xl text-center tracking-wide pr-12 transition-colors ${passwordError ? 'border-red-300 dark:border-red-500/50 focus-visible:ring-red-500' : 'border-gray-200 dark:border-slate-700/50 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400'}`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 focus:outline-none transition-colors"
-                      >
-                        {showCurrentPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
-                    </div>
-                    {passwordError && (
-                      <p className="text-xs font-bold text-red-500 dark:text-red-400 mt-2 text-center animate-in fade-in transition-colors">{passwordError}</p>
-                    )}
+                <div className="mb-6">
+                  <div className="relative">
+                    <Input
+                      type={showCurrentPassword ? "text" : "password"}
+                      placeholder="Digite sua senha atual"
+                      value={currentPassword}
+                      onChange={(e) => {
+                        setCurrentPassword(e.target.value);
+                        setPasswordError('');
+                      }}
+                      className={`h-12 rounded-xl text-center tracking-wide pr-12 transition-colors ${passwordError ? 'border-red-300 dark:border-red-500/50 focus-visible:ring-red-500' : 'border-gray-200 dark:border-slate-700/50 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400'}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 focus:outline-none transition-colors"
+                    >
+                      {showCurrentPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
                   </div>
-                ) : (
-                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 p-4 rounded-xl mb-6 text-center transition-colors">
-                    <p className="text-xs font-bold text-blue-800 dark:text-blue-300 transition-colors">
-                      Sua conta utiliza login social ({authProvider}). Será necessário realizar um re-login para confirmar a exclusão.
-                    </p>
-                  </div>
-                )}
+                  {passwordError && (
+                    <p className="text-xs font-bold text-red-500 dark:text-red-400 mt-2 text-center animate-in fade-in transition-colors">{passwordError}</p>
+                  )}
+                </div>
                 
                 <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
                   <Button 
@@ -243,7 +279,9 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
                   </Button>
                 </div>
               </>
-            ) : (
+            )}
+
+            {deleteStep === 'token' && (
               <>
                 <div className="flex items-center gap-4 mb-5">
                   <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center shrink-0 transition-colors">
@@ -289,7 +327,6 @@ export default function PrivacySettings({ email }: PrivacySettingsProps) {
                 </div>
               </>
             )}
-
           </div>
         </div>
       )}

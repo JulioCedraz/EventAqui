@@ -1,80 +1,84 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { z } from 'zod';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getRequestUser, getUserRole } from '@/lib/auth';
+
+const bodySchema = z.object({ confirmTicketAbandonment: z.boolean().default(false) });
+
+const PRODUCER_BLOCKED_MESSAGE = 'Você possui eventos ativos ou futuros. Encerre seus eventos, processe os repasses/estornos e contate o administrador para encerrar sua conta.';
+
+// O que impede ou condiciona a exclusão: eventos futuros do produtor e ingressos futuros do usuário.
+async function getDeletionImpact(userId: string, role: string) {
+  const todayIso = new Date().toISOString();
+
+  if (role === 'producer') {
+    const { data: activeEvents, error } = await supabaseAdmin
+      .from('events')
+      .select('id')
+      .eq('producer_id', userId)
+      .gte('event_date', todayIso)
+      .limit(1);
+
+    if (error) throw error;
+    if (activeEvents?.length) return { producerBlocked: true, futureTickets: 0, guests: 0 };
+  }
+
+  const { data: tickets, error: ticketsError } = await supabaseAdmin
+    .from('tickets')
+    .select('id, events!inner(event_date)')
+    .eq('user_id', userId)
+    .in('payment_status', ['approved', 'pending'])
+    .gte('events.event_date', todayIso);
+
+  if (ticketsError) throw ticketsError;
+
+  const ticketIds = (tickets ?? []).map((t) => t.id);
+  if (!ticketIds.length) return { producerBlocked: false, futureTickets: 0, guests: 0 };
+
+  const { data: guests, error: guestsError } = await supabaseAdmin
+    .from('guests')
+    .select('id')
+    .eq('buyer_id', userId)
+    .in('ticket_id', ticketIds);
+
+  if (guestsError) throw guestsError;
+
+  return { producerBlocked: false, futureTickets: ticketIds.length, guests: guests?.length ?? 0 };
+}
+
+export async function GET(request: Request) {
+  try {
+    const user = await getRequestUser(request);
+    if (!user) return NextResponse.json({ error: 'Sessão inválida.' }, { status: 401 });
+
+    const { role } = await getUserRole(user);
+    return NextResponse.json(await getDeletionImpact(user.id, role));
+  } catch (error) {
+    console.error('Erro ao consultar a exclusão:', error);
+    return NextResponse.json({ error: 'Erro interno ao processar a solicitação.' }, { status: 500 });
+  }
+}
 
 export async function POST(request: Request) {
   try {
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Token não fornecido.' }, { status: 401 });
+    const user = await getRequestUser(request);
+    if (!user) return NextResponse.json({ error: 'Sessão inválida.' }, { status: 401 });
+
+    const parsed = bodySchema.safeParse(await request.json().catch(() => ({})));
+    if (!parsed.success) return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 });
+
+    const { role } = await getUserRole(user);
+    const impact = await getDeletionImpact(user.id, role);
+
+    if (impact.producerBlocked) {
+      return NextResponse.json({ code: 'PRODUCER_ACTIVE_EVENTS', error: PRODUCER_BLOCKED_MESSAGE }, { status: 403 });
     }
 
-    let body = {};
-    try {
-      body = await request.json();
-    } catch {
-    }
-    const { confirmTicketAbandonment } = body as { confirmTicketAbandonment?: boolean };
-
-    const token = authHeader.replace('Bearer ', '');
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    const supabaseUserClient = createClient(supabaseUrl, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-    const { data: { user }, error: authError } = await supabaseUserClient.auth.getUser(token);
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Sessão inválida.' }, { status: 401 });
-    }
-
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { autoRefreshToken: false, persistSession: false }
-    });
-
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !profile) {
-      return NextResponse.json({ error: 'Perfil não encontrado.' }, { status: 404 });
-    }
-
-    const todayIso = new Date().toISOString();
-
-    if (profile.role === 'producer') {
-      const { data: activeEvents, error: eventsError } = await supabaseAdmin
-        .from('events')
-        .select('id')
-        .eq('producer_id', user.id)
-        .gte('event_date', todayIso)
-        .limit(1);
-
-      if (eventsError) throw eventsError;
-
-      if (activeEvents && activeEvents.length > 0) {
-        return NextResponse.json({ 
-          code: 'PRODUCER_ACTIVE_EVENTS',
-          error: 'Você possui eventos ativos ou futuros. Encerre seus eventos, processe os repasses/estornos e contate o administrador para encerrar sua conta.' 
-        }, { status: 403 });
-      }
-    }
-
-    const { data: futureTickets, error: ticketsError } = await supabaseAdmin
-      .from('tickets')
-      .select('id, events!inner(event_date)')
-      .eq('user_id', user.id)
-      .gte('events.event_date', todayIso)
-      .limit(1);
-
-    if (ticketsError) throw ticketsError;
-
-    if (futureTickets && futureTickets.length > 0) {
-      if (!confirmTicketAbandonment) {
-        return NextResponse.json({ 
-          code: 'CUSTOMER_HAS_TICKETS',
-          error: 'Você possui ingressos para eventos futuros. É necessário abrir mão deles ou solicitar o estorno antes de excluir a conta.' 
-        }, { status: 400 });
-      }
+    if (impact.futureTickets && !parsed.data.confirmTicketAbandonment) {
+      return NextResponse.json({
+        code: 'CUSTOMER_HAS_TICKETS',
+        error: 'Você possui ingressos para eventos futuros. Confirme que abre mão deles para excluir a conta.'
+      }, { status: 400 });
     }
 
     // Soft delete: a exclusão definitiva ocorre após 30 dias de carência
@@ -91,11 +95,10 @@ export async function POST(request: Request) {
 
     if (updateError) throw updateError;
 
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Sua solicitação foi processada e a conta agendada para exclusão definitiva em 30 dias.' 
+    return NextResponse.json({
+      success: true,
+      message: 'Sua solicitação foi processada e a conta agendada para exclusão definitiva em 30 dias.'
     });
-
   } catch (error) {
     console.error('Erro na solicitação de exclusão:', error);
     return NextResponse.json({ error: 'Erro interno ao processar a solicitação.' }, { status: 500 });
