@@ -103,7 +103,7 @@ function ProfileContent() {
       }
         
       if (profileData) {
-        setRole(profileData.role || 'customer');
+        setRole((profileData.role as typeof role) || 'customer');
         setHasCpfInitially(!!profileData.cpf);
 
         let formattedBirthDate = '';

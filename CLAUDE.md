@@ -6,7 +6,7 @@ Plataforma de venda de ingressos e gestão de portaria.
 - Stack: Next.js 16 (App Router, Route Handlers), TypeScript, Tailwind + shadcn/ui, Supabase (Postgres, Auth, RLS, Storage, pg_cron), Mercado Pago (PIX, OAuth split), Nodemailer.
 - Textos de UI e comentários de código: pt-BR. Mensagens de commit: inglês.
 - Rotas de API: `src/app/api/**/route.ts`. Utilitários: `src/lib`. Componentes: `src/components`.
-- Tipos do banco: `src/types/database.types.ts`. Regenerar após qualquer migration.
+- Tipos do banco: `src/types/database.types.ts`, gerado pelo Supabase. Não editar à mão; regenerar com `npm run db:types` após aplicar mudanças no banco.
 - Para implementar mudanças e preparar commits, siga a skill `eventaqui-dev`.
 
 ## Segurança (inegociável)
