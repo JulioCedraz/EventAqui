@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { getErrorMessage } from '@/lib/utils';
 import { supabase } from '../../../lib/supabase';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { Database } from '../../../types/database.types';
@@ -31,7 +32,7 @@ export default function EventDetails() {
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(false);
-  const [pendingTicket, setPendingTicket] = useState<any | null>(null);
+  const [pendingTicket, setPendingTicket] = useState<Pick<Database['public']['Tables']['tickets']['Row'], 'id' | 'expires_at'> | null>(null);
   const [hasApprovedTicket, setHasApprovedTicket] = useState(false);
   const [pixData, setPixData] = useState<{ qr_code: string; qr_code_base64: string } | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -119,7 +120,7 @@ export default function EventDetails() {
     fetchEventAndStatus();
   }, [fetchEventAndStatus]);
 
-  const handleApplyCoupon = async (codeToApply?: any) => {
+  const handleApplyCoupon = async (codeToApply?: unknown) => {
     const code = typeof codeToApply === 'string' ? codeToApply : couponInput;
     if (!code.trim()) return;
     
@@ -141,7 +142,7 @@ export default function EventDetails() {
         toast.success('Cupom aplicado com sucesso!');
         setCouponInput(code.toUpperCase());
       }
-    } catch (error) {
+    } catch {
       toast.error('Erro ao validar o cupom.');
     } finally {
       setIsApplyingCoupon(false);
@@ -183,7 +184,7 @@ export default function EventDetails() {
       try {
         await navigator.clipboard.writeText(url);
         toast.success('Link do evento copiado para a área de transferência!');
-      } catch (error) {
+      } catch {
         toast.error('Não foi possível copiar o link.');
       }
     }
@@ -278,8 +279,8 @@ export default function EventDetails() {
 
       toast.success('PIX gerado! Realize o pagamento em até 30 minutos.', { id: toastId });
 
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao processar requisição.', { id: toastId });
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Erro ao processar requisição.'), { id: toastId });
       setShowConfirmModal(false);
     } finally {
       setBuying(false);

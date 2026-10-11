@@ -11,6 +11,15 @@ export function safeNextPath(next?: string | null) {
   return next
 }
 
+// Erros do Supabase são objetos com "message", não instâncias de Error
+export function getErrorMessage(error: unknown, fallback: string) {
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    const { message } = error as { message: unknown }
+    if (typeof message === 'string' && message) return message
+  }
+  return fallback
+}
+
 // Usa window: só no navegador. "confirmado=1" vai na query porque o Supabase apaga o hash da URL ao ler o token.
 export function confirmationRedirectUrl(next?: string | null) {
   const origin = window.location.origin

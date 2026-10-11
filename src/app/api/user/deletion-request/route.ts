@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     let body = {};
     try {
       body = await request.json();
-    } catch (e) {
+    } catch {
     }
     const { confirmTicketAbandonment } = body as { confirmTicketAbandonment?: boolean };
 
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
       message: 'Sua solicitação foi processada e a conta agendada para exclusão definitiva em 30 dias.' 
     });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Erro na solicitação de exclusão:', error);
     return NextResponse.json({ error: 'Erro interno ao processar a solicitação.' }, { status: 500 });
   }

@@ -115,7 +115,7 @@ export default function CheckinPage() {
       });
       toast.success(data.message);
 
-    } catch (error) {
+    } catch {
       setResult({ status: 'error', message: 'Falha de conexão com o servidor.' });
       toast.error('Falha de conexão com o servidor.');
     } finally {

@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       message: 'Bem-vindo de volta! Sua conta foi reativada com sucesso.' 
     });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Erro na reativação da conta:', error);
     return NextResponse.json({ error: 'Erro interno ao reativar a conta.' }, { status: 500 });
   }

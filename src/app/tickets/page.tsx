@@ -17,11 +17,15 @@ import {
   ArrowLeft, Clock, Receipt, User, Wallet,
   Users, HelpCircle, Edit3, Link as LinkIcon
 } from "lucide-react";
+import type { Tables } from '@/types/database.types';
+import type { CouponSummary, TicketWithEvent } from '@/types/tickets';
+
+type MyTicket = TicketWithEvent & { guests: Tables<'guests'>[]; isInheritedCoupon: boolean };
 
 export default function MyTickets() {
   const router = useRouter();
   
-  const [tickets, setTickets] = useState<any[]>([]);
+  const [tickets, setTickets] = useState<MyTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedTicketId, setCopiedTicketId] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
@@ -38,7 +42,7 @@ export default function MyTickets() {
     phone: ''
   });
 
-  const openEditModal = (guest: any) => {
+  const openEditModal = (guest: Tables<'guests'>) => {
     setEditForm({
       id: guest.id,
       name: guest.guest_name || '',
@@ -73,7 +77,7 @@ export default function MyTickets() {
       toast.success('Dados do convidado atualizados com sucesso!');
       setIsEditModalOpen(false);
       fetchTickets();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro ao atualizar convidado:', error);
       toast.error('Erro ao atualizar. Tente novamente.');
     } finally {
@@ -111,16 +115,16 @@ export default function MyTickets() {
         `)
         .eq('claimed_by_user_id', session.user.id);
 
-      const guestCouponMap = new Map();
+      const guestCouponMap = new Map<string, CouponSummary>();
       if (guestsData) {
-        guestsData.forEach((g: any) => {
+        guestsData.forEach((g) => {
           if (g.tickets?.event_id && g.tickets?.coupons) {
             guestCouponMap.set(g.tickets.event_id, g.tickets.coupons);
           }
         });
       }
 
-      const enrichedTickets = ticketsData.map((t: any) => {
+      const enrichedTickets = ticketsData.map((t) => {
         let appliedCoupon = t.coupons;
         let isInherited = false;
 
@@ -146,7 +150,7 @@ export default function MyTickets() {
     fetchTickets();
   }, [fetchTickets]);
 
-  const calculateFinalPrice = (ticket: any) => {
+  const calculateFinalPrice = (ticket: MyTicket) => {
     const basePrice = (ticket.events?.price || 0) * (ticket.quantity || 1);
     if (!ticket.coupons) return basePrice;
     
@@ -230,7 +234,7 @@ export default function MyTickets() {
       setCopiedLink(guestId);
       toast.success('Link de resgate copiado! Envie para seu convidado.');
       setTimeout(() => setCopiedLink(null), 3000);
-    } catch (error) {
+    } catch {
       toast.error('Falha ao copiar o link.');
     }
   };

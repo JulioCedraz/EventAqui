@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
+import { getErrorMessage } from '@/lib/utils';
 import { supabase } from '../../lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from "react-hook-form";
@@ -26,6 +27,8 @@ import {
   Sparkles, AlertCircle, X, LockKeyhole, KeyRound, 
   Unlock, Eye, EyeOff 
 } from "lucide-react";
+import type { UserAttributes } from '@supabase/supabase-js';
+import type { TablesUpdate } from '@/types/database.types';
 
 const profileSchema = basePersonalDataSchema.extend({
   email: z.string().email("Formato de e-mail inválido"),
@@ -196,7 +199,7 @@ function ProfileContent() {
     const toastId = toast.loading(isInvite ? 'Concluindo seu cadastro...' : 'Processando alterações...');
 
     try {
-      const authUpdates: any = {};
+      const authUpdates: UserAttributes = {};
       
       if (data.email !== originalEmail) authUpdates.email = data.email;
       if (data.newPassword) authUpdates.password = data.newPassword;
@@ -215,7 +218,7 @@ function ProfileContent() {
         const finalUniversity = data.university === "Outra" ? data.customUniversity : data.university;
         const finalCourse = data.course === "Outro" ? data.customCourse : data.course;
         
-        const profileUpdates: any = {
+        const profileUpdates: TablesUpdate<'profiles'> = {
           first_name: data.firstName || null,
           last_name: data.lastName || null,
           cpf: data.cpf || null,
@@ -245,8 +248,8 @@ function ProfileContent() {
       form.reset({ ...data, newPassword: '', confirmNewPassword: '' });
       if (data.email !== originalEmail) setOriginalEmail(data.email);
 
-    } catch (err: any) {
-      toast.error(err.message || 'Erro ao salvar dados.', { id: toastId });
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Erro ao salvar dados.'), { id: toastId });
     } finally {
       setIsSaving(false);
     }
