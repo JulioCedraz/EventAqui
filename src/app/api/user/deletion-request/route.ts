@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getRequestUser, getUserRole } from '@/lib/auth';
+import { sendAccountDeletionScheduledEmail } from '@/lib/mail';
 import { DELETION_CODE_MAX_ATTEMPTS, deletionCodeMatches } from '@/lib/deletion-code';
 
 const bodySchema = z.object({
@@ -126,6 +127,12 @@ export async function POST(request: Request) {
       .eq('id', user.id);
 
     if (updateError) throw updateError;
+
+    // Aviso ao dono da conta: se não foi ele, ainda dá tempo de reativar
+    if (user.email) {
+      await sendAccountDeletionScheduledEmail(user.email, deletionDate)
+        .catch((error) => console.error('Falha ao enviar o aviso de exclusão:', error));
+    }
 
     return NextResponse.json({
       success: true,

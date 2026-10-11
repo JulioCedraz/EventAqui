@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { eqValue, fakeDb } from '@/test/fake-supabase';
 import { getRequestUser, getUserRole } from '@/lib/auth';
+import { sendAccountDeletionScheduledEmail } from '@/lib/mail';
 import { hashDeletionCode } from '@/lib/deletion-code';
 import { GET, POST } from './route';
 
 vi.mock('@/lib/supabase-admin', async () => ({ supabaseAdmin: (await import('@/test/fake-supabase')).fakeDb.client }));
 vi.mock('@/lib/auth', () => ({ getRequestUser: vi.fn(), getUserRole: vi.fn() }));
+vi.mock('@/lib/mail', () => ({ sendAccountDeletionScheduledEmail: vi.fn() }));
 
 const USER = { id: '11111111-1111-4111-8111-111111111111', email: 'alice@x.com' };
 
@@ -31,6 +33,7 @@ beforeEach(() => {
   fakeDb.on('tickets', 'select', { data: [] });
   fakeDb.on('guests', 'select', { data: [] });
   fakeDb.on('account_deletion_codes', 'select', { data: storedCode() });
+  vi.mocked(sendAccountDeletionScheduledEmail).mockResolvedValue({} as never);
 });
 
 describe('GET /api/user/deletion-request', () => {
@@ -62,7 +65,7 @@ describe('GET /api/user/deletion-request', () => {
 });
 
 describe('POST /api/user/deletion-request', () => {
-  it('schedules the deletion and consumes the code', async () => {
+  it('schedules the deletion, consumes the code and warns the owner by e-mail', async () => {
     const res = await request();
 
     expect(res.status).toBe(200);
@@ -70,6 +73,14 @@ describe('POST /api/user/deletion-request', () => {
     expect(update.payload).toMatchObject({ status: 'pending_deletion' });
     expect(eqValue(update, 'id')).toBe(USER.id);
     expect(fakeDb.find('account_deletion_codes', 'delete')).toHaveLength(1);
+    expect(sendAccountDeletionScheduledEmail).toHaveBeenCalledWith(USER.email, expect.any(Date));
+  });
+
+  it('still schedules the deletion when the warning e-mail fails', async () => {
+    vi.mocked(sendAccountDeletionScheduledEmail).mockRejectedValue(new Error('smtp down'));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    expect((await request()).status).toBe(200);
   });
 
   it('rejects a wrong code and counts the attempt', async () => {
