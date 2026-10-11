@@ -35,6 +35,7 @@ export function PixPaymentCard({ pixData }: { pixData: PixData }) {
         <p className="text-emerald-700 dark:text-emerald-500 font-medium mb-8 transition-colors">Escaneie o QR Code abaixo com o aplicativo do seu banco:</p>
 
         <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800 mb-8 inline-block transition-colors">
+          {/* eslint-disable-next-line @next/next/no-img-element -- QR Code em data URL */}
           <img
             src={`data:image/jpeg;base64,${pixData.qr_code_base64}`}
             alt="QR Code PIX Mercado Pago"
