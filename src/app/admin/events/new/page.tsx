@@ -228,7 +228,7 @@ function EventForm() {
         return;
       }
 
-      setCoupons([...coupons, insertedCoupon]);
+      setCoupons([...coupons, insertedCoupon as LocalCoupon]);
       toast.success('Cupom ativado com sucesso!');
       
       setShowTooltipFor(insertedCoupon.id);
