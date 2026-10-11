@@ -18,7 +18,7 @@ Antes de propor qualquer commit, rode e reporte o resultado:
 - `npm test`
 
 Se algum falhar, corrija ou informe o erro. Não proponha commit com erro.
-Regra de negócio nova ou alterada em `src/lib` ganha teste no `*.test.ts` ao lado do arquivo.
+Regra de negócio nova ou alterada em `src/lib` ou em `src/app/api` ganha teste no `*.test.ts` ao lado do arquivo. Rotas de API usam o Supabase falso de `src/test/fake-supabase.ts`.
 
 ## 2. Divisão em commits
 - Um commit = uma mudança lógica. Pode envolver vários arquivos (ex.: migration + rota).
