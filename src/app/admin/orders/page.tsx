@@ -51,6 +51,22 @@ type EventSummary = {
   title: string;
 };
 
+function calculateOrderTotal(order: Order) {
+  const basePrice = (order.events?.price || 0) * (order.quantity || 1);
+  if (!order.coupons) return basePrice;
+
+  let final = basePrice;
+  if (order.coupons.discount_type === 'percentage') {
+    final = final - (final * (order.coupons.discount_value / 100));
+  } else {
+    // Se for valor fixo e for um cupom herdado da casadinha, divide o desconto 
+    // para não abater o valor duas vezes no KPI geral da receita.
+    const discount = order.isInheritedCoupon ? (order.coupons.discount_value / 2) : order.coupons.discount_value;
+    final = final - discount;
+  }
+  return Math.max(0, final);
+}
+
 export default function OrdersPage() {
   const router = useRouter();
 
@@ -182,22 +198,6 @@ export default function OrdersPage() {
     checkAuthAndFetchData();
   }, [router]);
 
-  const calculateOrderTotal = (order: Order) => {
-    const basePrice = (order.events?.price || 0) * (order.quantity || 1);
-    if (!order.coupons) return basePrice;
-
-    let final = basePrice;
-    if (order.coupons.discount_type === 'percentage') {
-      final = final - (final * (order.coupons.discount_value / 100));
-    } else {
-      // Se for valor fixo e for um cupom herdado da casadinha, divide o desconto 
-      // para não abater o valor duas vezes no KPI geral da receita.
-      const discount = order.isInheritedCoupon ? (order.coupons.discount_value / 2) : order.coupons.discount_value;
-      final = final - discount;
-    }
-    return Math.max(0, final);
-  };
-
   const filteredOrders = useMemo(() => {
     const result = orders.filter(order => {
       const matchEvent = selectedEventId === 'all' || order.event_id === selectedEventId;
@@ -237,7 +237,7 @@ export default function OrdersPage() {
     });
 
     return { revenue, sold, pendingAmount };
-  }, [filteredOrders, orders]);
+  }, [filteredOrders]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {

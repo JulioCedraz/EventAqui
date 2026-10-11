@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../../lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -40,7 +40,7 @@ export default function ManageEventsPage() {
     uid: string;
   } | null>(null);
 
-  const fetchEvents = async (context = userContext) => {
+  const fetchEvents = useCallback(async (context: { isAdmin: boolean; uid: string } | null) => {
     if (!context) return;
 
     let query = supabase
@@ -56,7 +56,7 @@ export default function ManageEventsPage() {
     if (!error && data) {
       setEvents(data);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -97,7 +97,7 @@ export default function ManageEventsPage() {
     };
     
     checkAccess();
-  }, [router]);
+  }, [router, fetchEvents]);
 
   const handleEdit = (id: string) => {
     router.push(`/admin/events/new?id=${id}`);
@@ -123,7 +123,7 @@ export default function ManageEventsPage() {
       if (error) throw error;
 
       toast.success("Evento excluído com sucesso.");
-      fetchEvents();
+      fetchEvents(userContext);
     } catch {
       toast.error(
         "Erro ao excluir evento. Verifique se há ingressos vinculados a ele.",

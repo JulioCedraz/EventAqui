@@ -74,6 +74,8 @@ export function useMyTickets() {
   }, [router]);
 
   useEffect(() => {
+    // Na montagem loading já é true: o setLoading(true) síncrono não re-renderiza
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTickets();
   }, [fetchTickets]);
 

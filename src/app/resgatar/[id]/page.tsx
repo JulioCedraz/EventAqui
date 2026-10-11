@@ -44,6 +44,8 @@ export default function ResgatarIngresso() {
     const queryParams = new URLSearchParams(window.location.search);
     if (!hashParams.get('error_code') && !queryParams.get('error_code')) return;
 
+    // O hash só existe no cliente: precisa ser lido após a montagem
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLinkExpired(true);
     window.history.replaceState(null, '', window.location.pathname);
   }, []);

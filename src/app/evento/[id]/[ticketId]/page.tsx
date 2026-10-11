@@ -273,6 +273,7 @@ export default function ResumePaymentPage() {
               </div>
               
               <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800 mb-8 inline-block transition-colors">
+                {/* eslint-disable-next-line @next/next/no-img-element -- QR Code em data URL */}
                 <img 
                   src={`data:image/jpeg;base64,${pixData.qr_code_base64}`} 
                   alt="QR Code PIX" 

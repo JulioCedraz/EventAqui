@@ -10,6 +10,8 @@ export default function EmailConfirmationHandler() {
   const [modalState, setModalState] = useState<ModalState>('none');
   const router = useRouter();
 
+  // O hash só existe no cliente: precisa ser lido após a montagem
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const hash = window.location.hash;
 
@@ -24,6 +26,7 @@ export default function EmailConfirmationHandler() {
       window.history.replaceState(null, '', window.location.pathname);
     }
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleSuccessContinue = () => {
     setModalState('none');

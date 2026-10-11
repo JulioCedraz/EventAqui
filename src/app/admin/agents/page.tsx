@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getErrorMessage } from '@/lib/utils';
 import { supabase } from '../../../lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -31,7 +31,7 @@ export default function ManageAgentsPage() {
   const [isModalProcessing, setIsModalProcessing] = useState(false);
   const [userContext, setUserContext] = useState<{isAdmin: boolean, uid: string} | null>(null);
 
-  const fetchAgents = async (context = userContext) => {
+  const fetchAgents = useCallback(async (context: { isAdmin: boolean, uid: string } | null) => {
     if (!context) return;
 
     let query = supabase
@@ -49,7 +49,7 @@ export default function ManageAgentsPage() {
     if (!error && data) {
       setAgents(data);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -61,7 +61,7 @@ export default function ManageAgentsPage() {
       }
 
       const user = session.user;
-      const role = user.user_metadata?.role || user.app_metadata?.role || 'customer';
+      const role = user.app_metadata?.role || 'customer';
       const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
 
       const isAdmin = admins.includes(user.email || '') || role === 'admin';
@@ -81,7 +81,7 @@ export default function ManageAgentsPage() {
     };
 
     checkAccess();
-  }, [router]);
+  }, [router, fetchAgents]);
 
   const handleAddAgent = async (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -116,7 +116,7 @@ export default function ManageAgentsPage() {
 
       toast.success(result.message || 'Agente adicionado e convite enviado!');
       setNewEmail('');
-      fetchAgents();
+      fetchAgents(userContext);
     } catch (error) {
       toast.error(getErrorMessage(error, 'Erro ao autorizar agente.'));
     } finally {
@@ -165,7 +165,7 @@ export default function ManageAgentsPage() {
       }
 
       toast.success(result.message || 'Acesso revogado com sucesso.');
-      fetchAgents();
+      fetchAgents(userContext);
     } catch (error) {
       toast.error(getErrorMessage(error, 'Erro ao revogar acesso do agente.'));
     } finally {

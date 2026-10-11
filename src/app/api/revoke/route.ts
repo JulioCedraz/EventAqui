@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     if (dbError) throw dbError;
 
     const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
-      user_metadata: { role: 'customer', producer_id: null }
+      app_metadata: { role: 'customer', producer_id: null }
     });
 
     if (authUpdateError) throw authUpdateError;
