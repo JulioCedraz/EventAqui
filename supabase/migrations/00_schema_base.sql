@@ -449,18 +449,9 @@ CREATE POLICY "Tickets - Atualização" ON public.tickets FOR UPDATE USING (
   public.is_ticket_manager(event_id)
 );
 
-CREATE POLICY "Tickets - Cancelamento pelo comprador" ON public.tickets FOR UPDATE USING (
-  user_id = auth.uid() AND payment_status = 'pending'
-) WITH CHECK (
-  user_id = auth.uid() AND payment_status = 'cancelled'
-);
-
+-- Comprador cancela, exclui e edita convidado só pela API (/api/tickets, /api/guests), que valida os dados.
 CREATE POLICY "Tickets - Exclusão" ON public.tickets FOR DELETE USING (
   public.get_user_role() = 'admin' OR event_id IN (SELECT id FROM public.events WHERE producer_id = auth.uid())
-);
-
-CREATE POLICY "Tickets - Exclusão pelo comprador" ON public.tickets FOR DELETE USING (
-  user_id = auth.uid() AND payment_status = 'cancelled'
 );
 
 -- GUESTS: dados pessoais visíveis só para os envolvidos
@@ -468,12 +459,6 @@ CREATE POLICY "Guests - Leitura" ON public.guests FOR SELECT USING (
   buyer_id = auth.uid()
   OR claimed_by_user_id = auth.uid()
   OR public.can_manage_ticket(ticket_id)
-);
-
-CREATE POLICY "Guests - Edição única pelo comprador" ON public.guests FOR UPDATE USING (
-  auth.uid() = buyer_id AND is_claimed = false AND has_been_edited = false
-) WITH CHECK (
-  auth.uid() = buyer_id AND is_claimed = false
 );
 
 -- =========================================================
