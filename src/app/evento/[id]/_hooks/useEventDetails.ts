@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { cancelTicket } from '@/lib/api-client';
 import type { EventRow, PendingTicket } from '../types';
 
 export function useEventDetails(id: string | undefined) {
@@ -46,7 +47,7 @@ export function useEventDetails(id: string | undefined) {
       if (!pending) return;
 
       if (pending.expires_at && new Date(pending.expires_at) < new Date()) {
-        await supabase.from('tickets').update({ payment_status: 'cancelled' }).eq('id', pending.id);
+        await cancelTicket(pending.id).catch((error) => console.error('Falha ao cancelar PIX expirado:', error));
         setPendingTicket(null);
       } else {
         setPendingTicket(pending);

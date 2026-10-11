@@ -7,6 +7,7 @@ import { AlertTriangle, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { applyDiscount } from '@/lib/pricing';
 import { getErrorMessage } from '@/lib/utils';
+import { cancelTicket } from '@/lib/api-client';
 import SmartModal, { DialogConfig } from '@/components/SmartModal';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -87,12 +88,7 @@ export default function EventDetails() {
       onConfirm: async () => {
         setIsModalProcessing(true);
         try {
-          const { error } = await supabase
-            .from('tickets')
-            .update({ payment_status: 'cancelled' })
-            .eq('id', pendingTicket.id);
-
-          if (error) throw error;
+          await cancelTicket(pendingTicket.id);
 
           setPendingTicket(null);
           refresh();
@@ -100,7 +96,7 @@ export default function EventDetails() {
           setDialog(null);
         } catch (error) {
           console.error('Erro ao cancelar:', error);
-          toast.error('Erro ao cancelar o pedido. Tente novamente.');
+          toast.error(getErrorMessage(error, 'Erro ao cancelar o pedido. Tente novamente.'));
         } finally {
           setIsModalProcessing(false);
         }
