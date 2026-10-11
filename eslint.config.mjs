@@ -8,7 +8,6 @@ const eslintConfig = defineConfig([
   {
     // Dívida existente: avisa sem bloquear o CI até ser corrigida
     rules: {
-      "@typescript-eslint/no-explicit-any": "warn",
       "react-hooks/set-state-in-effect": "warn",
     },
   },
