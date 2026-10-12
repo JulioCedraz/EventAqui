@@ -75,10 +75,10 @@ export default function Footer() {
             <ul className="space-y-3.5">
               <li>
                 <Link
-                  href="/para-produtores"
+                  href="/como-funciona"
                   className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                 >
-                  Seja um Produtor
+                  Como Funciona
                 </Link>
               </li>
               <li>

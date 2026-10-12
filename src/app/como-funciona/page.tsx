@@ -18,6 +18,8 @@ import {
   X,
   HeartHandshake,
   TrendingUp,
+  Tag,
+  CalendarPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -51,6 +53,45 @@ export default function ProducersLandingPage() {
     setOpenFaqIndex(openFaqIndex === index ? null : index);
   };
 
+  const features = [
+    {
+      icon: ShieldCheck,
+      iconClassName: "bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400",
+      title: "Cadastro e Aprovação",
+      description: "Para manter a comunidade segura, o acesso como produtor/organizador é moderado. Você cria a sua conta gratuitamente e solicita a autorização via e-mail.",
+    },
+    {
+      icon: CalendarPlus,
+      iconClassName: "bg-violet-100 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400",
+      title: "Eventos e Vagas",
+      description: "Crie, edite e exclua seus eventos com capa, descrição, data e preço. Defina o limite de vagas e a plataforma não vende além dele. Eventos podem ser pagos ou gratuitos.",
+    },
+    {
+      icon: Zap,
+      iconClassName: "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400",
+      title: "Pagamento via PIX",
+      description: "Vincule sua conta do Mercado Pago pelo painel administrativo. O comprador paga por PIX e o valor cai direto no saldo da sua conta Mercado Pago, que cobra a própria taxa de processamento. Pedidos não pagos em 30 minutos são cancelados e a vaga volta a ficar disponível.",
+    },
+    {
+      icon: Tag,
+      iconClassName: "bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400",
+      title: "Cupons e Casadinha",
+      description: "Crie cupons de desconto em porcentagem ou valor fixo, com limite de usos e data de validade. Ofereça o ingresso casadinha: o comprador leva dois ingressos e o acompanhante recebe o dele por e-mail.",
+    },
+    {
+      icon: QrCode,
+      iconClassName: "bg-cyan-100 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400",
+      title: "Portaria Antifraude",
+      description: "Convide sua equipe pelo e-mail e ela valida os ingressos com a câmera do próprio celular. Ingressos já usados, não pagos ou de eventos de outro produtor são recusados. Se a câmera falhar, dá para digitar o código do ingresso.",
+    },
+    {
+      icon: TrendingUp,
+      iconClassName: "bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400",
+      title: "Painel de Vendas",
+      description: "Acompanhe receita bruta, ingressos vendidos e pagamentos pendentes. Veja a lista de compradores com contato e dados acadêmicos, e filtre por evento, status do pagamento e cupom.",
+    },
+  ];
+
   const faqs = [
     {
       question: "A plataforma cobra alguma taxa sobre os ingressos?",
@@ -58,19 +99,27 @@ export default function ProducersLandingPage() {
     },
     {
       question: "É obrigatório ter uma conta no Mercado Pago?",
-      answer: "Para você receber valores, sim. A infraestrutura de pagamentos desta plataforma foi arquitetada para o uso da API de Checkout do Mercado Pago."
+      answer: "Só para eventos pagos. A infraestrutura de pagamentos desta plataforma foi arquitetada para o uso da API de Checkout do Mercado Pago. Em eventos gratuitos, o ingresso é emitido na hora e você não precisa vincular nenhuma conta."
     },
     {
       question: "O Mercado Pago cobra alguma taxa?",
-      answer: "Sim. A taxa padrão de processamento do próprio Mercado Pago para Pix com QR code dinâmico é de 0,99% (aproximadamente 1%) por transação."
+      answer: "Sim. O próprio Mercado Pago cobra uma taxa de processamento por PIX recebido, conforme a tabela vigente dele. Hoje, para PIX com QR Code dinâmico, ela é de 0,99% por transação."
     },
     {
       question: "Como eu recebo o dinheiro das minhas vendas?",
-      answer: "De forma direta e instantânea. Nossa arquitetura conecta a sua conta pessoal do Mercado Pago à sua conta da EventAqui e vincula a todos os eventos organizados por você. Quando um cliente realiza o PIX, o valor é creditado imediatamente no seu saldo. Lembrando que haverá desconto de 1% do valor pela taxa de transação do Mercado Pago. A responsabilidade é inteiramente sua. A EventAqui não retém nenhum valor."
+      answer: "De forma direta. Nossa arquitetura conecta a sua conta pessoal do Mercado Pago à sua conta da EventAqui e vincula a todos os eventos organizados por você. Quando um cliente realiza o PIX, o valor é creditado imediatamente no saldo da sua conta Mercado Pago, já descontada a taxa do Mercado Pago. A responsabilidade é inteiramente sua. A EventAqui não retém nenhum valor."
+    },
+    {
+      question: "O que acontece se o comprador não pagar o PIX?",
+      answer: "O PIX vale por 30 minutos. Depois disso, o pedido é cancelado automaticamente e a vaga volta a ficar disponível. Se um pagamento chegar atrasado e o evento já estiver lotado, o ingresso não é emitido e você recebe um e-mail avisando para fazer o estorno pelo Mercado Pago."
+    },
+    {
+      question: "Como funciona o ingresso casadinha?",
+      answer: "O comprador leva dois ingressos em uma única compra e informa os dados do acompanhante. O acompanhante recebe um convite por e-mail, cria a conta dele e resgata o próprio ingresso, com QR Code individual. Você também pode criar cupons que valem só para a casadinha."
     },
     {
       question: "Como minha equipe valida a entrada das pessoas no evento?",
-      answer: "No painel administrativo, clique em 'Equipe de Portaria', informe o e-mail da pessoa que você quer designar como seu agente de portaria, depois clique em 'Convidar Agente' para habilitar aquele e-mail com o acesso ao leitor de QR Code de validação dos ingressos. Com o próprio celular, o agente acessa o Scanner de Check-in, lê o QR Code da pessoa, a catraca virtual fica verde. É rápido e antifraude."
+      answer: "No painel administrativo, clique em 'Equipe de Portaria', informe o e-mail da pessoa que você quer designar como seu agente de portaria, depois clique em 'Convidar Agente' para habilitar aquele e-mail com o acesso ao leitor de QR Code de validação dos ingressos. Com o próprio celular, o agente acessa o Scanner de Check-in e lê o QR Code da pessoa. Cada ingresso só entra uma vez. Se a pessoa já for agente de outro produtor, basta adicioná-lo pelo e-mail, sem novo cadastro."
     },
     {
       question: "Como faço para liberar meu acesso como produtor/organizador?",
@@ -87,16 +136,11 @@ export default function ProducersLandingPage() {
       <header className="fixed top-0 w-full z-50">
         <div className="relative z-50 w-full border-b border-gray-200 dark:border-border bg-white/95 dark:bg-background/95 backdrop-blur-md transition-colors">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Link href="/" className="group">
-                <span className="text-2xl font-extrabold text-blue-600 dark:text-blue-500 tracking-tighter hover:opacity-80 transition-opacity">
-                  EventAqui
-                </span>
-              </Link>
-              <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400 cursor-default">
-                Produtor
+            <Link href="/" className="group">
+              <span className="text-2xl font-extrabold text-blue-600 dark:text-blue-500 tracking-tighter hover:opacity-80 transition-opacity">
+                EventAqui
               </span>
-            </div>
+            </Link>
 
             <nav className="hidden md:flex items-center gap-2 sm:gap-4">
               <Button
@@ -104,8 +148,8 @@ export default function ProducersLandingPage() {
                 variant="ghost"
                 className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium"
               >
-                <Link href="#como-funciona">
-                  Como Funciona
+                <Link href="#recursos">
+                  Recursos
                 </Link>
               </Button>
               <Button
@@ -194,8 +238,8 @@ export default function ProducersLandingPage() {
               className="w-full justify-start text-left text-gray-700 dark:text-gray-300 font-medium"
               onClick={() => setIsMenuOpen(false)}
             >
-              <Link href="#como-funciona">
-                Como Funciona
+              <Link href="#recursos">
+                Recursos
               </Link>
             </Button>
             <Button
@@ -263,15 +307,14 @@ export default function ProducersLandingPage() {
             </div>
 
             <p className="text-xl text-gray-600 dark:text-gray-400 font-medium leading-relaxed max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 transition-colors">
-              Um sistema focado em redução máxima de custos operacionais.
-              Tenha total controle de acesso ao seu evento usando o nosso validador de ingressos via QR Code.
-              Os pagamentos vão diretamente para sua conta bancária do Mercado Pago.
+              Sem taxa da plataforma. Venda ingressos via PIX com o valor caindo direto no saldo da sua conta Mercado Pago,
+              crie cupons de desconto e controle a entrada do seu evento com o nosso validador de ingressos via QR Code.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6 animate-in fade-in slide-in-from-bottom-10 duration-700 delay-300">
               <Button asChild className="w-full sm:w-auto h-14 px-8 text-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-black rounded-2xl shadow-md transition-all hover:-translate-y-1">
-                <Link href="#como-funciona">
-                  Ver como funciona
+                <Link href="#recursos">
+                  Ver recursos
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
               </Button>
@@ -280,66 +323,34 @@ export default function ProducersLandingPage() {
         </div>
       </main>
 
-      <section id="como-funciona" className="py-24 bg-white dark:bg-background relative transition-colors">
+      <section id="recursos" className="py-24 bg-white dark:bg-background relative transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-16 md:text-center max-w-3xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-black tracking-tight text-gray-900 dark:text-white mb-4 transition-colors">
-              Um guia rápido de uso
+              Do cadastro ao check-in
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400 font-medium transition-colors">
               A EventAqui foi desenhada para ser intuitiva. Veja como é simples estruturar a venda e a portaria do seu próximo evento.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-20">
-            <div className="bg-gray-50 dark:bg-card border border-gray-100 dark:border-border p-8 rounded-3xl hover:shadow-lg dark:hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all group">
-              <div className="w-12 h-12 bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <ShieldCheck className="w-6 h-6" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20">
+            {features.map(({ icon: Icon, iconClassName, title, description }) => (
+              <div
+                key={title}
+                className="bg-gray-50 dark:bg-card border border-gray-100 dark:border-border p-8 rounded-3xl hover:shadow-lg dark:hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all group"
+              >
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform ${iconClassName}`}>
+                  <Icon className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3 tracking-tight transition-colors">
+                  {title}
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-medium text-sm transition-colors">
+                  {description}
+                </p>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3 tracking-tight transition-colors">
-              Cadastro e Aprovação
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-medium text-sm transition-colors">
-                Para manter a comunidade segura, o acesso como produtor/organizador é moderado. Você cria a sua conta gratuitamente e solicita a autorização via e-mail.
-              </p>
-            </div>
-
-            <div className="bg-gray-50 dark:bg-card border border-gray-100 dark:border-border p-8 rounded-3xl hover:shadow-lg dark:hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all group">
-              <div className="w-12 h-12 bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Zap className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3 tracking-tight transition-colors">
-              Integração Financeira
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-medium text-sm transition-colors">
-                Vincule sua conta do Mercado Pago através de seu painel administrativo para receber pela venda de seus ingressos. Os ingressos são vendidos via PIX e você recebe imediatamente. Taxa de 1% por cada pagamento aprovado.
-              </p>
-            </div>
-
-            <div className="bg-gray-50 dark:bg-card border border-gray-100 dark:border-border p-8 rounded-3xl hover:shadow-lg dark:hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all group">
-              <div className="w-12 h-12 bg-cyan-100 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <QrCode className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3 tracking-tight transition-colors">
-                Portaria Colaborativa
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-medium text-sm transition-colors">
-                Sem papelada. Em seu painel administrativo, você autoriza seus amigos e eles ganham acesso seguro ao Scanner de QR Code para validar os seus ingressos usando a câmera do próprio celular dentro da plataforma.
-              </p>
-            </div>
-
-            <div className="bg-gray-50 dark:bg-card border border-gray-100 dark:border-border p-8 rounded-3xl hover:shadow-lg dark:hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all group">
-              <div className="w-12 h-12 bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <TrendingUp className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3 tracking-tight transition-colors">
-                Métricas em Tempo Real
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-medium text-sm transition-colors">
-                Planilha dinâmica de vendas informando receita bruta, quantidade de
-                ingressos emitidos e pagamentos pendentes. Você pode filtrar cada evento individualmente.
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
