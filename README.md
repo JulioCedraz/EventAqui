@@ -2,6 +2,9 @@
 
 O **EventAqui** é um sistema web completo e responsivo desenhado para promover criação e divulgação de eventos, venda de ingressos com aprovação instantânea via PIX e a gestão de portaria através de leitura de QR Code.
 
+**Demo:** [eventaqui.vercel.app](https://eventaqui.vercel.app)
+
+[![CI](https://github.com/JulioCedraz/eventaqui/actions/workflows/ci.yml/badge.svg)](https://github.com/JulioCedraz/eventaqui/actions/workflows/ci.yml)
 ![Next.js](https://img.shields.io/badge/Next.js-black?style=for-the-badge&logo=next.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
@@ -13,46 +16,127 @@ O **EventAqui** é um sistema web completo e responsivo desenhado para promover 
 
 ### Para o Usuário (Cliente)
 * **Vitrine de Eventos:** Exploração de eventos em um grid responsivo e moderno.
-* **Autenticação Segura:** Criação de conta e login protegido.
-* **Checkout Rápido:** Compra de ingressos com pagamento via **PIX** (QR Code e Copia e Cola).
-* **Meus Ingressos:** Painel exclusivo e redesenhado para visualizar ingressos comprados, com QR Code de entrada com visual de "bilhete" e status de pagamento em tempo real.
+* **Autenticação Segura:** Criação de conta com confirmação de e-mail e login protegido.
+* **Checkout Rápido:** Compra de ingressos com pagamento via **PIX** (QR Code e Copia e Cola), cupons de desconto e ingresso "casadinha" com convite por e-mail para o acompanhante.
+* **Meus Ingressos:** Painel para visualizar ingressos comprados, com QR Code de entrada em visual de "bilhete" e status de pagamento atualizado automaticamente.
 
 ### Para o Produtor de Eventos
 * **Hub Administrativo:** Dashboard centralizado com atalhos rápidos e interface fluida.
 * **Recebimentos Diretos (Conta Bancária):** Conexão OAuth 2.0 segura com o Mercado Pago. O produtor vincula a própria conta para receber o valor das vendas instantaneamente via PIX.
-* **Dashboard de Vendas:** Acompanhamento financeiro avançado com KPIs de receita bruta, quantidade de ingressos vendidos e valores aguardando PIX, além de filtros dinâmicos por evento e tabela responsiva de transações.
-* **Gestão de Eventos (CRUD):** Áreas isoladas e dedicadas para listagem, criação e edição de eventos, com suporte a upload de imagens de capa.
-* **Gestão de Equipe (Agentes):** Recrutamento de agentes de portaria com disparo de e-mail integrado e gestão de acessos independente. O agente tem acesso ao leitor de QR Code integrado para validar os ingressos na entrada do evento e evitar fraudes/duplicidades.
+* **Dashboard de Vendas:** KPIs de receita bruta, ingressos vendidos e valores aguardando PIX, com filtros por evento, status e cupom.
+* **Gestão de Eventos e Cupons:** Criação e edição de eventos com upload de capa, limite de vagas e cupons por evento.
+* **Gestão de Equipe (Agentes):** Recrutamento de agentes de portaria com convite por e-mail. O agente usa o leitor de QR Code integrado para validar os ingressos na entrada e evitar fraudes e duplicidades.
 
 ### Engine e Integrações
 * **Recebimento Direto via Mercado Pago:** Pagamentos criados pela API do Mercado Pago (Checkout Transparente) com a conta conectada do produtor, que recebe o valor das vendas diretamente. A cobrança de taxa da plataforma está desativada nesta fase de validação.
-* **Regras de Preço:** Eventos são "Gratuitos" ou têm valor mínimo de R$ 1,00, bloqueando transações irrisórias no gateway. O valor cobrado é sempre recalculado no servidor, incluindo cupons e vagas disponíveis.
-* **Onboarding Inteligente:** Usuários convidados recebem e-mails mágicos e são redirecionados automaticamente para a conclusão de perfil e definição de senha.
-* **Sistema "Uber" de Portaria (Conta Unificada):** O produtor de eventos pode recrutar os seus próprios agentes de portaria enviando um e-mail personalizado diretamente da plataforma. A pessoa convidada cria sua conta apenas uma vez no EventAqui e já terá acesso ao leitor de QR code para validação dos ingressos vendidos pelo produtor contratante. Qualquer outro produtor pode contratá-lo simplesmente digitando seu e-mail no painel. O sistema reconhece o agente de portaria instantaneamente e faz a ponte entre eles nos bastidores, liberando o acesso aos novos eventos sem exigir que o porteiro crie outro cadastro.
-* **Baixa Automática (Webhook):** Comunicação direta e validada com o Mercado Pago para aprovar ingressos automaticamente assim que o PIX é pago.
-* **Segurança Avançada (RLS):** Row Level Security implementado no Supabase para garantir que produtores e agentes acessem única e exclusivamente os dados que lhes pertencem.
+* **Regras de Preço:** Eventos são gratuitos ou têm valor mínimo de R$ 1,00. O valor cobrado é sempre recalculado no servidor, incluindo cupons e vagas disponíveis.
+* **Onboarding de Convidados:** Usuários convidados recebem um link mágico por e-mail e são levados à conclusão do perfil e à definição de senha.
+* **Agentes Compartilhados entre Produtores:** O agente de portaria cria a conta uma única vez. Qualquer produtor pode adicioná-lo à própria equipe pelo e-mail, e o acesso aos eventos daquele produtor é liberado sem novo cadastro.
+* **Baixa Automática (Webhook):** O webhook consulta o pagamento direto no Mercado Pago e só aprova o ingresso se o PIX for o gerado para aquele pedido, na conta do dono do evento.
+* **Pedidos Vencidos:** Um job do `pg_cron` cancela pedidos pendentes vencidos. Pagamento que chega depois do prazo só vira ingresso se ainda houver vaga; senão, o produtor recebe um e-mail para estornar.
 
 ### Segurança e Conformidade (LGPD)
-* **Step-Up Authentication:** Ações destrutivas (como exclusão de conta) exigem revalidação da senha e envio de código OTP via e-mail, prevenindo sequestro de sessão (*Session Hijacking*).
-* **Retenção Inteligente (Soft Delete):** Sistema de exclusão com carência de 30 dias. Usuários arrependidos são interceptados por uma "parede de vidro" (Reactivation Guard) no próximo login, permitindo a restauração instantânea da conta com um clique.
-* **Validação de Ingressos e Eventos:** Travas de segurança arquiteturais impedem que clientes deletem contas com ingressos futuros ativos sem confirmação explícita de abandono, e bloqueiam produtores com eventos em andamento.
+* **Step-Up Authentication:** A exclusão de conta exige a senha, conferida no servidor, e um código de 6 dígitos enviado por e-mail.
+* **Exclusão com Carência:** A conta fica 30 dias em carência. Quem voltar nesse período pode reativá-la com um clique. Depois disso, um job do `pg_cron` cancela ingressos futuros, anonimiza o histórico e apaga a conta.
+* **Travas de Exclusão:** Clientes com ingressos futuros precisam confirmar o abandono deles, e produtores com eventos em andamento são bloqueados.
+
+---
+
+## 🔒 Segurança
+
+O projeto passou por uma auditoria de segurança. Os princípios aplicados:
+
+* **Nada que vem do cliente é confiável:** preço, desconto, status de pagamento, papel do usuário e dono do recurso são sempre recalculados ou buscados no servidor.
+* **Row Level Security em todas as tabelas:** cada policy de escrita tem `WITH CHECK`, e nenhuma tabela com CPF, e-mail ou telefone tem leitura pública.
+* **Campos sensíveis protegidos por triggers:** o próprio usuário não consegue alterar papel, status, tokens do Mercado Pago nem o status de pagamento dos ingressos.
+* **Papel do usuário com uma única fonte:** `profiles.role`, lido pela RLS, pelas rotas da API e pelas telas. Nunca `user_metadata`, que o usuário edita.
+* **Rotas da API:** toda rota autentica o usuário, confere se ele é dono do recurso e valida o body com `zod`. Erros internos nunca são devolvidos ao cliente.
+* **OAuth com `state` assinado:** o `state` do Mercado Pago fica ligado ao usuário que iniciou a conexão, por um cookie com HMAC.
+* **E-mails:** todo dado do usuário inserido no HTML é escapado.
+* **Segredos:** nenhum segredo usa o prefixo `NEXT_PUBLIC_`, e o histórico do repositório foi varrido com o gitleaks.
+
+---
+
+## 🏗️ Arquitetura
+
+```mermaid
+flowchart LR
+    B[Navegador] -->|Supabase JS + RLS| SB[(Supabase<br/>Postgres, Auth, Storage)]
+    B -->|fetch + token| API[Next.js<br/>Route Handlers]
+    API -->|service role| SB
+    API -->|PIX com o token do produtor| MP[Mercado Pago]
+    MP -->|webhook| API
+    API -->|Nodemailer| M[Gmail SMTP]
+    CRON[pg_cron] --> SB
+```
+
+* **Leituras simples** vão direto do navegador ao Supabase, protegidas pela RLS.
+* **Regras de negócio** (pagamento, cupons, convites, exclusão de conta) ficam nas rotas de `src/app/api`, que usam a service role.
+* **Rotinas agendadas** rodam no próprio banco com `pg_cron`.
+
+---
+
+## 🧪 Qualidade
+
+* **129 testes** com [Vitest](https://vitest.dev/), cobrindo regras de negócio e as rotas da API com um Supabase falso em memória.
+* **CI no GitHub Actions** em todo PR: typecheck, lint, testes e build.
+* **TypeScript estrito**, sem `any`, com os tipos do banco gerados pelo Supabase.
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
-* **Frontend & Backend (Fullstack):** [Next.js](https://nextjs.org/) (App Router & API Routes)
+* **Frontend & Backend (Fullstack):** [Next.js](https://nextjs.org/) (App Router & Route Handlers)
 * **Linguagem:** [TypeScript](https://www.typescriptlang.org/)
-* **Interface e Estilização:** [Tailwind CSS](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/) (Componentes de UI acessíveis e customizáveis)
-* **Ícones e Feedbacks:** [Lucide React](https://lucide.dev/) (Ícones) e [Sonner](https://sonner.emilkowal.ski/) (Toasts de notificação)
-* **BaaS (Banco de Dados, Auth e Storage):** [Supabase](https://supabase.com/)
+* **Interface e Estilização:** [Tailwind CSS](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/)
+* **Ícones e Feedbacks:** [Lucide React](https://lucide.dev/) e [Sonner](https://sonner.emilkowal.ski/)
+* **BaaS (Banco de Dados, Auth, Storage e Cron):** [Supabase](https://supabase.com/)
 * **Gateway de Pagamento:** [API do Mercado Pago](https://www.mercadopago.com.br/developers) (OAuth 2.0)
+* **E-mails:** [Nodemailer](https://nodemailer.com/)
+* **Validação e Testes:** [Zod](https://zod.dev/) e [Vitest](https://vitest.dev/)
+
+---
+
+## 🚀 Rodando Localmente
+
+**Pré-requisitos:** Node.js 24, um projeto no [Supabase](https://supabase.com/), uma aplicação no [painel de desenvolvedores do Mercado Pago](https://www.mercadopago.com.br/developers) e uma conta Gmail com senha de app.
+
+1. Instale as dependências:
+   ```bash
+   npm install
+   ```
+2. No SQL Editor do Supabase, rode `supabase/migrations/00_schema_base.sql`. Ele cria todo o banco: tabelas, RLS, triggers, storage e jobs do `pg_cron`.
+3. Crie o `.env.local` com as variáveis abaixo.
+4. Inicie o servidor:
+   ```bash
+   npm run dev
+   ```
+
+| Variável | Descrição |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | URL do projeto Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Chave pública (anon) do Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | Chave service role, usada só no servidor |
+| `NEXT_PUBLIC_SITE_URL` | URL pública do site, usada nos links de e-mail e no OAuth |
+| `NEXT_PUBLIC_MP_APP_ID` | ID da aplicação no Mercado Pago |
+| `MP_CLIENT_SECRET` | Client secret da aplicação no Mercado Pago |
+| `GMAIL_USER` | Conta Gmail que envia os e-mails |
+| `GMAIL_PASS` | Senha de app dessa conta |
+
+**Scripts:** `npm run typecheck`, `npm run lint`, `npm test` e `npm run build`. Para regenerar os tipos do banco, troque o `--project-id` do script `db:types` pelo do seu projeto e rode `npm run db:types`.
+
+Para tornar um usuário administrador, rode no SQL Editor:
+
+```sql
+UPDATE public.profiles SET role = 'admin'
+WHERE id = (SELECT id FROM auth.users WHERE email = 'seu@email.com');
+```
 
 ---
 
 ## ⚖️ Licença e Direitos Autorais
 
-Este é um software proprietário de código fechado. 
+O código está aberto para leitura e avaliação, somente.
 **Todos os direitos reservados © 2026 EventAqui.**
 
-É estritamente proibida a cópia, distribuição, modificação, uso comercial ou uso não autorizado de qualquer parte deste código-fonte sem a permissão explícita e por escrito do criador.
+É proibida a cópia, distribuição, modificação ou uso comercial de qualquer parte deste código-fonte sem a permissão explícita e por escrito do criador. Veja o arquivo [LICENSE](LICENSE).
