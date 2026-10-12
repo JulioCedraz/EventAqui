@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getErrorMessage } from '@/lib/utils';
 import { supabase } from '../../../lib/supabase';
-import { useRouter } from 'next/navigation';
+import { PANEL_ROLES } from '@/lib/roles';
+import { useRoleGuard, type RoleAccess } from '@/hooks/useRoleGuard';
 import Link from 'next/link';
 import SmartModal, { DialogConfig } from '../../../components/SmartModal';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -20,18 +21,19 @@ import { Database } from "../../../types/database.types";
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
 export default function ManageAgentsPage() {
-  const router = useRouter();
-  
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [authorized, setAuthorized] = useState(false);
+  const access = useRoleGuard({
+    allow: PANEL_ROLES,
+    deniedMessage: 'Você não tem permissão para gerenciar equipes de portaria.',
+    deniedRedirect: '/admin',
+    toastId: 'unauthorized-agents',
+  });
   const [agents, setAgents] = useState<Profile[]>([]);
   const [newEmail, setNewEmail] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [dialog, setDialog] = useState<DialogConfig | null>(null);
   const [isModalProcessing, setIsModalProcessing] = useState(false);
-  const [userContext, setUserContext] = useState<{isAdmin: boolean, uid: string} | null>(null);
 
-  const fetchAgents = useCallback(async (context: { isAdmin: boolean, uid: string } | null) => {
+  const fetchAgents = useCallback(async (context: RoleAccess | null) => {
     if (!context) return;
 
     let query = supabase
@@ -52,36 +54,9 @@ export default function ManageAgentsPage() {
   }, []);
 
   useEffect(() => {
-    const checkAccess = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        router.push('/');
-        return;
-      }
-
-      const user = session.user;
-      const role = user.app_metadata?.role || 'customer';
-      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
-
-      const isAdmin = admins.includes(user.email || '') || role === 'admin';
-      const isProducer = role === 'producer';
-
-      if (!isAdmin && !isProducer) {
-        toast.error('Você não tem permissão para gerenciar equipes de portaria.', { id: 'unauthorized-agents' });
-        router.push('/admin');
-        return;
-      }
-      
-      const context = { isAdmin, uid: user.id };
-      setUserContext(context);
-      setAuthorized(true);
-      fetchAgents(context);
-      setIsCheckingAuth(false);
-    };
-
-    checkAccess();
-  }, [router, fetchAgents]);
+    const loadAgents = async () => fetchAgents(access);
+    loadAgents();
+  }, [access, fetchAgents]);
 
   const handleAddAgent = async (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -116,7 +91,7 @@ export default function ManageAgentsPage() {
 
       toast.success(result.message || 'Agente adicionado e convite enviado!');
       setNewEmail('');
-      fetchAgents(userContext);
+      fetchAgents(access);
     } catch (error) {
       toast.error(getErrorMessage(error, 'Erro ao autorizar agente.'));
     } finally {
@@ -165,7 +140,7 @@ export default function ManageAgentsPage() {
       }
 
       toast.success(result.message || 'Acesso revogado com sucesso.');
-      fetchAgents(userContext);
+      fetchAgents(access);
     } catch (error) {
       toast.error(getErrorMessage(error, 'Erro ao revogar acesso do agente.'));
     } finally {
@@ -174,15 +149,13 @@ export default function ManageAgentsPage() {
     }
   };
 
-  if (isCheckingAuth) {
+  if (!access) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background transition-colors">
         <Loader2 className="w-10 h-10 animate-spin text-blue-600 dark:text-blue-500" />
       </div>
     );
   }
-
-  if (!authorized) return null;
 
   return (
     <main className="bg-gray-50 dark:bg-background py-10 px-4 sm:px-6 lg:px-8 grow flex flex-col items-center min-h-screen transition-colors">

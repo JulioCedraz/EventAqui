@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { useRouter } from 'next/navigation';
+import { PANEL_ROLES } from '@/lib/roles';
+import { useRoleGuard } from '@/hooks/useRoleGuard';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
 import { 
   Loader2, ArrowLeft, TrendingUp, Ticket, Clock, 
   Search, Filter, CheckCircle2, XCircle, AlertCircle, Tag, ArrowDownAZ 
@@ -68,10 +68,11 @@ function calculateOrderTotal(order: Order) {
 }
 
 export default function OrdersPage() {
-  const router = useRouter();
-
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [authorized, setAuthorized] = useState(false);
+  const access = useRoleGuard({
+    allow: PANEL_ROLES,
+    deniedMessage: 'Você não tem permissão para acessar esta área.',
+    toastId: 'unauthorized-orders',
+  });
   const [loading, setLoading] = useState(true);
   
   const [orders, setOrders] = useState<Order[]>([]);
@@ -83,34 +84,10 @@ export default function OrdersPage() {
   const [sortOrder, setSortOrder] = useState<string>('date_desc');
 
   useEffect(() => {
-    const checkAuthAndFetchData = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const userEmail = session?.user?.email;
-      const currentUserId = session?.user?.id;
+    if (!access) return;
 
-      if (!session || !userEmail || !currentUserId) {
-        router.push('/');
-        return;
-      }
-      
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', currentUserId)
-        .single();
-
-      const role = profile?.role || 'customer';
-      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
-      const isAdmin = admins.includes(userEmail) || role === 'admin';
-      const isProducer = role === 'producer';
-
-      if (!isAdmin && !isProducer) {
-        toast.error('Você não tem permissão para acessar esta área.', { id: 'unauthorized-orders' });
-        router.push('/');
-        return;
-      }
-      
-      setAuthorized(true);
+    const fetchOrders = async () => {
+      const { isAdmin, uid: currentUserId } = access;
 
       let query = supabase
         .from('tickets')
@@ -192,11 +169,10 @@ export default function OrdersPage() {
       }
       
       setLoading(false);
-      setIsCheckingAuth(false);
     };
 
-    checkAuthAndFetchData();
-  }, [router]);
+    fetchOrders();
+  }, [access]);
 
   const filteredOrders = useMemo(() => {
     const result = orders.filter(order => {
@@ -252,15 +228,13 @@ export default function OrdersPage() {
     }
   };
 
-  if (isCheckingAuth || loading) {
+  if (!access || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background transition-colors">
         <Loader2 className="w-10 h-10 animate-spin text-blue-600 dark:text-blue-500" />
       </div>
     );
   }
-
-  if (!authorized) return null;
 
   return (
     <main className="bg-gray-50 dark:bg-background py-10 px-4 sm:px-6 lg:px-8 min-h-screen flex flex-col items-center transition-colors">

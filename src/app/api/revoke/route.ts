@@ -39,12 +39,6 @@ export async function POST(request: Request) {
 
     if (dbError) throw dbError;
 
-    const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
-      app_metadata: { role: 'customer', producer_id: null }
-    });
-
-    if (authUpdateError) throw authUpdateError;
-
     return NextResponse.json({ success: true, message: 'Acesso revogado com sucesso.' });
   } catch (error) {
     console.error('Erro na API de Revogação:', error);

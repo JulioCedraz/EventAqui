@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { useRouter } from 'next/navigation';
+import { SCANNER_ROLES } from '@/lib/roles';
+import { useRoleGuard } from '@/hooks/useRoleGuard';
 import Link from 'next/link';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -15,10 +16,11 @@ import {
 } from "lucide-react";
 
 export default function CheckinPage() {
-  const router = useRouter();
-
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [authorized, setAuthorized] = useState(false);
+  const access = useRoleGuard({
+    allow: SCANNER_ROLES,
+    deniedMessage: 'Acesso negado.',
+    toastId: 'unauthorized-checkin',
+  });
 
   const [ticketId, setTicketId] = useState('');
   const [loading, setLoading] = useState(false);
@@ -40,39 +42,6 @@ export default function CheckinPage() {
   const [isScanning, setIsScanning] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const checkAccess = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        router.push('/');
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', session.user.id)
-        .single();
-        
-      const role = profile?.role || 'customer';
-      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(e => e.trim()) || [];
-      const isAdmin = admins.includes(session.user.email || '') || role === 'admin';
-      
-      const hasAccess = isAdmin || role === 'producer' || role === 'agent';
-
-      if (!hasAccess) {
-        toast.error('Acesso negado.', { id: 'unauthorized-checkin' });
-        router.push('/');
-      } else {
-        setAuthorized(true);
-      }
-      
-      setIsCheckingAuth(false);
-    };
-
-    checkAccess();
-  }, [router]);
 
   const handleCheckin = async (e?: React.SyntheticEvent | null, scannedId?: string) => {
     if (e) e.preventDefault();
@@ -127,15 +96,13 @@ export default function CheckinPage() {
     }
   };
 
-  if (isCheckingAuth) {
+  if (!access) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background transition-colors">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-500" />
       </div>
     );
   }
-
-  if (!authorized) return null;
 
   return (
     <main className="bg-gray-50 dark:bg-background py-10 px-4 sm:px-6 lg:px-8 min-h-screen flex flex-col items-center transition-colors">

@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { PANEL_ROLES } from '@/lib/roles';
+import { useRoleGuard } from '@/hooks/useRoleGuard';
 import { getErrorMessage } from '@/lib/utils';
 import type { TablesInsert } from '@/types/database.types';
 import type { EventFormValues, LocalCoupon } from '../types';
@@ -30,11 +32,14 @@ function toLocalInputValue(isoDate: string) {
 
 export function useEventForm(editId: string | null) {
   const router = useRouter();
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [authorized, setAuthorized] = useState(false);
+  const access = useRoleGuard({
+    allow: PANEL_ROLES,
+    deniedMessage: 'Você não tem permissão para criar eventos.',
+    toastId: 'unauthorized-event-creation',
+  });
+  const currentUserId = access?.uid ?? null;
   const [isLoadingEvent, setIsLoadingEvent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const [values, setValues] = useState<EventFormValues>(EMPTY_VALUES);
   const [image, setImage] = useState<File | null>(null);
@@ -44,40 +49,9 @@ export function useEventForm(editId: string | null) {
   const update = (patch: Partial<EventFormValues>) => setValues(prev => ({ ...prev, ...patch }));
 
   useEffect(() => {
-    const checkAdminAndFetchEvent = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    if (!access || !editId) return;
 
-      if (!session) {
-        router.push('/');
-        return;
-      }
-
-      const userId = session.user.id;
-      setCurrentUserId(userId);
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .single();
-
-      const role = profile?.role || 'customer';
-      const userEmail = session.user.email;
-      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
-      const isAdmin = admins.includes(userEmail || '') || role === 'admin';
-      const isProducer = role === 'producer';
-
-      if (!isAdmin && !isProducer) {
-        toast.error('Você não tem permissão para criar eventos.', { id: 'unauthorized-event-creation' });
-        router.push('/');
-        return;
-      }
-
-      setAuthorized(true);
-      setIsCheckingAuth(false);
-
-      if (!editId) return;
-
+    const fetchEvent = async () => {
       setIsLoadingEvent(true);
 
       const { data, error } = await supabase
@@ -113,8 +87,8 @@ export function useEventForm(editId: string | null) {
       setIsLoadingEvent(false);
     };
 
-    checkAdminAndFetchEvent();
-  }, [router, editId]);
+    fetchEvent();
+  }, [access, router, editId]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setImageError('');
@@ -254,8 +228,7 @@ export function useEventForm(editId: string | null) {
   };
 
   return {
-    isCheckingAuth,
-    authorized,
+    isCheckingAuth: !access,
     isLoadingEvent,
     loading,
     currentUserId,

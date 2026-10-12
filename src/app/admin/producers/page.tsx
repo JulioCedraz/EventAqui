@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getErrorMessage } from '@/lib/utils';
 import { supabase } from "../../../lib/supabase";
-import { useRouter } from "next/navigation";
+import { ADMIN_ROLES } from "@/lib/roles";
+import { useRoleGuard } from "@/hooks/useRoleGuard";
 import Link from "next/link";
 import SmartModal, { DialogConfig } from "../../../components/SmartModal";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -17,16 +18,19 @@ import { Database } from "../../../types/database.types";
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
 export default function ManageProducersPage() {
-  const router = useRouter();
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [authorized, setAuthorized] = useState(false);
+  const access = useRoleGuard({
+    allow: ADMIN_ROLES,
+    deniedMessage: "Acesso restrito a administradores.",
+    deniedRedirect: "/admin",
+    toastId: "unauthorized-producers",
+  });
   const [producers, setProducers] = useState<Profile[]>([]);
   const [newEmail, setNewEmail] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [dialog, setDialog] = useState<DialogConfig | null>(null);
   const [isModalProcessing, setIsModalProcessing] = useState(false);
 
-  const fetchProducers = async () => {
+  const fetchProducers = useCallback(async () => {
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
@@ -36,37 +40,14 @@ export default function ManageProducersPage() {
     if (!error && data) {
       setProducers(data);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    const checkAccess = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
-        router.push("/");
-        return;
-      }
-
-      const user = session.user;
-      const userEmail = user.email;
-      const role = user.app_metadata?.role || "customer";
-      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(",").map((email) => email.trim()) || [];
-
-      const isAdmin = admins.includes(userEmail || "") || role === "admin";
-
-      if (!isAdmin) {
-        toast.error("Acesso restrito a administradores.", { id: "unauthorized-producers" });
-        router.push("/admin");
-      } else {
-        setAuthorized(true);
-        fetchProducers();
-      }
-
-      setIsCheckingAuth(false);
+    const loadProducers = async () => {
+      if (access) await fetchProducers();
     };
-
-    checkAccess();
-  }, [router]);
+    loadProducers();
+  }, [access, fetchProducers]);
 
   const handleAddProducer = async (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -163,7 +144,7 @@ export default function ManageProducersPage() {
     }
   };
 
-  if (isCheckingAuth) {
+  if (!access) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background transition-colors">
         <div className="text-center space-y-4">
@@ -173,8 +154,6 @@ export default function ManageProducersPage() {
       </div>
     );
   }
-
-  if (!authorized) return null;
 
   return (
     <main className="bg-gray-50 dark:bg-background py-10 px-4 sm:px-6 lg:px-8 grow flex flex-col items-center min-h-screen transition-colors">
