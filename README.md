@@ -2,15 +2,16 @@
 
 O **EventAqui** é um sistema web completo e responsivo desenhado para promover criação e divulgação de eventos, venda de ingressos com aprovação instantânea via PIX e a gestão de portaria através de leitura de QR Code.
 
-**Demo:** [eventaqui.vercel.app](https://eventaqui.vercel.app)
+**Demo:** [eventaqui.vercel.app](https://eventaqui.vercel.app/como-funciona)
 
-[![CI](https://github.com/JulioCedraz/eventaqui/actions/workflows/ci.yml/badge.svg)](https://github.com/JulioCedraz/eventaqui/actions/workflows/ci.yml)
 ![Next.js](https://img.shields.io/badge/Next.js-black?style=for-the-badge&logo=next.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-000000?style=for-the-badge&logo=shadcnui&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
 ![Mercado Pago](https://img.shields.io/badge/Mercado_Pago-00B1EA?style=for-the-badge&logo=mercado-pago&logoColor=white)
+
+[![CI](https://github.com/JulioCedraz/eventaqui/actions/workflows/ci.yml/badge.svg)](https://github.com/JulioCedraz/eventaqui/actions/workflows/ci.yml)
 
 ## ✨ Principais Funcionalidades
 
@@ -80,7 +81,7 @@ flowchart LR
 
 * **129 testes** com [Vitest](https://vitest.dev/), cobrindo regras de negócio e as rotas da API com um Supabase falso em memória.
 * **CI no GitHub Actions** em todo PR: typecheck, lint, testes e build.
-* **TypeScript estrito**, sem `any`, com os tipos do banco gerados pelo Supabase.
+* **TypeScript estrito**, com os tipos do banco gerados pelo Supabase.
 
 ---
 
