@@ -62,9 +62,7 @@ export default function ManageAgentsPage() {
 
       const user = session.user;
       const role = user.app_metadata?.role || 'customer';
-      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
-
-      const isAdmin = admins.includes(user.email || '') || role === 'admin';
+      const isAdmin = role === 'admin';
       const isProducer = role === 'producer';
 
       if (!isAdmin && !isProducer) {

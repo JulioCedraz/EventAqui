@@ -115,15 +115,8 @@ function LoginContent() {
       }
 
       const { data: { session } } = await supabase.auth.getSession();
-      const userEmail = session?.user?.email;
-
-      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(",").map((adminEmail) => adminEmail.trim()) || [];
-
-      if (userEmail && admins.includes(userEmail)) {
-        router.push(next || "/admin");
-      } else {
-        router.push(next || "/tickets");
-      }
+      const isAdmin = session?.user.app_metadata?.role === "admin";
+      router.push(next || (isAdmin ? "/admin" : "/tickets"));
     } catch (err) {
       setErrorMsg(getErrorMessage(err, "Não foi possível entrar. Tente novamente."));
     } finally {

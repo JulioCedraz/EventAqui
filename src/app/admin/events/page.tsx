@@ -78,10 +78,7 @@ export default function ManageEventsPage() {
         .single();
 
       const role = profile?.role || "customer";
-      const admins =
-        process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(",").map((e) => e.trim()) || [];
-      const isAdmin =
-        admins.includes(session.user.email || "") || role === "admin";
+      const isAdmin = role === "admin";
 
       if (!isAdmin && role !== "producer") {
         toast.error("Acesso negado.");

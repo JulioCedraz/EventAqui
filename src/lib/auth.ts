@@ -21,15 +21,8 @@ export async function getUserRole(user: User) {
     .eq('id', user.id)
     .single();
 
-  const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? '')
-    .split(',')
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-
   const role = profile?.role ?? 'customer';
-  const isAdmin = role === 'admin' || adminEmails.includes((user.email ?? '').toLowerCase());
-
-  return { role, isAdmin };
+  return { role, isAdmin: role === 'admin' };
 }
 
 // Confere a senha no servidor. A sessão criada pela checagem é revogada em seguida,

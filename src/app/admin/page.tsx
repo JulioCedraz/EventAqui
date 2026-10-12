@@ -45,9 +45,6 @@ function AdminHubContent() {
       }
 
       const uid = session.user.id;
-      const userEmail = session.user.email;
-
-      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -57,7 +54,7 @@ function AdminHubContent() {
         
       const role = profile?.role || 'customer';
       const firstName = profile?.first_name || session.user.user_metadata?.first_name || '';
-      const isAdmin = admins.includes(userEmail || '') || role === 'admin';
+      const isAdmin = role === 'admin';
       const isProducer = role === 'producer';
 
       if (!isAdmin && !isProducer) {

@@ -48,11 +48,7 @@ export default function ManageProducersPage() {
       }
 
       const user = session.user;
-      const userEmail = user.email;
-      const role = user.app_metadata?.role || "customer";
-      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(",").map((email) => email.trim()) || [];
-
-      const isAdmin = admins.includes(userEmail || "") || role === "admin";
+      const isAdmin = user.app_metadata?.role === "admin";
 
       if (!isAdmin) {
         toast.error("Acesso restrito a administradores.", { id: "unauthorized-producers" });

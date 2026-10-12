@@ -50,10 +50,7 @@ export default function Header() {
         .single();
 
       const role = profile?.role || 'customer';
-      const email = currentUser.email;
-
-      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(e => e.trim()) || [];
-      const isAdmin = admins.includes(email || '') || role === 'admin';
+      const isAdmin = role === 'admin';
       const isProducer = role === 'producer';
       const isAgent = role === 'agent';
 

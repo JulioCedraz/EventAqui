@@ -100,8 +100,7 @@ export default function OrdersPage() {
         .single();
 
       const role = profile?.role || 'customer';
-      const admins = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
-      const isAdmin = admins.includes(userEmail) || role === 'admin';
+      const isAdmin = role === 'admin';
       const isProducer = role === 'producer';
 
       if (!isAdmin && !isProducer) {
