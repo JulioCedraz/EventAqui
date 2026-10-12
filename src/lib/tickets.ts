@@ -1,6 +1,6 @@
 import 'server-only';
 import { supabaseAdmin } from './supabase-admin';
-import { sendGuestInviteEmail, sendTicketApprovedEmail } from './mail';
+import { sendGuestInviteEmail, sendManualRefundEmail, sendTicketApprovedEmail } from './mail';
 import { SITE_URL } from './site';
 
 export async function findCoupon(code: string, eventId: string) {
@@ -42,13 +42,83 @@ async function sendApprovalEmails(ticketId: string, buyerEmail: string, eventTit
   }
 }
 
+// Pedido vencido pode ter perdido a vaga para outra compra enquanto o pagamento não chegava.
+async function hasSpotForLatePayment(eventId: string, quantity: number, totalSpots: number | null) {
+  if (totalSpots === null) return true;
+  return countSpots(await getActiveTickets(eventId)) + quantity <= totalSpots;
+}
+
+// Pagamento que não virou ingresso: o produtor estorna pelo gateway.
+// O filtro em refund_requested_at garante um único e-mail mesmo com notificações repetidas.
+async function requestManualRefund(ticketId: string, reason: string) {
+  console.error(`Pedido ${ticketId}: ${reason} Estorno manual necessário.`);
+
+  const { data: ticket } = await supabaseAdmin
+    .from('tickets')
+    .update({ refund_requested_at: new Date().toISOString() })
+    .eq('id', ticketId)
+    .is('refund_requested_at', null)
+    .select('buyer_name, buyer_email, events(title, producer_id)')
+    .maybeSingle();
+
+  const event = ticket?.events as { title: string; producer_id: string | null } | null;
+  if (!ticket || !event?.producer_id) return;
+
+  const { data: producer } = await supabaseAdmin
+    .from('profiles')
+    .select('email')
+    .eq('id', event.producer_id)
+    .maybeSingle();
+
+  if (!producer?.email) return;
+
+  await sendManualRefundEmail(producer.email, {
+    eventTitle: event.title,
+    ticketId,
+    buyerName: ticket.buyer_name,
+    buyerEmail: ticket.buyer_email,
+    reason,
+  }).catch((error) => console.error('Falha ao enviar e-mail de estorno:', error));
+}
+
 // Idempotente: só o primeiro chamador aprova, conta o cupom e dispara e-mails.
+// Só pedido pendente é aprovado; pago após o prazo, só se ainda houver vaga.
 export async function approveTicket(ticketId: string): Promise<boolean> {
+  const { data: current } = await supabaseAdmin
+    .from('tickets')
+    .select('payment_status, expires_at, quantity, event_id, user_id, events(total_spots)')
+    .eq('id', ticketId)
+    .maybeSingle();
+
+  if (current?.payment_status !== 'pending') {
+    // Sem user_id, a conta foi excluída e o cancelamento veio da exclusão, não de um pagamento perdido.
+    if (current?.payment_status === 'cancelled' && current.user_id) {
+      await requestManualRefund(ticketId, 'o pedido já estava cancelado quando o pagamento chegou.');
+    }
+    return false;
+  }
+
+  const isExpired = !!current.expires_at && new Date(current.expires_at) <= new Date();
+  const totalSpots = (current.events as { total_spots: number | null } | null)?.total_spots ?? null;
+
+  if (isExpired && !(await hasSpotForLatePayment(current.event_id, current.quantity ?? 1, totalSpots))) {
+    const { data: cancelled } = await supabaseAdmin
+      .from('tickets')
+      .update({ payment_status: 'cancelled' })
+      .eq('id', ticketId)
+      .eq('payment_status', 'pending')
+      .select('id')
+      .maybeSingle();
+
+    if (cancelled) await requestManualRefund(ticketId, 'o pagamento chegou após o prazo e o evento esgotou.');
+    return false;
+  }
+
   const { data: ticket, error } = await supabaseAdmin
     .from('tickets')
     .update({ payment_status: 'approved' })
     .eq('id', ticketId)
-    .neq('payment_status', 'approved')
+    .eq('payment_status', 'pending')
     .select('id, coupon_id, buyer_email, events(title)')
     .maybeSingle();
 

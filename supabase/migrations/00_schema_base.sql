@@ -74,6 +74,7 @@ CREATE TABLE public.tickets (
     pix_qr_code text,
     pix_qr_code_base64 text,
     expires_at timestamp with time zone,
+    refund_requested_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now())
 );
 
@@ -324,10 +325,10 @@ BEGIN
   END IF;
 
   IF (NEW.id, NEW.event_id, NEW.user_id, NEW.coupon_id, NEW.buyer_name, NEW.buyer_email,
-      NEW.quantity, NEW.pix_qr_code, NEW.pix_qr_code_base64, NEW.expires_at, NEW.created_at)
+      NEW.quantity, NEW.pix_qr_code, NEW.pix_qr_code_base64, NEW.expires_at, NEW.refund_requested_at, NEW.created_at)
      IS DISTINCT FROM
      (OLD.id, OLD.event_id, OLD.user_id, OLD.coupon_id, OLD.buyer_name, OLD.buyer_email,
-      OLD.quantity, OLD.pix_qr_code, OLD.pix_qr_code_base64, OLD.expires_at, OLD.created_at) THEN
+      OLD.quantity, OLD.pix_qr_code, OLD.pix_qr_code_base64, OLD.expires_at, OLD.refund_requested_at, OLD.created_at) THEN
     RAISE EXCEPTION 'Alteração não permitida neste ingresso.' USING ERRCODE = '42501';
   END IF;
 
@@ -506,6 +507,19 @@ SELECT cron.schedule(
     DELETE FROM auth.users
     WHERE email_confirmed_at IS NULL
     AND created_at < NOW() - INTERVAL '21 hours';
+  $$
+);
+
+-- Cancela pedidos pendentes vencidos sem depender do comprador voltar à página.
+-- A folga de 1 hora cobre o atraso do webhook: pagamento feito no prazo ainda é aprovado se houver vaga.
+SELECT cron.schedule(
+  'cancel-expired-orders',
+  '*/15 * * * *',
+  $$
+    UPDATE public.tickets
+    SET payment_status = 'cancelled'
+    WHERE payment_status = 'pending'
+    AND expires_at < NOW() - INTERVAL '1 hour';
   $$
 );
 
