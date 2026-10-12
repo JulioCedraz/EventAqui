@@ -46,6 +46,8 @@ beforeEach(() => {
   fakeDb.on('tickets', 'select', { data: [] });
   fakeDb.on('profiles', 'select', { data: { first_name: 'Alice', last_name: 'Souza' } });
   fakeDb.on('profiles', 'select', { data: { mp_access_token: 'producer-token' } }, (q) => q.columns === 'mp_access_token');
+  fakeDb.on('tickets', 'select', { data: { payment_status: 'pending', expires_at: null, quantity: 1, event_id: EVENT_ID, events: { total_spots: null } } },
+    (q) => !!q.columns?.includes('total_spots'));
   fakeDb.on('tickets', 'insert', { data: { id: TICKET_ID } });
   fakeDb.on('tickets', 'update', { data: { id: TICKET_ID, coupon_id: null, buyer_email: USER.email, events: { title: 'Calourada' } } });
 

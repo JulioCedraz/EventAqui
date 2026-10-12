@@ -150,3 +150,26 @@ export function sendAccountDeletionScheduledEmail(to: string, deletionDate: Date
       </div>`,
   });
 }
+
+type ManualRefundDetails = { eventTitle: string; ticketId: string; buyerName: string; buyerEmail: string; reason: string };
+
+export function sendManualRefundEmail(to: string, details: ManualRefundDetails) {
+  const title = escapeHtml(details.eventTitle);
+  return transporter.sendMail({
+    from: FROM,
+    to,
+    subject: `Estorno necessário: pagamento sem ingresso em ${details.eventTitle}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333; border: 1px solid #eaeaea; border-radius: 12px;">
+        <div style="padding: 30px;">
+          <h2 style="color: #dc2626;">Estorno necessário</h2>
+          <p>Recebemos um pagamento para <strong>${title}</strong> que não pôde virar ingresso: ${escapeHtml(details.reason)}</p>
+          <p>Faça o estorno pelo seu gateway de pagamento. A EventAqui não estorna automaticamente.</p>
+          <ul style="line-height: 1.6;">
+            <li>Comprador: <strong>${escapeHtml(details.buyerName)}</strong> (${escapeHtml(details.buyerEmail)})</li>
+            <li>Pedido: <code>${escapeHtml(details.ticketId)}</code></li>
+          </ul>
+        </div>
+      </div>`,
+  });
+}

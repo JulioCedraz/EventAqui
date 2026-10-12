@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     const approved = await approveTicket(ticketId);
     console.log(approved
       ? `Ingresso ${ticketId} aprovado e e-mails disparados.`
-      : `Ingresso ${ticketId} já estava aprovado.`);
+      : `Ingresso ${ticketId} não aprovado: já estava aprovado ou não é mais pendente.`);
 
     return NextResponse.json({ recebido: true }, { status: 200 });
   } catch (error) {

@@ -12,6 +12,7 @@ vi.mock('@/lib/mail', () => ({
 const TICKET_ID = '55555555-5555-4555-8555-555555555555';
 const PRODUCER_ID = '33333333-3333-4333-8333-333333333333';
 const OTHER_PRODUCER_ID = '66666666-6666-4666-8666-666666666666';
+const EVENT_ID = '44444444-4444-4444-8444-444444444444';
 
 const fetchMock = vi.fn();
 
@@ -34,6 +35,8 @@ beforeEach(() => {
 
   fakeDb.on('profiles', 'select', { data: { mp_access_token: 'producer-token' } });
   fakeDb.on('tickets', 'select', { data: { id: TICKET_ID, pix_qr_code: 'PIX-QR', events: { producer_id: PRODUCER_ID } } });
+  fakeDb.on('tickets', 'select', { data: { payment_status: 'pending', expires_at: null, quantity: 1, event_id: EVENT_ID, events: { total_spots: null } } },
+    (q) => !!q.columns?.includes('total_spots'));
   fakeDb.on('tickets', 'update', { data: { id: TICKET_ID, coupon_id: null, buyer_email: 'alice@x.com', events: { title: 'Calourada' } } });
 
   fetchMock.mockImplementation(async () => new Response(JSON.stringify(mpPayment())));

@@ -305,6 +305,7 @@ export type Database = {
           pix_qr_code: string | null
           pix_qr_code_base64: string | null
           quantity: number
+          refund_requested_at: string | null
           user_id: string | null
         }
         Insert: {
@@ -320,6 +321,7 @@ export type Database = {
           pix_qr_code?: string | null
           pix_qr_code_base64?: string | null
           quantity?: number
+          refund_requested_at?: string | null
           user_id?: string | null
         }
         Update: {
@@ -335,6 +337,7 @@ export type Database = {
           pix_qr_code?: string | null
           pix_qr_code_base64?: string | null
           quantity?: number
+          refund_requested_at?: string | null
           user_id?: string | null
         }
         Relationships: [
