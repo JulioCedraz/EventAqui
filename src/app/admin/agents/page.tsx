@@ -61,7 +61,13 @@ export default function ManageAgentsPage() {
       }
 
       const user = session.user;
-      const role = user.app_metadata?.role || 'customer';
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      const role = profile?.role || 'customer';
       const isAdmin = role === 'admin';
       const isProducer = role === 'producer';
 

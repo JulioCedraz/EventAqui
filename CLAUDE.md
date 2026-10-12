@@ -13,7 +13,7 @@ Plataforma de venda de ingressos e gestão de portaria.
 - Nunca confie em valores vindos do cliente para preço, desconto, status de pagamento, role, `producer_id` ou dono de recurso. Recalcule ou busque no servidor.
 - Toda rota em `src/app/api` autentica o usuário e verifica se ele é dono do recurso. Exceção: webhook, que valida a assinatura do gateway.
 - Webhooks: validar assinatura e conferir valor e referência contra o banco antes de aprovar.
-- Autorização nunca usa `user_metadata`, que é editável pelo próprio usuário. Use `profiles.role` ou `app_metadata`.
+- Autorização nunca usa `user_metadata`, que é editável pelo próprio usuário. Use `profiles.role`, a única fonte do papel (não há cópia em `app_metadata`).
 - Validar o body de toda rota com `zod`.
 - Segredos nunca com prefixo `NEXT_PUBLIC_`. Nunca retornar `err.message` ao cliente.
 - Dados do usuário em HTML de e-mail devem ser escapados. Rotas que enviam e-mail exigem autenticação.

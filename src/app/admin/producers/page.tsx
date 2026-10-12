@@ -47,10 +47,13 @@ export default function ManageProducersPage() {
         return;
       }
 
-      const user = session.user;
-      const isAdmin = user.app_metadata?.role === "admin";
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", session.user.id)
+        .single();
 
-      if (!isAdmin) {
+      if (profile?.role !== "admin") {
         toast.error("Acesso restrito a administradores.", { id: "unauthorized-producers" });
         router.push("/admin");
       } else {

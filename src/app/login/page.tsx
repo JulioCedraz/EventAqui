@@ -115,8 +115,11 @@ function LoginContent() {
       }
 
       const { data: { session } } = await supabase.auth.getSession();
-      const isAdmin = session?.user.app_metadata?.role === "admin";
-      router.push(next || (isAdmin ? "/admin" : "/tickets"));
+      const { data: profile } = session
+        ? await supabase.from("profiles").select("role").eq("id", session.user.id).single()
+        : { data: null };
+
+      router.push(next || (profile?.role === "admin" ? "/admin" : "/tickets"));
     } catch (err) {
       setErrorMsg(getErrorMessage(err, "Não foi possível entrar. Tente novamente."));
     } finally {

@@ -3,10 +3,8 @@ import { eqValue, fakeDb } from '@/test/fake-supabase';
 import { getRequestUser, getUserRole } from '@/lib/auth';
 import { POST } from './route';
 
-const { updateUserById } = vi.hoisted(() => ({ updateUserById: vi.fn() }));
-
 vi.mock('@/lib/supabase-admin', async () => ({
-  supabaseAdmin: { ...(await import('@/test/fake-supabase')).fakeDb.client, auth: { admin: { updateUserById } } },
+  supabaseAdmin: (await import('@/test/fake-supabase')).fakeDb.client,
 }));
 vi.mock('@/lib/auth', () => ({ getRequestUser: vi.fn(), getUserRole: vi.fn() }));
 
@@ -21,20 +19,18 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(getRequestUser).mockResolvedValue(PRODUCER as never);
   vi.mocked(getUserRole).mockResolvedValue({ role: 'producer', isAdmin: false });
-  updateUserById.mockResolvedValue({ error: null });
 
   fakeDb.on('profiles', 'select', { data: { role: 'agent', producer_id: PRODUCER.id } });
 });
 
 describe('POST /api/revoke', () => {
-  it('revokes an agent of the producer team in profiles and app_metadata', async () => {
+  it('revokes an agent of the producer team in profiles', async () => {
     const res = await revoke();
 
     expect(res.status).toBe(200);
     const [update] = fakeDb.find('profiles', 'update');
     expect(update.payload).toEqual({ role: 'customer', producer_id: null });
     expect(eqValue(update, 'id')).toBe(AGENT_ID);
-    expect(updateUserById).toHaveBeenCalledWith(AGENT_ID, { app_metadata: { role: 'customer', producer_id: null } });
   });
 
   it('requires an authenticated user', async () => {
@@ -54,7 +50,6 @@ describe('POST /api/revoke', () => {
 
     expect((await revoke()).status).toBe(403);
     expect(fakeDb.find('profiles', 'update')).toHaveLength(0);
-    expect(updateUserById).not.toHaveBeenCalled();
   });
 
   it('lets an admin revoke any user', async () => {
@@ -62,6 +57,6 @@ describe('POST /api/revoke', () => {
     fakeDb.on('profiles', 'select', { data: { role: 'producer', producer_id: null } });
 
     expect((await revoke()).status).toBe(200);
-    expect(updateUserById).toHaveBeenCalledOnce();
+    expect(fakeDb.find('profiles', 'update')).toHaveLength(1);
   });
 });
