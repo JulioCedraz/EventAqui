@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../../lib/supabase";
+import { PANEL_ROLES } from "@/lib/roles";
+import { useRoleGuard, type RoleAccess } from "@/hooks/useRoleGuard";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import SmartModal, { DialogConfig } from "../../../components/SmartModal";
@@ -30,17 +32,16 @@ import type { Tables } from '@/types/database.types';
 export default function ManageEventsPage() {
   const router = useRouter();
 
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [authorized, setAuthorized] = useState(false);
+  const access = useRoleGuard({
+    allow: PANEL_ROLES,
+    deniedMessage: "Acesso negado.",
+    deniedRedirect: "/admin",
+  });
   const [events, setEvents] = useState<Tables<'events'>[]>([]);
   const [dialog, setDialog] = useState<DialogConfig | null>(null);
   const [isModalProcessing, setIsModalProcessing] = useState(false);
-  const [userContext, setUserContext] = useState<{
-    isAdmin: boolean;
-    uid: string;
-  } | null>(null);
 
-  const fetchEvents = useCallback(async (context: { isAdmin: boolean; uid: string } | null) => {
+  const fetchEvents = useCallback(async (context: RoleAccess | null) => {
     if (!context) return;
 
     let query = supabase
@@ -59,42 +60,9 @@ export default function ManageEventsPage() {
   }, []);
 
   useEffect(() => {
-    const checkAccess = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      
-      if (!session) {
-        router.push("/");
-        return;
-      }
-
-      const userId = session.user.id;
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", userId)
-        .single();
-
-      const role = profile?.role || "customer";
-      const isAdmin = role === "admin";
-
-      if (!isAdmin && role !== "producer") {
-        toast.error("Acesso negado.");
-        router.push("/admin");
-      } else {
-        setAuthorized(true);
-        
-        const currentContext = { isAdmin, uid: userId };
-        setUserContext(currentContext);
-        fetchEvents(currentContext);
-      }
-      setIsCheckingAuth(false);
-    };
-    
-    checkAccess();
-  }, [router, fetchEvents]);
+    const loadEvents = async () => fetchEvents(access);
+    loadEvents();
+  }, [access, fetchEvents]);
 
   const handleEdit = (id: string) => {
     router.push(`/admin/events/new?id=${id}`);
@@ -120,7 +88,7 @@ export default function ManageEventsPage() {
       if (error) throw error;
 
       toast.success("Evento excluído com sucesso.");
-      fetchEvents(userContext);
+      fetchEvents(access);
     } catch {
       toast.error(
         "Erro ao excluir evento. Verifique se há ingressos vinculados a ele.",
@@ -160,7 +128,7 @@ export default function ManageEventsPage() {
     );
   };
 
-  if (isCheckingAuth) {
+  if (!access) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background transition-colors">
         <div className="text-center space-y-4">
@@ -172,8 +140,6 @@ export default function ManageEventsPage() {
       </div>
     );
   }
-
-  if (!authorized) return null;
 
   return (
     <main className="bg-gray-50 dark:bg-background py-10 px-4 sm:px-6 lg:px-8 grow flex flex-col items-center min-h-screen transition-colors">

@@ -31,8 +31,6 @@ function EventForm() {
     );
   }
 
-  if (!form.authorized) return null;
-
   return (
     <main className="bg-gray-50 dark:bg-background py-10 px-4 sm:px-6 lg:px-8 grow flex flex-col items-center min-h-screen transition-colors">
       <SmartModal

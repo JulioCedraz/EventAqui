@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, Suspense } from "react";
 import { supabase } from "../../lib/supabase";
+import { fetchOwnRole } from "@/lib/roles";
 import { confirmationRedirectUrl, safeNextPath, getErrorMessage } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -115,11 +116,9 @@ function LoginContent() {
       }
 
       const { data: { session } } = await supabase.auth.getSession();
-      const { data: profile } = session
-        ? await supabase.from("profiles").select("role").eq("id", session.user.id).single()
-        : { data: null };
+      const role = session ? await fetchOwnRole(session.user.id) : "customer";
 
-      router.push(next || (profile?.role === "admin" ? "/admin" : "/tickets"));
+      router.push(next || (role === "admin" ? "/admin" : "/tickets"));
     } catch (err) {
       setErrorMsg(getErrorMessage(err, "Não foi possível entrar. Tente novamente."));
     } finally {

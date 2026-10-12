@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import { fetchOwnRole, PANEL_ROLES, SCANNER_ROLES } from "@/lib/roles";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
@@ -43,19 +44,10 @@ export default function Header() {
         return;
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', currentUser.id)
-        .single();
+      const role = await fetchOwnRole(currentUser.id);
 
-      const role = profile?.role || 'customer';
-      const isAdmin = role === 'admin';
-      const isProducer = role === 'producer';
-      const isAgent = role === 'agent';
-
-      setHasPanelAccess(isAdmin || isProducer);
-      setHasScannerAccess(isAdmin || isProducer || isAgent);
+      setHasPanelAccess(PANEL_ROLES.includes(role));
+      setHasScannerAccess(SCANNER_ROLES.includes(role));
       setLoading(false);
     };
 

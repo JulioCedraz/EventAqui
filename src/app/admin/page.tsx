@@ -2,6 +2,8 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { supabase } from '../../lib/supabase';
+import { PANEL_ROLES } from '@/lib/roles';
+import { useRoleGuard } from '@/hooks/useRoleGuard';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import MercadoPagoConnect from '../../components/MercadoPagoConnect';
@@ -16,8 +18,11 @@ import {
 function AdminHubContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [authorized, setAuthorized] = useState(false);
+  const access = useRoleGuard({
+    allow: PANEL_ROLES,
+    deniedMessage: 'Você não tem permissão para acessar esta área.',
+    toastId: 'unauthorized-access',
+  });
   const [userName, setUserName] = useState('');
   
   const [isAlreadyConnected, setIsAlreadyConnected] = useState(false);
@@ -36,51 +41,29 @@ function AdminHubContent() {
   }, [searchParams, router]);
 
   useEffect(() => {
-    const checkAccess = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        router.push('/');
-        return;
-      }
+    if (!access) return;
 
-      const uid = session.user.id;
-
+    const loadProfile = async () => {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role, first_name, mp_user_id')
-        .eq('id', uid)
+        .select('first_name, mp_user_id')
+        .eq('id', access.uid)
         .single();
-        
-      const role = profile?.role || 'customer';
-      const firstName = profile?.first_name || session.user.user_metadata?.first_name || '';
-      const isAdmin = role === 'admin';
-      const isProducer = role === 'producer';
 
-      if (!isAdmin && !isProducer) {
-        toast.error('Você não tem permissão para acessar esta área.', { id: 'unauthorized-access' });
-        router.push('/');
-      } else {
-        setAuthorized(true);
-        setUserName(firstName);
-        setIsAlreadyConnected(!!profile?.mp_user_id);
-      }
-      
-      setIsCheckingAuth(false);
+      setUserName(profile?.first_name || '');
+      setIsAlreadyConnected(!!profile?.mp_user_id);
     };
 
-    checkAccess();
-  }, [router]);
+    loadProfile();
+  }, [access]);
 
-  if (isCheckingAuth) {
+  if (!access) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background transition-colors">
         <Loader2 className="w-10 h-10 animate-spin text-blue-600 dark:text-blue-500" />
       </div>
     );
   }
-
-  if (!authorized) return null;
 
   const menuActions = [
     {
