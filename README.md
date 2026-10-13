@@ -79,7 +79,7 @@ flowchart LR
 
 ## 🧪 Qualidade
 
-* **129 testes** com [Vitest](https://vitest.dev/), cobrindo regras de negócio e as rotas da API com um Supabase falso em memória.
+* **133 testes** com [Vitest](https://vitest.dev/), cobrindo regras de negócio e as rotas da API com um Supabase falso em memória.
 * **CI no GitHub Actions** em todo PR: typecheck, lint, testes e build.
 * **TypeScript estrito**, com os tipos do banco gerados pelo Supabase.
 
@@ -123,6 +123,7 @@ flowchart LR
 | `MP_CLIENT_SECRET` | Client secret da aplicação no Mercado Pago |
 | `GMAIL_USER` | Conta Gmail que envia os e-mails |
 | `GMAIL_PASS` | Senha de app dessa conta |
+| `CRON_SECRET` | Segredo que a Vercel envia ao chamar `/api/keepalive`, o ping diário que evita a pausa do Supabase por inatividade |
 
 **Scripts:** `npm run typecheck`, `npm run lint`, `npm test` e `npm run build`. Para regenerar os tipos do banco, troque o `--project-id` do script `db:types` pelo do seu projeto e rode `npm run db:types`.
 
