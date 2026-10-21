@@ -17,6 +17,26 @@ import type { TicketWithEvent } from '@/types/tickets';
 
 type Event = Database['public']['Tables']['events']['Row'];
 
+// Na volta do checkout, o PIX pode levar alguns segundos para compensar.
+const CONFIRM_ATTEMPTS = 20;
+const CONFIRM_INTERVAL_MS = 3000;
+
+async function confirmReturnedPayment(accessToken: string, ticketId: string, returned: URLSearchParams) {
+  const res = await fetch('/api/payment/confirm', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
+    body: JSON.stringify({
+      ticketId,
+      transactionNsu: returned.get('transaction_nsu'),
+      slug: returned.get('slug'),
+      receiptUrl: returned.get('receipt_url') ?? undefined,
+    }),
+  }).catch(() => null);
+
+  const body = await res?.json().catch(() => null);
+  return typeof body?.status === 'string' ? body.status : null;
+}
+
 export default function ResumePaymentPage() {
   const router = useRouter();
   const params = useParams();
@@ -30,9 +50,13 @@ export default function ResumePaymentPage() {
   const [ticketDetails, setTicketDetails] = useState<TicketWithEvent | null>(null);
   const [timeLeft, setTimeLeft] = useState<string>('Calculando...');
   const [isExpired, setIsExpired] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
+    let pollId: NodeJS.Timeout;
+    // A primeira consulta é assíncrona: se a tela sair antes dela, o intervalo não pode começar.
+    let isActive = true;
 
     const loadCheckout = async () => {
       if (!eventId || !ticketId) return;
@@ -40,24 +64,44 @@ export default function ResumePaymentPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { router.push('/login'); return; }
 
-      // Volta do checkout: confirma no servidor antes de olhar prazo e status.
+      // Volta do checkout: confirma no servidor e repete até aprovar ou esgotar as tentativas.
       const returned = new URLSearchParams(window.location.search);
-      const transactionNsu = returned.get('transaction_nsu');
-      const slug = returned.get('slug');
 
-      if (transactionNsu && slug) {
-        const res = await fetch('/api/payment/confirm', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-          body: JSON.stringify({ ticketId, transactionNsu, slug, receiptUrl: returned.get('receipt_url') ?? undefined }),
-        }).catch(() => null);
-
-        const confirmation = await res?.json().catch(() => null);
-        if (confirmation?.status === 'approved') {
+      if (returned.get('transaction_nsu') && returned.get('slug')) {
+        const goToTickets = () => {
           toast.success('Pagamento confirmado! Seu ingresso está disponível.');
           router.push('/tickets');
+        };
+
+        const firstStatus = await confirmReturnedPayment(session.access_token, ticketId, returned);
+        if (!isActive) return;
+        if (firstStatus === 'approved') {
+          goToTickets();
           return;
         }
+
+        setIsConfirming(true);
+        setLoading(false);
+
+        let attempts = 1;
+        pollId = setInterval(async () => {
+          attempts += 1;
+          const status = await confirmReturnedPayment(session.access_token, ticketId, returned);
+          if (!isActive) return;
+
+          if (status === 'approved') {
+            clearInterval(pollId);
+            goToTickets();
+            return;
+          }
+
+          // Sem aprovação: recarrega sem os parâmetros e mostra o pedido como está.
+          if (status === 'cancelled' || attempts >= CONFIRM_ATTEMPTS) {
+            clearInterval(pollId);
+            window.location.replace(window.location.pathname);
+          }
+        }, CONFIRM_INTERVAL_MS);
+        return;
       }
 
       const { data: ticketData, error: ticketError } = await supabase
@@ -116,7 +160,9 @@ export default function ResumePaymentPage() {
     loadCheckout();
 
     return () => {
+      isActive = false;
       if (intervalId) clearInterval(intervalId);
+      if (pollId) clearInterval(pollId);
     };
   }, [eventId, ticketId, router]);
 
@@ -124,6 +170,20 @@ export default function ResumePaymentPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background transition-colors">
         <Loader2 className="w-10 h-10 animate-spin text-blue-600 dark:text-blue-500" />
+      </div>
+    );
+  }
+
+  if (isConfirming) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background px-4 transition-colors">
+        <Card className="max-w-md w-full dark:bg-card shadow-lg animate-in zoom-in-95 transition-colors">
+          <CardContent className="pt-10 pb-8 px-8 text-center flex flex-col items-center">
+            <Loader2 className="w-12 h-12 animate-spin text-blue-600 dark:text-blue-500 mb-6" />
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2 transition-colors">Confirmando seu pagamento</h2>
+            <p className="text-gray-600 dark:text-gray-400 transition-colors">Isso costuma levar poucos segundos. Não feche esta página.</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
