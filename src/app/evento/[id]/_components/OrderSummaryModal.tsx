@@ -63,7 +63,7 @@ export function OrderSummaryModal({ basePrice, finalPrice, isFreeEvent, isCasadi
                   Pagamento
                 </span>
                 <span className="flex gap-2 items-center justify-center font-semibold text-gray-900 dark:text-gray-100 transition-colors">
-                  Pix
+                  Pix ou cartão
                   <img src="/pix.svg" className="w-5 h-5 dark:brightness-200" alt="Pix" />
                 </span>
               </div>
@@ -89,7 +89,7 @@ export function OrderSummaryModal({ basePrice, finalPrice, isFreeEvent, isCasadi
 
             <p className="text-xs text-center text-muted-foreground mt-2 flex items-center justify-center gap-1.5 transition-colors">
               <Clock className="w-3.5 h-3.5" />
-              {isFree ? 'Sua vaga será reservada imediatamente.' : 'Após a confirmação, você terá 30 minutos para efetuar o PIX.'}
+              {isFree ? 'Sua vaga será reservada imediatamente.' : 'Após a confirmação, você terá 30 minutos para pagar. No cartão, pode haver juros do parcelamento.'}
             </p>
           </div>
 

@@ -92,7 +92,7 @@ export default function OrdersPage() {
       let query = supabase
         .from('tickets')
         .select(`
-          id, created_at, buyer_name, buyer_email, payment_status, quantity, event_id, user_id, coupon_id, pix_qr_code,
+          id, created_at, buyer_name, buyer_email, payment_status, quantity, event_id, user_id, coupon_id, payment_method,
           events!inner ( title, price, producer_id ),
           coupons ( code, discount_type, discount_value )
         `)
@@ -139,7 +139,7 @@ export default function OrdersPage() {
           let appliedCoupon = t.coupons;
           let isInherited = false;
 
-          if (!appliedCoupon && t.payment_status === 'approved' && !t.pix_qr_code && t.quantity === 1) {
+          if (!appliedCoupon && t.payment_status === 'approved' && t.payment_method === 'free' && t.quantity === 1) {
             const key = `${(t.buyer_email || '').toLowerCase()}_${t.event_id}`;
             if (guestCouponMap.has(key)) {
               appliedCoupon = guestCouponMap.get(key);

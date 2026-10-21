@@ -55,7 +55,7 @@ export function useMyTickets() {
         let appliedCoupon = t.coupons;
         let isInherited = false;
 
-        if (!appliedCoupon && t.quantity === 1 && !t.pix_qr_code && guestCouponMap.has(t.event_id)) {
+        if (!appliedCoupon && t.quantity === 1 && t.payment_method === 'free' && guestCouponMap.has(t.event_id)) {
           appliedCoupon = guestCouponMap.get(t.event_id);
           isInherited = true;
         }

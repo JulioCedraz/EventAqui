@@ -31,6 +31,8 @@ CREATE TABLE public.profiles (
     mp_refresh_token text,
     mp_user_id text,
     mp_public_key text,
+    infinitepay_handle text CHECK (infinitepay_handle ~ '^[a-z0-9._-]{2,40}$'),
+    infinitepay_api_key_enc text,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now())
 );
 
@@ -71,8 +73,14 @@ CREATE TABLE public.tickets (
     payment_status text,
     is_used boolean DEFAULT false,
     quantity integer NOT NULL DEFAULT 1,
-    pix_qr_code text,
-    pix_qr_code_base64 text,
+    amount_cents integer CHECK (amount_cents >= 0),
+    payment_method text CHECK (payment_method IN ('free', 'pix', 'credit_card')),
+    checkout_url text,
+    transaction_nsu text UNIQUE,
+    invoice_slug text,
+    paid_amount_cents integer,
+    installments integer,
+    receipt_url text,
     expires_at timestamp with time zone,
     refund_requested_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now())
@@ -270,7 +278,7 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- Pelo app, o usuário não altera papel, status, e-mail nem tokens do Mercado Pago.
+-- Pelo app, o usuário não altera papel, status, e-mail nem credenciais de pagamento.
 CREATE FUNCTION public.protect_sensitive_profile_fields()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -291,6 +299,8 @@ BEGIN
     NEW.mp_refresh_token := NULL;
     NEW.mp_user_id := NULL;
     NEW.mp_public_key := NULL;
+    NEW.infinitepay_handle := NULL;
+    NEW.infinitepay_api_key_enc := NULL;
     RETURN NEW;
   END IF;
 
@@ -304,6 +314,8 @@ BEGIN
   NEW.mp_refresh_token := OLD.mp_refresh_token;
   NEW.mp_user_id := OLD.mp_user_id;
   NEW.mp_public_key := OLD.mp_public_key;
+  NEW.infinitepay_handle := OLD.infinitepay_handle;
+  NEW.infinitepay_api_key_enc := OLD.infinitepay_api_key_enc;
   RETURN NEW;
 END;
 $$;
@@ -325,10 +337,12 @@ BEGIN
   END IF;
 
   IF (NEW.id, NEW.event_id, NEW.user_id, NEW.coupon_id, NEW.buyer_name, NEW.buyer_email,
-      NEW.quantity, NEW.pix_qr_code, NEW.pix_qr_code_base64, NEW.expires_at, NEW.refund_requested_at, NEW.created_at)
+      NEW.quantity, NEW.amount_cents, NEW.payment_method, NEW.checkout_url, NEW.transaction_nsu, NEW.invoice_slug,
+      NEW.paid_amount_cents, NEW.installments, NEW.receipt_url, NEW.expires_at, NEW.refund_requested_at, NEW.created_at)
      IS DISTINCT FROM
      (OLD.id, OLD.event_id, OLD.user_id, OLD.coupon_id, OLD.buyer_name, OLD.buyer_email,
-      OLD.quantity, OLD.pix_qr_code, OLD.pix_qr_code_base64, OLD.expires_at, OLD.refund_requested_at, OLD.created_at) THEN
+      OLD.quantity, OLD.amount_cents, OLD.payment_method, OLD.checkout_url, OLD.transaction_nsu, OLD.invoice_slug,
+      OLD.paid_amount_cents, OLD.installments, OLD.receipt_url, OLD.expires_at, OLD.refund_requested_at, OLD.created_at) THEN
     RAISE EXCEPTION 'Alteração não permitida neste ingresso.' USING ERRCODE = '42501';
   END IF;
 

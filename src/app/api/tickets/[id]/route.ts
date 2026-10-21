@@ -27,7 +27,7 @@ async function loadOwnTicket(request: Request, params: RouteContext['params']) {
   return { ticket };
 }
 
-// Cancela pedido pendente. A cobrança PIX no Mercado Pago não é cancelada aqui.
+// Cancela pedido pendente. O link de pagamento continua válido até expirar no gateway.
 export async function PATCH(request: Request, { params }: RouteContext) {
   try {
     const parsed = patchSchema.safeParse(await request.json().catch(() => null));

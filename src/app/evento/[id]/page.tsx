@@ -15,10 +15,9 @@ import { useEventDetails } from './_hooks/useEventDetails';
 import { useCoupon } from './_hooks/useCoupon';
 import { EventCover, EventInfo } from './_components/EventDetailsHeader';
 import { OrderSummaryModal } from './_components/OrderSummaryModal';
-import { PixPaymentCard } from './_components/PixPaymentCard';
 import { ApprovedTicketCard, PendingOrderCard, SoldOutCard } from './_components/OrderStatusCards';
 import { PurchasePanel } from './_components/PurchasePanel';
-import type { GuestData, PixData } from './types';
+import type { GuestData } from './types';
 
 const EMPTY_GUEST: GuestData = { name: '', email: '', cpf: '', phone: '' };
 
@@ -33,7 +32,6 @@ export default function EventDetails() {
 
   const [guest, setGuest] = useState<GuestData>(EMPTY_GUEST);
   const [buying, setBuying] = useState(false);
-  const [pixData, setPixData] = useState<PixData | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [dialog, setDialog] = useState<DialogConfig | null>(null);
   const [isModalProcessing, setIsModalProcessing] = useState(false);
@@ -114,7 +112,7 @@ export default function EventDetails() {
 
   const handleBuy = async () => {
     setBuying(true);
-    const toastId = toast.loading(finalPrice === 0 ? 'Garantindo sua vaga...' : 'Gerando PIX seguro e reservando a sua vaga...');
+    const toastId = toast.loading(finalPrice === 0 ? 'Garantindo sua vaga...' : 'Reservando a sua vaga e abrindo o pagamento...');
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -124,7 +122,7 @@ export default function EventDetails() {
         return;
       }
 
-      // O servidor cria o ingresso, calcula o preço e gera o PIX
+      // O servidor cria o ingresso, calcula o preço e gera o link de pagamento
       const res = await fetch('/api/payment', {
         method: 'POST',
         headers: {
@@ -149,10 +147,9 @@ export default function EventDetails() {
         return;
       }
 
-      setPixData(paymentResponse);
       setPendingTicket({ id: paymentResponse.ticketId, expires_at: paymentResponse.expires_at });
-      setShowConfirmModal(false);
-      toast.success('PIX gerado! Realize o pagamento em até 30 minutos.', { id: toastId });
+      toast.success('Vaga reservada! Redirecionando para o pagamento...', { id: toastId });
+      window.location.href = paymentResponse.checkout_url;
     } catch (error) {
       toast.error(getErrorMessage(error, 'Erro ao processar requisição.'), { id: toastId });
       setShowConfirmModal(false);
@@ -162,7 +159,6 @@ export default function EventDetails() {
   };
 
   const renderOrderArea = () => {
-    if (pixData) return <PixPaymentCard pixData={pixData} />;
     if (pendingTicket) return <PendingOrderCard eventId={event.id} ticketId={pendingTicket.id} onCancel={promptCancelPending} />;
     if (hasApprovedTicket) return <ApprovedTicketCard />;
     if (isSoldOut) return <SoldOutCard />;
