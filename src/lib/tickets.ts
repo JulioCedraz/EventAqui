@@ -133,7 +133,7 @@ export async function approveTicket(ticketId: string): Promise<boolean> {
   return true;
 }
 
-// Ingressos que ocupam vaga: aprovados ou pendentes dentro do prazo do PIX.
+// Ingressos que ocupam vaga: aprovados ou pendentes dentro do prazo de pagamento.
 export async function getActiveTickets(eventId: string) {
   const { data } = await supabaseAdmin
     .from('tickets')

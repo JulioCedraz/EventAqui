@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../../lib/supabase';
-import { cancelTicket } from '@/lib/api-client';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Database } from '../../../../types/database.types';
@@ -91,9 +90,9 @@ export default function ResumePaymentPage() {
       const limitTime = new Date(ticketData.expires_at).getTime();
       const nowTime = new Date().getTime();
 
+      // O navegador não cancela: o cron faz isso com folga para um pagamento ainda em trânsito.
       if (nowTime > limitTime) {
         setIsExpired(true);
-        await cancelTicket(ticketId).catch((error) => console.error('Falha ao cancelar pedido expirado:', error));
         setLoading(false);
       } else {
         intervalId = setInterval(() => {
@@ -103,7 +102,6 @@ export default function ResumePaymentPage() {
           if (distance <= 0) {
             clearInterval(intervalId);
             setIsExpired(true);
-            cancelTicket(ticketId).catch((error) => console.error('Falha ao cancelar pedido expirado:', error));
           } else {
             const minutes = String(Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
             const seconds = String(Math.floor((distance % (1000 * 60)) / 1000)).padStart(2, '0');
@@ -161,7 +159,7 @@ export default function ResumePaymentPage() {
               <Clock className="w-8 h-8 text-red-500 dark:text-red-400" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2 transition-colors">Prazo de Pagamento Encerrado</h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-8 transition-colors">O prazo de 30 minutos para pagamento encerrou e o seu pedido foi cancelado. Para garantir o seu ingresso, faça um novo pedido.</p>
+            <p className="text-gray-600 dark:text-gray-400 mb-8 transition-colors">O prazo de 30 minutos para pagamento encerrou. Se você pagou agora há pouco, o ingresso aparece em Meus Ingressos em instantes. Se não, faça um novo pedido.</p>
             <Button 
               onClick={() => router.push(`/evento/${eventId}`)} 
               className="w-full h-12 text-base font-bold rounded-xl bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white transition-colors"
