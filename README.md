@@ -1,6 +1,6 @@
 # 🎟️ EventAqui - Plataforma de Gestão e Venda de Ingressos
 
-O **EventAqui** é um sistema web completo e responsivo desenhado para promover criação e divulgação de eventos, venda de ingressos com aprovação instantânea via PIX e a gestão de portaria através de leitura de QR Code.
+O **EventAqui** é um sistema web completo e responsivo desenhado para promover criação e divulgação de eventos, venda de ingressos com PIX ou cartão de crédito e a gestão de portaria através de leitura de QR Code.
 
 **Demo:** [eventaqui.vercel.app](https://eventaqui.vercel.app/como-funciona)
 
@@ -9,7 +9,7 @@ O **EventAqui** é um sistema web completo e responsivo desenhado para promover 
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-000000?style=for-the-badge&logo=shadcnui&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
-![Mercado Pago](https://img.shields.io/badge/Mercado_Pago-00B1EA?style=for-the-badge&logo=mercado-pago&logoColor=white)
+![InfinitePay](https://img.shields.io/badge/InfinitePay-1A1A1A?style=for-the-badge)
 
 [![CI](https://github.com/JulioCedraz/eventaqui/actions/workflows/ci.yml/badge.svg)](https://github.com/JulioCedraz/eventaqui/actions/workflows/ci.yml)
 
@@ -18,22 +18,22 @@ O **EventAqui** é um sistema web completo e responsivo desenhado para promover 
 ### Para o Usuário (Cliente)
 * **Vitrine de Eventos:** Exploração de eventos em um grid responsivo e moderno.
 * **Autenticação Segura:** Criação de conta com confirmação de e-mail e login protegido.
-* **Checkout Rápido:** Compra de ingressos com pagamento via **PIX** (QR Code e Copia e Cola), cupons de desconto e ingresso "casadinha" com convite por e-mail para o acompanhante.
+* **Checkout Rápido:** Compra de ingressos com **PIX** ou **cartão de crédito** no checkout hospedado da InfinitePay, cupons de desconto e ingresso "casadinha" com convite por e-mail para o acompanhante.
 * **Meus Ingressos:** Painel para visualizar ingressos comprados, com QR Code de entrada em visual de "bilhete" e status de pagamento atualizado automaticamente.
 
 ### Para o Produtor de Eventos
 * **Hub Administrativo:** Dashboard centralizado com atalhos rápidos e interface fluida.
-* **Recebimentos Diretos (Conta Bancária):** Conexão OAuth 2.0 segura com o Mercado Pago. O produtor vincula a própria conta para receber o valor das vendas instantaneamente via PIX.
-* **Dashboard de Vendas:** KPIs de receita bruta, ingressos vendidos e valores aguardando PIX, com filtros por evento, status e cupom.
+* **Recebimentos Diretos:** O produtor conecta a própria conta InfinitePay com a InfiniteTag e a API Key do Checkout, guardada criptografada. O valor das vendas cai direto na conta dele.
+* **Dashboard de Vendas:** KPIs de receita bruta, ingressos vendidos e valores aguardando pagamento, com filtros por evento, status e cupom.
 * **Gestão de Eventos e Cupons:** Criação e edição de eventos com upload de capa, limite de vagas e cupons por evento.
 * **Gestão de Equipe (Agentes):** Recrutamento de agentes de portaria com convite por e-mail. O agente usa o leitor de QR Code integrado para validar os ingressos na entrada e evitar fraudes e duplicidades.
 
 ### Engine e Integrações
-* **Recebimento Direto via Mercado Pago:** Pagamentos criados pela API do Mercado Pago (Checkout Transparente) com a conta conectada do produtor, que recebe o valor das vendas diretamente. A cobrança de taxa da plataforma está desativada nesta fase de validação.
+* **Checkout Integrado da InfinitePay:** Cada pedido gera um link de pagamento único na conta do produtor, que expira junto com a reserva de 30 minutos. PIX sem taxa; no cartão, vale a taxa da InfinitePay. A plataforma não cobra taxa.
 * **Regras de Preço:** Eventos são gratuitos ou têm valor mínimo de R$ 1,00. O valor cobrado é sempre recalculado no servidor, incluindo cupons e vagas disponíveis.
 * **Onboarding de Convidados:** Usuários convidados recebem um link mágico por e-mail e são levados à conclusão do perfil e à definição de senha.
 * **Agentes Compartilhados entre Produtores:** O agente de portaria cria a conta uma única vez. Qualquer produtor pode adicioná-lo à própria equipe pelo e-mail, e o acesso aos eventos daquele produtor é liberado sem novo cadastro.
-* **Baixa Automática (Webhook):** O webhook consulta o pagamento direto no Mercado Pago e só aprova o ingresso se o PIX for o gerado para aquele pedido, na conta do dono do evento.
+* **Baixa Automática (Webhook):** A notificação da InfinitePay não tem assinatura, então só dispara uma consulta ao `payment_check` com a chave do produtor. O ingresso é aprovado só se o pagamento estiver pago, com o valor do pedido e uma transação ainda não usada. A volta do checkout faz a mesma conferência.
 * **Pedidos Vencidos:** Um job do `pg_cron` cancela pedidos pendentes vencidos. Pagamento que chega depois do prazo só vira ingresso se ainda houver vaga; senão, o produtor recebe um e-mail para estornar.
 
 ### Segurança e Conformidade (LGPD)
@@ -49,10 +49,10 @@ O projeto passou por uma auditoria de segurança. Os princípios aplicados:
 
 * **Nada que vem do cliente é confiável:** preço, desconto, status de pagamento, papel do usuário e dono do recurso são sempre recalculados ou buscados no servidor.
 * **Row Level Security em todas as tabelas:** cada policy de escrita tem `WITH CHECK`, e nenhuma tabela com CPF, e-mail ou telefone tem leitura pública.
-* **Campos sensíveis protegidos por triggers:** o próprio usuário não consegue alterar papel, status, tokens do Mercado Pago nem o status de pagamento dos ingressos.
+* **Campos sensíveis protegidos por triggers:** o próprio usuário não consegue alterar papel, status, credenciais de pagamento nem o status de pagamento dos ingressos.
 * **Papel do usuário com uma única fonte:** `profiles.role`, lido pela RLS, pelas rotas da API e pelas telas. Nunca `user_metadata`, que o usuário edita.
 * **Rotas da API:** toda rota autentica o usuário, confere se ele é dono do recurso e valida o body com `zod`. Erros internos nunca são devolvidos ao cliente.
-* **OAuth com `state` assinado:** o `state` do Mercado Pago fica ligado ao usuário que iniciou a conexão, por um cookie com HMAC.
+* **API Key criptografada:** a chave do produtor é gravada com AES-256-GCM e nunca volta para o navegador; a tela mostra só os 4 últimos caracteres.
 * **E-mails:** todo dado do usuário inserido no HTML é escapado.
 * **Segredos:** nenhum segredo usa o prefixo `NEXT_PUBLIC_`, e o histórico do repositório foi varrido com o gitleaks.
 
@@ -65,8 +65,9 @@ flowchart LR
     B[Navegador] -->|Supabase JS + RLS| SB[(Supabase<br/>Postgres, Auth, Storage)]
     B -->|fetch + token| API[Next.js<br/>Route Handlers]
     API -->|service role| SB
-    API -->|PIX com o token do produtor| MP[Mercado Pago]
-    MP -->|webhook| API
+    API -->|link de pagamento com a API Key do produtor| IP[InfinitePay]
+    IP -->|webhook| API
+    API -->|payment_check| IP
     API -->|Nodemailer| M[Gmail SMTP]
     CRON[pg_cron] --> SB
 ```
@@ -79,7 +80,7 @@ flowchart LR
 
 ## 🧪 Qualidade
 
-* **133 testes** com [Vitest](https://vitest.dev/), cobrindo regras de negócio e as rotas da API com um Supabase falso em memória.
+* **147 testes** com [Vitest](https://vitest.dev/), cobrindo regras de negócio e as rotas da API com um Supabase falso em memória.
 * **CI no GitHub Actions** em todo PR: typecheck, lint, testes e build.
 * **TypeScript estrito**, com os tipos do banco gerados pelo Supabase.
 
@@ -92,7 +93,7 @@ flowchart LR
 * **Interface e Estilização:** [Tailwind CSS](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/)
 * **Ícones e Feedbacks:** [Lucide React](https://lucide.dev/) e [Sonner](https://sonner.emilkowal.ski/)
 * **BaaS (Banco de Dados, Auth, Storage e Cron):** [Supabase](https://supabase.com/)
-* **Gateway de Pagamento:** [API do Mercado Pago](https://www.mercadopago.com.br/developers) (OAuth 2.0)
+* **Gateway de Pagamento:** [Checkout Integrado da InfinitePay](https://ajuda.infinitepay.io/pt-BR/articles/10766888-como-usar-o-checkout-integrado-da-infinitepay)
 * **E-mails:** [Nodemailer](https://nodemailer.com/)
 * **Validação e Testes:** [Zod](https://zod.dev/) e [Vitest](https://vitest.dev/)
 
@@ -100,7 +101,7 @@ flowchart LR
 
 ## 🚀 Rodando Localmente
 
-**Pré-requisitos:** Node.js 24, um projeto no [Supabase](https://supabase.com/), uma aplicação no [painel de desenvolvedores do Mercado Pago](https://www.mercadopago.com.br/developers) e uma conta Gmail com senha de app.
+**Pré-requisitos:** Node.js 24, um projeto no [Supabase](https://supabase.com/), uma conta na [InfinitePay](https://www.infinitepay.io/) com a API Key do Checkout (para testar pagamentos) e uma conta Gmail com senha de app.
 
 1. Instale as dependências:
    ```bash
@@ -118,9 +119,8 @@ flowchart LR
 | `NEXT_PUBLIC_SUPABASE_URL` | URL do projeto Supabase |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Chave pública (anon) do Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | Chave service role, usada só no servidor |
-| `NEXT_PUBLIC_SITE_URL` | URL pública do site, usada nos links de e-mail e no OAuth |
-| `NEXT_PUBLIC_MP_APP_ID` | ID da aplicação no Mercado Pago |
-| `MP_CLIENT_SECRET` | Client secret da aplicação no Mercado Pago |
+| `NEXT_PUBLIC_SITE_URL` | URL pública do site, usada nos links de e-mail e no retorno do checkout |
+| `PAYMENT_KEY_SECRET` | Chave de 32 bytes em base64 que criptografa as API Keys dos produtores. Se for perdida, cada produtor precisa conectar a conta de novo |
 | `GMAIL_USER` | Conta Gmail que envia os e-mails |
 | `GMAIL_PASS` | Senha de app dessa conta |
 | `CRON_SECRET` | Segredo que a Vercel envia ao chamar `/api/keepalive`, o ping diário que evita a pausa do Supabase por inatividade |
