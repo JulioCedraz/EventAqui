@@ -1,6 +1,6 @@
 'use client';
 
-import { Clock, DollarSignIcon, Loader2, Tag, Ticket } from 'lucide-react';
+import { Clock, CreditCard, DollarSignIcon, Loader2, Tag, Ticket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatBRL } from '@/lib/utils';
@@ -65,6 +65,7 @@ export function OrderSummaryModal({ basePrice, finalPrice, isFreeEvent, isCasadi
                 <span className="flex gap-2 items-center justify-center font-semibold text-gray-900 dark:text-gray-100 transition-colors">
                   Pix ou cartão
                   <img src="/pix.svg" className="w-5 h-5 dark:brightness-200" alt="Pix" />
+                  <CreditCard className="w-5 h-5 text-gray-700 dark:text-gray-300" aria-label="Cartão de crédito" />
                 </span>
               </div>
             )}

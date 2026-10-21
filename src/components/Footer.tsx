@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Ticket, ArrowUp } from "lucide-react";
+import { Ticket, ArrowUp, CreditCard } from "lucide-react";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -154,6 +154,13 @@ export default function Footer() {
                   src="/pix.svg"
                   alt="PIX"
                   className="object-contain h-8 w-auto opacity-90 dark:opacity-80 hover:opacity-100 dark:hover:opacity-100 transition-opacity"
+                />
+              </div>
+
+              <div className="h-8 flex items-center">
+                <CreditCard
+                  aria-label="Cartão de crédito"
+                  className="h-8 w-8 text-gray-500 dark:text-gray-400 opacity-90 dark:opacity-80 hover:opacity-100 dark:hover:opacity-100 transition-opacity"
                 />
               </div>
             </div>

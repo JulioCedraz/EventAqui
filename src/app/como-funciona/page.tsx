@@ -20,6 +20,7 @@ import {
   TrendingUp,
   Tag,
   CalendarPlus,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -289,6 +290,10 @@ export default function ProducersLandingPage() {
                 width={120}
                 height={40}
                 className="h-10 w-auto object-contain block drop-shadow-sm"
+              />
+              <CreditCard
+                aria-label="Cartão de crédito"
+                className="h-10 w-10 text-gray-600 dark:text-gray-300 drop-shadow-sm"
               />
               <Image
                 src="/mercado-pago.svg"
