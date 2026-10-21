@@ -1,44 +1,25 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { PANEL_ROLES } from '@/lib/roles';
 import { useRoleGuard } from '@/hooks/useRoleGuard';
-import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import MercadoPagoConnect from '../../components/MercadoPagoConnect';
+import InfinitePayConnect from '../../components/InfinitePayConnect';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import { 
   Loader2, QrCode, Calendar, TrendingUp, 
   ChevronRight, ShieldCheck, Briefcase 
 } from "lucide-react";
 
-function AdminHubContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+export default function AdminHub() {
   const access = useRoleGuard({
     allow: PANEL_ROLES,
     deniedMessage: 'Você não tem permissão para acessar esta área.',
     toastId: 'unauthorized-access',
   });
   const [userName, setUserName] = useState('');
-  
-  const [isAlreadyConnected, setIsAlreadyConnected] = useState(false);
-
-  useEffect(() => {
-    const success = searchParams.get('success');
-    const error = searchParams.get('error');
-
-    if (success === 'mp_connected') {
-      toast.success('Conta do Mercado Pago vinculada com sucesso! Você já pode receber PIX.', { duration: 5000 });
-      router.replace('/admin');
-    } else if (error === 'mp_auth_failed' || error === 'missing_mp_params') {
-      toast.error('Não foi possível conectar a conta. Por favor, tente novamente.', { duration: 5000 });
-      router.replace('/admin');
-    }
-  }, [searchParams, router]);
 
   useEffect(() => {
     if (!access) return;
@@ -46,12 +27,11 @@ function AdminHubContent() {
     const loadProfile = async () => {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('first_name, mp_user_id')
+        .select('first_name')
         .eq('id', access.uid)
         .single();
 
       setUserName(profile?.first_name || '');
-      setIsAlreadyConnected(!!profile?.mp_user_id);
     };
 
     loadProfile();
@@ -127,7 +107,7 @@ function AdminHubContent() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
           
-          <MercadoPagoConnect isAlreadyConnected={isAlreadyConnected} />
+          <InfinitePayConnect />
 
           {menuActions.map((action, index) => (
             <Card key={index} className={`border-0 dark:border dark:border-border dark:hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group overflow-hidden rounded-3xl flex flex-col ${action.color}`}>
@@ -159,14 +139,3 @@ function AdminHubContent() {
   );
 }
 
-export default function AdminHub() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background">
-        <Loader2 className="w-10 h-10 animate-spin text-blue-600 dark:text-blue-500" />
-      </div>
-    }>
-      <AdminHubContent />
-    </Suspense>
-  );
-}

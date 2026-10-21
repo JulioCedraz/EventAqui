@@ -8,11 +8,10 @@ import Link from 'next/link';
 import { Database } from '../../../../types/database.types';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { 
-  Loader2, AlertCircle, Clock, Copy,
-  CheckCircle2, QrCode, Ticket, Tag,
+  Loader2, AlertCircle, Clock, CreditCard,
+  ExternalLink, Ticket, Tag,
   Receipt, User, Calendar, ArrowLeft
 } from "lucide-react";
 import type { TicketWithEvent } from '@/types/tickets';
@@ -27,13 +26,11 @@ export default function ResumePaymentPage() {
   const ticketId = params?.ticketId as string;
 
   const [loading, setLoading] = useState(true);
-  const [pixData, setPixData] = useState<{ qr_code: string; qr_code_base64: string } | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [eventDetails, setEventDetails] = useState<Event | null>(null);
   const [ticketDetails, setTicketDetails] = useState<TicketWithEvent | null>(null);
   const [timeLeft, setTimeLeft] = useState<string>('Calculando...');
   const [isExpired, setIsExpired] = useState(false);
-  const [copiedPix, setCopiedPix] = useState(false);
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
@@ -43,6 +40,26 @@ export default function ResumePaymentPage() {
 
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { router.push('/login'); return; }
+
+      // Volta do checkout: confirma no servidor antes de olhar prazo e status.
+      const returned = new URLSearchParams(window.location.search);
+      const transactionNsu = returned.get('transaction_nsu');
+      const slug = returned.get('slug');
+
+      if (transactionNsu && slug) {
+        const res = await fetch('/api/payment/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+          body: JSON.stringify({ ticketId, transactionNsu, slug, receiptUrl: returned.get('receipt_url') ?? undefined }),
+        }).catch(() => null);
+
+        const confirmation = await res?.json().catch(() => null);
+        if (confirmation?.status === 'approved') {
+          toast.success('Pagamento confirmado! Seu ingresso está disponível.');
+          router.push('/tickets');
+          return;
+        }
+      }
 
       const { data: ticketData, error: ticketError } = await supabase
         .from('tickets')
@@ -62,8 +79,8 @@ export default function ResumePaymentPage() {
         return;
       }
 
-      if (!ticketData.expires_at) {
-        setErrorMsg('Erro interno: A validade deste ingresso não foi registrada corretamente. Por favor, cancele e tente novamente.');
+      if (!ticketData.expires_at || !ticketData.checkout_url) {
+        setErrorMsg('Este pedido não tem um link de pagamento válido. Por favor, cancele e faça um novo pedido.');
         setLoading(false);
         return;
       }
@@ -76,14 +93,9 @@ export default function ResumePaymentPage() {
 
       if (nowTime > limitTime) {
         setIsExpired(true);
-        await cancelTicket(ticketId).catch((error) => console.error('Falha ao cancelar PIX expirado:', error));
+        await cancelTicket(ticketId).catch((error) => console.error('Falha ao cancelar pedido expirado:', error));
         setLoading(false);
       } else {
-        setPixData({
-          qr_code: ticketData.pix_qr_code || '',
-          qr_code_base64: ticketData.pix_qr_code_base64 || ''
-        });
-
         intervalId = setInterval(() => {
           const currentNow = new Date().getTime();
           const distance = limitTime - currentNow;
@@ -91,7 +103,7 @@ export default function ResumePaymentPage() {
           if (distance <= 0) {
             clearInterval(intervalId);
             setIsExpired(true);
-            cancelTicket(ticketId).catch((error) => console.error('Falha ao cancelar PIX expirado:', error));
+            cancelTicket(ticketId).catch((error) => console.error('Falha ao cancelar pedido expirado:', error));
           } else {
             const minutes = String(Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
             const seconds = String(Math.floor((distance % (1000 * 60)) / 1000)).padStart(2, '0');
@@ -109,20 +121,6 @@ export default function ResumePaymentPage() {
       if (intervalId) clearInterval(intervalId);
     };
   }, [eventId, ticketId, router]);
-
-  const copyPix = async () => {
-    if (!pixData?.qr_code) return;
-
-    try {
-      await navigator.clipboard.writeText(pixData.qr_code);
-      setCopiedPix(true);
-      toast.success('Código PIX copiado com sucesso!');
-      
-      setTimeout(() => setCopiedPix(false), 2000);
-    } catch {
-      toast.error('Erro ao copiar. Por favor, selecione e copie o código manualmente.');
-    }
-  };
 
   if (loading) {
     return (
@@ -162,7 +160,7 @@ export default function ResumePaymentPage() {
             <div className="w-16 h-16 bg-red-50 dark:bg-red-500/10 rounded-full flex items-center justify-center mb-6 transition-colors">
               <Clock className="w-8 h-8 text-red-500 dark:text-red-400" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2 transition-colors">Código PIX Expirado</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2 transition-colors">Prazo de Pagamento Encerrado</h2>
             <p className="text-gray-600 dark:text-gray-400 mb-8 transition-colors">O prazo de 30 minutos para pagamento encerrou e o seu pedido foi cancelado. Para garantir o seu ingresso, faça um novo pedido.</p>
             <Button 
               onClick={() => router.push(`/evento/${eventId}`)} 
@@ -195,7 +193,7 @@ export default function ResumePaymentPage() {
         
         <div className="bg-blue-600 dark:bg-blue-900/40 border-b border-transparent dark:border-blue-900/50 p-8 text-center transition-colors">
           <div className="mx-auto w-12 h-12 bg-blue-500/50 dark:bg-blue-500/20 rounded-full flex items-center justify-center mb-4 transition-colors shadow-inner">
-            <QrCode className="w-6 h-6 text-white dark:text-blue-400" />
+            <CreditCard className="w-6 h-6 text-white dark:text-blue-400" />
           </div>
           <h1 className="text-2xl font-extrabold text-white dark:text-blue-50 tracking-tight transition-colors mb-2">Pagamento pendente</h1>
           <Link href={`/evento/${eventId}`} className="inline-flex items-center justify-center gap-1.5 text-blue-100 dark:text-blue-300 hover:text-white dark:hover:text-blue-100 hover:underline transition-colors font-medium">
@@ -264,47 +262,21 @@ export default function ResumePaymentPage() {
             </div>
           </div>
 
-          {pixData && (
-            <div className="text-center flex flex-col items-center">
-              
-              <div className="w-full text-left mb-4">
-                <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 transition-colors">Pix QR Code</p>
-                <p className="text-gray-500 dark:text-gray-400 text-sm transition-colors">Pegue o seu celular, acesse o aplicativo do seu banco, toque em Pix, depois em Ler QR Code:</p>
-              </div>
-              
-              <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800 mb-8 inline-block transition-colors">
-                {/* eslint-disable-next-line @next/next/no-img-element -- QR Code em data URL */}
-                <img 
-                  src={`data:image/jpeg;base64,${pixData.qr_code_base64}`} 
-                  alt="QR Code PIX" 
-                  className="w-48 h-48 sm:w-56 sm:h-56 object-contain" 
-                />
-              </div>
-              
-              <div className="w-full mb-8 text-left">
-                <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 transition-colors">PIX Copia e Cola</p>
-                <p className="text-gray-500 dark:text-gray-400 text-sm mb-3 transition-colors">Está no celular? Copie o código abaixo, acesse o aplicativo do seu banco, e cole na área de pagamento Pix Copia e Cola.</p>
-                <div className="flex gap-2">
-                  <Input 
-                    type="text" 
-                    readOnly 
-                    value={pixData.qr_code} 
-                    className="font-mono text-xs bg-gray-50 dark:bg-slate-900 dark:border-slate-700/50 dark:text-gray-300 h-12 rounded-xl focus-visible:ring-blue-500 transition-colors"
-                    onClick={(e) => (e.target as HTMLInputElement).select()}
-                  />
-                  <Button 
-                    type="button"
-                    onClick={copyPix}
-                    className={`h-12 px-6 rounded-xl font-bold transition-all shrink-0 shadow-sm ${
-                      copiedPix ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-900 hover:bg-gray-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white'
-                    }`}
-                  >
-                    {copiedPix ? <CheckCircle2 className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-                  </Button>
-                </div>
-              </div>
+          {ticketDetails?.checkout_url && (
+            <div className="flex flex-col gap-3">
+              <Button
+                asChild
+                className="w-full h-12 text-base font-bold rounded-xl bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white transition-colors"
+              >
+                <a href={ticketDetails.checkout_url}>
+                  Ir para o Pagamento <ExternalLink className="w-4 h-4 ml-2" />
+                </a>
+              </Button>
+              <p className="text-xs text-center text-gray-500 dark:text-gray-400 transition-colors">
+                PIX sem acréscimo. No cartão, a operadora pode acrescentar juros conforme o parcelamento.
+              </p>
 
-              <div className="w-full pt-6 border-t border-gray-100 dark:border-border transition-colors">
+              <div className="w-full pt-6 mt-3 border-t border-gray-100 dark:border-border transition-colors">
                 <Button 
                   variant="outline"
                   onClick={() => router.push('/tickets')} 
@@ -314,7 +286,6 @@ export default function ResumePaymentPage() {
                   Voltar para Meus Ingressos
                 </Button>
               </div>
-
             </div>
           )}
         </CardContent>

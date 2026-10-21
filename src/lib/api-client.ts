@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 
 // Chama a API com o token da sessão e devolve o JSON da resposta. Lança erro com a mensagem do servidor, quando houver.
-export async function callApi<T = void>(path: string, method: 'GET' | 'POST' | 'PATCH' | 'DELETE', body?: unknown): Promise<T> {
+export async function callApi<T = void>(path: string, method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', body?: unknown): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('Sessão expirada. Entre novamente.');
 

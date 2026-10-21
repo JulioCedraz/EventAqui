@@ -6,6 +6,7 @@ import { POST } from './route';
 
 vi.mock('@/lib/supabase-admin', async () => ({ supabaseAdmin: (await import('@/test/fake-supabase')).fakeDb.client }));
 vi.mock('@/lib/auth', () => ({ getRequestUser: vi.fn() }));
+vi.mock('@/lib/secret-box', () => ({ decryptSecret: (value: string) => value.replace('sealed:', '') }));
 vi.mock('@/lib/mail', () => ({
   sendTicketApprovedEmail: vi.fn().mockResolvedValue({}),
   sendGuestInviteEmail: vi.fn().mockResolvedValue({}),
@@ -29,9 +30,9 @@ const event = (overrides = {}) => ({
   id: EVENT_ID, title: 'Calourada', price: 50, total_spots: null, producer_id: PRODUCER_ID, ...overrides,
 });
 
-const mpPayment = { id: 987, point_of_interaction: { transaction_data: { qr_code: 'PIX-QR', qr_code_base64: 'BASE64' } } };
+const CHECKOUT_URL = 'https://checkout.infinitepay.io/produtora/abc123';
 
-const mpBody = () => JSON.parse(fetchMock.mock.calls[0][1].body);
+const linkBody = () => JSON.parse(fetchMock.mock.calls[0][1].body);
 const insertedTicket = () => fakeDb.find('tickets', 'insert')[0]?.payload as Record<string, unknown>;
 const statusUpdates = () =>
   fakeDb.find('tickets', 'update').map((q) => (q.payload as Record<string, unknown>).payment_status).filter(Boolean);
@@ -45,13 +46,13 @@ beforeEach(() => {
   fakeDb.on('events', 'select', { data: event() });
   fakeDb.on('tickets', 'select', { data: [] });
   fakeDb.on('profiles', 'select', { data: { first_name: 'Alice', last_name: 'Souza' } });
-  fakeDb.on('profiles', 'select', { data: { mp_access_token: 'producer-token' } }, (q) => q.columns === 'mp_access_token');
+  fakeDb.on('profiles', 'select', { data: { infinitepay_api_key_enc: 'sealed:inchk_producer' } }, (q) => q.columns === 'infinitepay_api_key_enc');
   fakeDb.on('tickets', 'select', { data: { payment_status: 'pending', expires_at: null, quantity: 1, event_id: EVENT_ID, events: { total_spots: null } } },
     (q) => !!q.columns?.includes('total_spots'));
   fakeDb.on('tickets', 'insert', { data: { id: TICKET_ID } });
   fakeDb.on('tickets', 'update', { data: { id: TICKET_ID, coupon_id: null, buyer_email: USER.email, events: { title: 'Calourada' } } });
 
-  fetchMock.mockResolvedValue(new Response(JSON.stringify(mpPayment), { status: 201 }));
+  fetchMock.mockResolvedValue(new Response(JSON.stringify({ url: CHECKOUT_URL }), { status: 200 }));
 });
 
 describe('POST /api/payment', () => {
@@ -70,18 +71,26 @@ describe('POST /api/payment', () => {
     const res = await POST(request({ eventId: EVENT_ID, price: 0, payment_status: 'approved' }));
 
     expect(res.status).toBe(200);
-    expect(mpBody().transaction_amount).toBe(50);
-    expect(mpBody().external_reference).toBe(TICKET_ID);
-    expect(insertedTicket()).toMatchObject({ payment_status: 'pending', user_id: USER.id, buyer_email: USER.email, quantity: 1 });
-    expect(await res.json()).toMatchObject({ ticketId: TICKET_ID, qr_code: 'PIX-QR' });
+    expect(linkBody().items).toEqual([{ quantity: 1, price: 5000, description: 'Calourada (1x)' }]);
+    expect(linkBody().order_nsu).toBe(TICKET_ID);
+    expect(insertedTicket()).toMatchObject({ payment_status: 'pending', user_id: USER.id, buyer_email: USER.email, quantity: 1, amount_cents: 5000 });
+    expect(await res.json()).toMatchObject({ ticketId: TICKET_ID, checkout_url: CHECKOUT_URL });
   });
 
-  it('uses the producer token from the database and saves the PIX on the ticket', async () => {
+  it('uses the producer API key from the database and saves the checkout link', async () => {
     await POST(request({ eventId: EVENT_ID }));
 
-    expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe('Bearer producer-token');
-    const pixUpdate = fakeDb.find('tickets', 'update', (q) => (q.payload as Record<string, unknown>).pix_qr_code !== undefined);
-    expect(pixUpdate[0].payload).toEqual({ pix_qr_code: 'PIX-QR', pix_qr_code_base64: 'BASE64' });
+    expect(fetchMock.mock.calls[0][0]).toBe('https://api.checkout.infinitepay.io/links');
+    expect(fetchMock.mock.calls[0][1].headers['X-Api-Key']).toBe('inchk_producer');
+    const linkUpdate = fakeDb.find('tickets', 'update', (q) => (q.payload as Record<string, unknown>).checkout_url !== undefined);
+    expect(linkUpdate[0].payload).toEqual({ checkout_url: CHECKOUT_URL });
+  });
+
+  it('expires the link with the reservation and keeps a single payment per link', async () => {
+    await POST(request({ eventId: EVENT_ID }));
+
+    expect(linkBody().options).toMatchObject({ single_payment: true, valid_until: insertedTicket().expires_at, assured_installments: 0 });
+    expect(linkBody().redirect_url).toContain(`/evento/${EVENT_ID}/${TICKET_ID}`);
   });
 
   it('applies a valid coupon of the same event', async () => {
@@ -91,7 +100,7 @@ describe('POST /api/payment', () => {
 
     await POST(request({ eventId: EVENT_ID, couponCode: 'promo' }));
 
-    expect(mpBody().transaction_amount).toBe(40);
+    expect(linkBody().items[0].price).toBe(4000);
     expect(insertedTicket().coupon_id).toBe('c1');
   });
 
@@ -105,18 +114,19 @@ describe('POST /api/payment', () => {
     const guest = { name: 'Bob Lima', email: 'BOB@X.COM', cpf: '123.456.789-09' };
     await POST(request({ eventId: EVENT_ID, isCasadinha: true, guest }));
 
-    expect(mpBody().transaction_amount).toBe(100);
+    expect(linkBody().items[0].price).toBe(10000);
     expect(insertedTicket().quantity).toBe(2);
     expect(fakeDb.find('guests', 'insert')[0].payload).toMatchObject({ ticket_id: TICKET_ID, buyer_id: USER.id, guest_email: 'bob@x.com' });
   });
 
-  it('approves free events on the server without calling Mercado Pago', async () => {
+  it('approves free events on the server without calling the gateway', async () => {
     fakeDb.on('events', 'select', { data: event({ price: 0 }) });
 
     const res = await POST(request({ eventId: EVENT_ID }));
 
     expect(await res.json()).toMatchObject({ is_free: true, status: 'approved' });
     expect(fetchMock).not.toHaveBeenCalled();
+    expect(insertedTicket()).toMatchObject({ amount_cents: 0, payment_method: 'free', expires_at: null });
     expect(statusUpdates()).toEqual(['approved']);
     expect(sendTicketApprovedEmail).toHaveBeenCalledWith(USER.email, 'Calourada', TICKET_ID);
   });
@@ -144,15 +154,15 @@ describe('POST /api/payment', () => {
     expect(fakeDb.find('tickets', 'insert')).toHaveLength(0);
   });
 
-  it('cancels the ticket when the producer has no Mercado Pago account', async () => {
-    fakeDb.on('profiles', 'select', { data: { mp_access_token: null } }, (q) => q.columns === 'mp_access_token');
+  it('cancels the ticket when the producer has no InfinitePay account', async () => {
+    fakeDb.on('profiles', 'select', { data: { infinitepay_api_key_enc: null } }, (q) => q.columns === 'infinitepay_api_key_enc');
 
     const res = await POST(request({ eventId: EVENT_ID }));
     expect(res.status).toBe(400);
     expect(statusUpdates()).toEqual(['cancelled']);
   });
 
-  it('cancels the ticket when Mercado Pago fails', async () => {
+  it('cancels the ticket when the gateway fails', async () => {
     fetchMock.mockResolvedValue(new Response(JSON.stringify({ message: 'bad' }), { status: 400 }));
 
     const res = await POST(request({ eventId: EVENT_ID }));

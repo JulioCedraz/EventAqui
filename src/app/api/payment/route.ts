@@ -5,8 +5,11 @@ import { getRequestUser } from '@/lib/auth';
 import { applyDiscount, getCouponError } from '@/lib/pricing';
 import { approveTicket, cancelTicket, countSpots, findCoupon, getActiveTickets } from '@/lib/tickets';
 import { SITE_URL } from '@/lib/site';
+import { decryptSecret } from '@/lib/secret-box';
+import { createCheckoutLink, InfinitePayError } from '@/lib/infinitepay';
 
-const PIX_EXPIRATION_MINUTES = 30;
+// Prazo da reserva da vaga. O link de pagamento expira junto (valid_until).
+const RESERVATION_MINUTES = 30;
 
 const bodySchema = z.object({
   eventId: z.uuid(),
@@ -59,8 +62,9 @@ export async function POST(request: Request) {
     }
 
     const amount = applyDiscount(Number(event.price) * quantity, coupon);
-    const expiresAt = amount > 0
-      ? new Date(Date.now() + PIX_EXPIRATION_MINUTES * 60_000).toISOString()
+    const amountCents = Math.round(amount * 100);
+    const expiresAt = amountCents > 0
+      ? new Date(Date.now() + RESERVATION_MINUTES * 60_000).toISOString()
       : null;
 
     const { data: profile } = await supabaseAdmin
@@ -82,6 +86,8 @@ export async function POST(request: Request) {
         quantity,
         is_used: false,
         coupon_id: coupon?.id ?? null,
+        amount_cents: amountCents,
+        payment_method: amountCents === 0 ? 'free' : null,
         expires_at: expiresAt,
       })
       .select('id')
@@ -105,67 +111,52 @@ export async function POST(request: Request) {
       }
     }
 
-    if (amount === 0) {
+    if (amountCents === 0) {
       await approveTicket(ticket.id);
       return NextResponse.json({ ticketId: ticket.id, is_free: true, status: 'approved' });
     }
 
     const { data: producer } = await supabaseAdmin
       .from('profiles')
-      .select('mp_access_token')
+      .select('infinitepay_api_key_enc')
       .eq('id', event.producer_id!)
       .single();
 
-    if (!producer?.mp_access_token) {
+    const apiKey = producer?.infinitepay_api_key_enc ? decryptSecret(producer.infinitepay_api_key_enc) : null;
+    if (!apiKey) {
       await cancelTicket(ticket.id);
       return fail('O organizador deste evento ainda não configurou o recebimento.', 400);
     }
 
-    const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${producer.mp_access_token}`,
-        'X-Idempotency-Key': ticket.id,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        transaction_amount: amount,
+    let checkoutUrl: string;
+    try {
+      checkoutUrl = await createCheckoutLink({
+        apiKey,
+        orderNsu: ticket.id,
+        amountCents,
         description: `${event.title} (${quantity}x)`,
-        payment_method_id: 'pix',
-        payer: { email: user.email },
-        date_of_expiration: expiresAt,
-        external_reference: ticket.id,
-        notification_url: `${SITE_URL}/api/webhook?producerId=${event.producer_id}`,
-      }),
-    });
-
-    const payment = await mpResponse.json();
-    const pix = payment.point_of_interaction?.transaction_data;
-
-    if (!mpResponse.ok || !pix?.qr_code) {
-      console.error('Erro Mercado Pago:', payment);
+        customer: { name: buyerName, email: user.email },
+        redirectUrl: `${SITE_URL}/evento/${eventId}/${ticket.id}`,
+        webhookUrl: `${SITE_URL}/api/webhook`,
+        validUntil: expiresAt!,
+      });
+    } catch (error) {
       await cancelTicket(ticket.id);
-      return fail('Falha ao gerar o PIX. Tente novamente.', 502);
+      if (error instanceof InfinitePayError) return fail('Falha ao gerar o pagamento. Tente novamente.', 502);
+      throw error;
     }
 
-    // O QR salvo aqui é o que o webhook usa para confirmar que o pagamento é deste ingresso.
-    const { error: pixError } = await supabaseAdmin
+    const { error: linkError } = await supabaseAdmin
       .from('tickets')
-      .update({ pix_qr_code: pix.qr_code, pix_qr_code_base64: pix.qr_code_base64 })
+      .update({ checkout_url: checkoutUrl })
       .eq('id', ticket.id);
 
-    if (pixError) {
+    if (linkError) {
       await cancelTicket(ticket.id);
-      throw pixError;
+      throw linkError;
     }
 
-    return NextResponse.json({
-      ticketId: ticket.id,
-      id: payment.id,
-      qr_code: pix.qr_code,
-      qr_code_base64: pix.qr_code_base64,
-      expires_at: expiresAt,
-    });
+    return NextResponse.json({ ticketId: ticket.id, checkout_url: checkoutUrl, expires_at: expiresAt });
   } catch (error) {
     console.error('Erro interno no pagamento:', error);
     return fail('Erro interno no servidor.', 500);

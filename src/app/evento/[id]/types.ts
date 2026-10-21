@@ -18,5 +18,3 @@ export type GuestData = {
   cpf: string;
   phone: string;
 };
-
-export type PixData = { qr_code: string; qr_code_base64: string };

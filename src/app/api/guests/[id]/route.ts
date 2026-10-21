@@ -127,6 +127,8 @@ export async function POST(request: Request, { params }: RouteContext) {
         payment_status: 'approved',
         quantity: 1,
         is_used: false,
+        amount_cents: 0,
+        payment_method: 'free',
       })
       .select('id')
       .single();

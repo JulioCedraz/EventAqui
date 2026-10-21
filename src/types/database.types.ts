@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.4"
   }
   public: {
     Tables: {
@@ -223,6 +223,8 @@ export type Database = {
           first_name: string | null
           full_name: string | null
           id: string
+          infinitepay_api_key_enc: string | null
+          infinitepay_handle: string | null
           last_name: string | null
           mp_access_token: string | null
           mp_public_key: string | null
@@ -246,6 +248,8 @@ export type Database = {
           first_name?: string | null
           full_name?: string | null
           id: string
+          infinitepay_api_key_enc?: string | null
+          infinitepay_handle?: string | null
           last_name?: string | null
           mp_access_token?: string | null
           mp_public_key?: string | null
@@ -269,6 +273,8 @@ export type Database = {
           first_name?: string | null
           full_name?: string | null
           id?: string
+          infinitepay_api_key_enc?: string | null
+          infinitepay_handle?: string | null
           last_name?: string | null
           mp_access_token?: string | null
           mp_public_key?: string | null
@@ -293,51 +299,69 @@ export type Database = {
       }
       tickets: {
         Row: {
+          amount_cents: number | null
           buyer_email: string
           buyer_name: string
+          checkout_url: string | null
           coupon_id: string | null
           created_at: string | null
           event_id: string
           expires_at: string | null
           id: string
+          installments: number | null
+          invoice_slug: string | null
           is_used: boolean | null
+          paid_amount_cents: number | null
+          payment_method: string | null
           payment_status: string | null
-          pix_qr_code: string | null
-          pix_qr_code_base64: string | null
           quantity: number
+          receipt_url: string | null
           refund_requested_at: string | null
+          transaction_nsu: string | null
           user_id: string | null
         }
         Insert: {
+          amount_cents?: number | null
           buyer_email: string
           buyer_name: string
+          checkout_url?: string | null
           coupon_id?: string | null
           created_at?: string | null
           event_id: string
           expires_at?: string | null
           id?: string
+          installments?: number | null
+          invoice_slug?: string | null
           is_used?: boolean | null
+          paid_amount_cents?: number | null
+          payment_method?: string | null
           payment_status?: string | null
-          pix_qr_code?: string | null
-          pix_qr_code_base64?: string | null
           quantity?: number
+          receipt_url?: string | null
           refund_requested_at?: string | null
+          transaction_nsu?: string | null
           user_id?: string | null
         }
         Update: {
+          amount_cents?: number | null
           buyer_email?: string
           buyer_name?: string
+          checkout_url?: string | null
           coupon_id?: string | null
           created_at?: string | null
           event_id?: string
           expires_at?: string | null
           id?: string
+          installments?: number | null
+          invoice_slug?: string | null
           is_used?: boolean | null
+          paid_amount_cents?: number | null
+          payment_method?: string | null
           payment_status?: string | null
-          pix_qr_code?: string | null
-          pix_qr_code_base64?: string | null
           quantity?: number
+          receipt_url?: string | null
           refund_requested_at?: string | null
+          transaction_nsu?: string | null
           user_id?: string | null
         }
         Relationships: [
