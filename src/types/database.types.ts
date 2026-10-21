@@ -226,10 +226,6 @@ export type Database = {
           infinitepay_api_key_enc: string | null
           infinitepay_handle: string | null
           last_name: string | null
-          mp_access_token: string | null
-          mp_public_key: string | null
-          mp_refresh_token: string | null
-          mp_user_id: string | null
           phone: string | null
           producer_id: string | null
           role: string | null
@@ -251,10 +247,6 @@ export type Database = {
           infinitepay_api_key_enc?: string | null
           infinitepay_handle?: string | null
           last_name?: string | null
-          mp_access_token?: string | null
-          mp_public_key?: string | null
-          mp_refresh_token?: string | null
-          mp_user_id?: string | null
           phone?: string | null
           producer_id?: string | null
           role?: string | null
@@ -276,10 +268,6 @@ export type Database = {
           infinitepay_api_key_enc?: string | null
           infinitepay_handle?: string | null
           last_name?: string | null
-          mp_access_token?: string | null
-          mp_public_key?: string | null
-          mp_refresh_token?: string | null
-          mp_user_id?: string | null
           phone?: string | null
           producer_id?: string | null
           role?: string | null
