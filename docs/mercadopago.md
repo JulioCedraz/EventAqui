@@ -1,14 +1,13 @@
-# Integração Mercado Pago
+# Integração Mercado Pago (substituída)
 
-Registro da integração com o Mercado Pago (MP), o gateway de pagamento em produção. Documenta como ela funciona, as decisões de segurança e as lacunas, para que a troca planejada pelo InfinitePay, ou uma volta ao MP depois dela, não precise redescobrir o que já foi resolvido.
+Registro da integração com o Mercado Pago (MP), o gateway usado até a troca pela InfinitePay. Documenta como ela funcionava, as decisões de segurança e as lacunas, para que uma volta ao MP não precise redescobrir o que já foi resolvido. O gateway atual está em [`infinitepay.md`](infinitepay.md).
 
-- **Situação:** em produção, só com PIX. O cartão de crédito foi pesquisado, mas não implementado (seção 9).
-- **Troca planejada:** pelo InfinitePay (decisão de 2026-10-11). Ainda não começou: depende de confirmar as taxas do checkout online e, com o suporte do InfinitePay, a expiração do link, o sandbox e a API de estorno.
-- **Quando a troca acontecer:** criar a tag Git `mp-integration-final` no commit anterior ao PR que remove o MP. Com ela, `git checkout mp-integration-final -- <caminho>` recupera qualquer arquivo.
+- **Situação:** substituído pela InfinitePay em 2026-10-21 (PR #33). Funcionou em produção só com PIX. O cartão de crédito foi pesquisado, mas não implementado (seção 9).
+- **Código:** a tag Git `mercadopago-pix` marca o último commit com a integração completa. Com ela, `git checkout mercadopago-pix -- <caminho>` recupera qualquer arquivo.
 
 ## Sumário
 
-1. [Por que a troca está planejada](#1-por-que-a-troca-está-planejada)
+1. [Por que a troca foi feita](#1-por-que-a-troca-foi-feita)
 2. [Como funciona](#2-como-funciona)
 3. [Inventário de arquivos](#3-inventário-de-arquivos)
 4. [Banco de dados](#4-banco-de-dados)
@@ -20,7 +19,7 @@ Registro da integração com o Mercado Pago (MP), o gateway de pagamento em prod
 10. [Como retomar depois da troca](#10-como-retomar-depois-da-troca)
 11. [Referências](#11-referências)
 
-## 1. Por que a troca está planejada
+## 1. Por que a troca foi feita
 
 - O público inicial é de estudantes. O InfinitePay cobra 0% no PIX e tem taxas de cartão menores no plano inicial.
 - O InfinitePay aceita conta de pessoa física (CPF), o que serve para produtor estudante.
@@ -95,7 +94,7 @@ Evento gratuito, ou com valor zerado por cupom, é aprovado no servidor sem cham
 
 ## 3. Inventário de arquivos
 
-Estado atual no `main`.
+Estado na tag `mercadopago-pix`. Tudo isto saiu do `main` na troca.
 
 **Exclusivos do MP:**
 
@@ -185,7 +184,7 @@ Problemas que existem hoje. Se o MP continuar, ou voltar depois da troca, resolv
 
 ## 8. Acoplamentos fora do código do MP
 
-Pontos que dependem do PIX do MP sem estar nos arquivos da integração. Eles quebram ou mudam de sentido na troca de gateway e precisam entrar no PR da troca.
+Pontos que dependiam do PIX do MP sem estar nos arquivos da integração. Todos foram tratados no PR #33: `payment_method` substituiu a heurística, a reserva virou `RESERVATION_MINUTES` e a tela do ingresso troca o QR pelo link do checkout.
 
 - **Heurística "ingresso sem cobrança".** `src/app/admin/orders/page.tsx` e `src/app/tickets/_hooks/useMyTickets.ts` usam `!t.pix_qr_code` para inferir que o ingresso foi gratuito e herdar o cupom do convidado. Com outro gateway, todo ingresso pago fica sem `pix_qr_code`. Substitua por um campo explícito, como `payment_method` ou o valor cobrado.
 - **Prazo de reserva de 30 min.** `PIX_EXPIRATION_MINUTES` em `/api/payment` e o filtro de `getActiveTickets` assumem que o pagamento expira com o PIX.
@@ -222,14 +221,14 @@ Pesquisado em 2026-10-11, antes da decisão de trocar de gateway. Está suspenso
 
 ## 10. Como retomar depois da troca
 
-Vale depois que a troca for feita. A troca pelo InfinitePay deve criar a interface de gateway (`createCharge` / `verifyPayment`). Retomar o MP significa escrever um segundo adaptador para essa interface, não restaurar os arquivos antigos por cima.
+A troca não criou uma interface genérica de gateway: com um gateway só, ela seria abstração sem uso. Retomar o MP começa por extrair essa interface de `src/lib/infinitepay.ts` e `src/lib/payment-confirmation.ts` (`createCharge` / `verifyPayment`) e escrever o adaptador do MP para ela, não restaurar os arquivos antigos por cima.
 
 1. **Leia a seção 7** e decida como tratar cada lacuna.
 2. **Confira a documentação atual do MP:** OAuth, `/v1/payments`, webhook com `x-signature`, Bricks. Os parâmetros mudam com frequência.
 3. **Recupere o código de referência:**
    ```bash
-   git show mp-integration-final:src/app/api/webhook/route.ts
-   git checkout mp-integration-final -- src/lib/oauth-state.ts src/lib/oauth-state.test.ts
+   git show mercadopago-pix:src/app/api/webhook/route.ts
+   git checkout mercadopago-pix -- src/lib/oauth-state.ts src/lib/oauth-state.test.ts
    ```
    `oauth-state.ts` pode voltar quase sem mudança. As rotas e o webhook servem de base para o adaptador.
 4. **Banco** (`00_schema_base.sql` e SQL para produção): colunas `mp_*` em `profiles`, de volta nas duas triggers (seção 4).
@@ -237,7 +236,7 @@ Vale depois que a troca for feita. A troca pelo InfinitePay deve criar a interfa
 6. **Adaptador MP:**
    - `createCharge`: o `fetch` de `/v1/payments` com o token do produtor e `X-Idempotency-Key`.
    - `verifyPayment`: a consulta de `GET /v1/payments/{id}` e o vínculo da seção 6, item 5.
-7. **Escolha por produtor:** guarde qual gateway o produtor usa e mostre o `MercadoPagoConnect` (recuperado da tag) só para quem escolher o MP.
+7. **Escolha por produtor:** guarde qual gateway o produtor usa e mostre o `MercadoPagoConnect` (recuperado da tag) só para quem escolher o MP, ao lado do `InfinitePayConnect`.
 8. **Renovação de token** (lacuna 2), antes de liberar para produtores.
 9. **Testes:** recupere os testes da tag (`payment` 13, `webhook` 8, `oauth-state` 6) e adapte-os à interface.
 10. **Cartão:** siga a seção 9.
