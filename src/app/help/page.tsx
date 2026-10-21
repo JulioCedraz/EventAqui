@@ -46,7 +46,12 @@ export default function HelpCenterPage() {
     {
       categories: ['produtor', 'pagamentos'],
       question: "Sou produtor, como recebo o dinheiro das vendas?",
-      answer: "Os valores das vendas processadas via PIX são creditados diretamente na sua conta do Mercado Pago que você vinculará à sua conta desta plataforma. A taxa padrão do Mercado Pago para vendas via Pix com QR code dinâmico é de 0,99% (aproximadamente 1%) por transação, o dinheiro é disponibilizado na hora já com o desconto da taxa."
+      answer: "As vendas caem direto na sua conta InfinitePay, que você conecta no painel administrativo com a sua InfiniteTag e a API Key do Checkout. O EventAqui não cobra taxa, e a InfinitePay cobra 0% no PIX. No cartão de crédito, a InfinitePay cobra uma taxa que depende do plano de recebimento e do faturamento mensal do produtor. No Plano Inicial (até R$ 20 mil por mês, recebimento em 1 dia útil), a tabela pública da InfinitePay indica, para Visa e Mastercard, 3,15% no crédito à vista, subindo a cada parcela até 12,40% em 12x. O produtor pode repassar os juros do parcelamento ao comprador nas configurações do app. Confira os valores atualizados em infinitepay.io/taxas."
+    },
+    {
+      categories: ['pagamentos', 'comprador'],
+      question: "Pago alguma taxa ao comprar?",
+      answer: "No PIX, você paga só o valor do ingresso. No cartão de crédito, o parcelamento pode ter juros, se o produtor repassar as taxas da InfinitePay. O valor final aparece no checkout antes de você confirmar o pagamento."
     },
     {
       categories: ['pagamentos', 'comprador', 'seguranca'],
