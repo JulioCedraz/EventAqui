@@ -70,8 +70,8 @@ export default function ProducersLandingPage() {
     {
       icon: Zap,
       iconClassName: "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400",
-      title: "Pagamento via PIX",
-      description: "Vincule sua conta do Mercado Pago pelo painel administrativo. O comprador paga por PIX e o valor cai direto no saldo da sua conta Mercado Pago, que cobra a própria taxa de processamento. Pedidos não pagos em 30 minutos são cancelados e a vaga volta a ficar disponível.",
+      title: "PIX e Cartão",
+      description: "Conecte sua conta InfinitePay no painel. O comprador paga por PIX, sem taxa, ou cartão de crédito, e o valor cai na sua conta em até 1 dia útil. Pedidos não pagos em 30 minutos são cancelados e a vaga volta a ficar disponível.",
     },
     {
       icon: Tag,
@@ -298,8 +298,7 @@ export default function ProducersLandingPage() {
             </div>
 
             <p className="text-xl text-gray-600 dark:text-gray-400 font-medium leading-relaxed max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 transition-colors">
-              Sem taxa da plataforma. Venda ingressos via PIX com o valor caindo direto no saldo da sua conta Mercado Pago,
-              crie cupons de desconto e controle a entrada do seu evento com o nosso validador de ingressos via QR Code.
+              Sem taxa da plataforma. Venda ingressos por PIX e cartão de crédito com o valor caindo direto na sua conta InfinitePay, crie cupons de desconto e controle a entrada do seu evento com o nosso validador de ingressos via QR Code.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6 animate-in fade-in slide-in-from-bottom-10 duration-700 delay-300">

@@ -15,7 +15,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: 'EventAqui - Ingressos Rápidos',
-  description: 'Compre ingressos com PIX de forma rápida, segura e sem taxas desnecessárias.',
+  description: 'Compre ingressos com PIX ou cartão de forma rápida, segura e sem taxas desnecessárias.',
 };
 
 export default function RootLayout({

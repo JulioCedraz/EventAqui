@@ -43,7 +43,7 @@ export default function Home() {
             Encontre os melhores eventos
           </h1>
           <p className="text-lg md:text-xl text-blue-100 dark:text-blue-200 animate-in slide-in-from-bottom-5 duration-700 delay-150 fill-mode-both">
-            Compre seus ingressos de forma rápida, segura e com aprovação via PIX na mesma hora.
+            Compre seus ingressos de forma rápida e segura, por PIX ou cartão, com aprovação na mesma hora.
           </p>
         </div>
       </section>

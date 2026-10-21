@@ -28,7 +28,7 @@ export default function HelpCenterPage() {
   const categories = [
     { id: 'comprador', title: 'Sou Comprador', desc: 'Dúvidas sobre ingressos e acesso.', icon: Ticket, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-500/10' },
     { id: 'produtor', title: 'Sou Produtor', desc: 'Gestão de eventos, equipe e portaria.', icon: Store, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
-    { id: 'pagamentos', title: 'Pagamentos', desc: 'PIX, reembolsos e taxas.', icon: CreditCard, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-500/10' },
+    { id: 'pagamentos', title: 'Pagamentos', desc: 'PIX, cartão, reembolsos e taxas.', icon: CreditCard, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-500/10' },
     { id: 'seguranca', title: 'Segurança e Suporte', desc: 'LGPD, regras, contas e antifraude.', icon: ShieldCheck, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-500/10' },
   ];
 
@@ -40,8 +40,8 @@ export default function HelpCenterPage() {
     },
     {
       categories: ['pagamentos', 'comprador'],
-      question: "O pagamento via PIX demora quanto tempo para aprovar?",
-      answer: "A aprovação do PIX é instantânea! Geralmente, em menos de 10 segundos após o pagamento no seu banco, o sistema já libera o seu ingresso."
+      question: "Quanto tempo o pagamento demora para ser aprovado?",
+      answer: "O PIX costuma ser aprovado em poucos segundos depois do pagamento no seu banco. No cartão, a aprovação também sai na hora na maioria dos casos. Ao terminar, clique em 'Continuar' no checkout para voltar ao EventAqui. Se você fechar a página antes, o ingresso é liberado do mesmo jeito."
     },
     {
       categories: ['produtor', 'pagamentos'],
