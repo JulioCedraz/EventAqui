@@ -380,6 +380,12 @@ CREATE TRIGGER enforce_guest_protection
 
 -- =========================================================
 -- 4. ROW LEVEL SECURITY
+-- Funções de trigger não são RPC. O disparo do trigger não depende de EXECUTE.
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.protect_sensitive_profile_fields() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.protect_ticket_fields() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.protect_guest_fields() FROM PUBLIC, anon, authenticated;
+
 -- =========================================================
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
