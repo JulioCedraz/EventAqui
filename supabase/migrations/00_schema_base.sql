@@ -27,10 +27,6 @@ CREATE TABLE public.profiles (
     producer_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
     status text DEFAULT 'active',
     deletion_scheduled_at timestamp with time zone,
-    mp_access_token text,
-    mp_refresh_token text,
-    mp_user_id text,
-    mp_public_key text,
     infinitepay_handle text CHECK (infinitepay_handle ~ '^[a-z0-9._-]{2,40}$'),
     infinitepay_api_key_enc text,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now())
@@ -295,10 +291,6 @@ BEGIN
     NEW.producer_id := NULL;
     NEW.status := 'active';
     NEW.deletion_scheduled_at := NULL;
-    NEW.mp_access_token := NULL;
-    NEW.mp_refresh_token := NULL;
-    NEW.mp_user_id := NULL;
-    NEW.mp_public_key := NULL;
     NEW.infinitepay_handle := NULL;
     NEW.infinitepay_api_key_enc := NULL;
     RETURN NEW;
@@ -310,10 +302,6 @@ BEGIN
   NEW.producer_id := OLD.producer_id;
   NEW.status := OLD.status;
   NEW.deletion_scheduled_at := OLD.deletion_scheduled_at;
-  NEW.mp_access_token := OLD.mp_access_token;
-  NEW.mp_refresh_token := OLD.mp_refresh_token;
-  NEW.mp_user_id := OLD.mp_user_id;
-  NEW.mp_public_key := OLD.mp_public_key;
   NEW.infinitepay_handle := OLD.infinitepay_handle;
   NEW.infinitepay_api_key_enc := OLD.infinitepay_api_key_enc;
   RETURN NEW;

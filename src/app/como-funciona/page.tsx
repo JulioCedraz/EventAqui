@@ -20,6 +20,7 @@ import {
   TrendingUp,
   Tag,
   CalendarPlus,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -69,8 +70,8 @@ export default function ProducersLandingPage() {
     {
       icon: Zap,
       iconClassName: "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400",
-      title: "Pagamento via PIX",
-      description: "Vincule sua conta do Mercado Pago pelo painel administrativo. O comprador paga por PIX e o valor cai direto no saldo da sua conta Mercado Pago, que cobra a própria taxa de processamento. Pedidos não pagos em 30 minutos são cancelados e a vaga volta a ficar disponível.",
+      title: "PIX e Cartão",
+      description: "Conecte sua conta InfinitePay no painel. O comprador paga por PIX, sem taxa, ou cartão de crédito, e o valor cai na sua conta em até 1 dia útil. Pedidos não pagos em 30 minutos são cancelados e a vaga volta a ficar disponível.",
     },
     {
       icon: Tag,
@@ -98,20 +99,20 @@ export default function ProducersLandingPage() {
       answer: "Não. A EventAqui é uma iniciativa gratuita para suporte em eventos estudantis e não é cobrada nenhuma taxa de serviço pelo uso do sistema."
     },
     {
-      question: "É obrigatório ter uma conta no Mercado Pago?",
-      answer: "Só para eventos pagos. A infraestrutura de pagamentos desta plataforma foi arquitetada para o uso da API de Checkout do Mercado Pago. Em eventos gratuitos, o ingresso é emitido na hora e você não precisa vincular nenhuma conta."
+      question: "É obrigatório ter uma conta na InfinitePay?",
+      answer: "Só para eventos pagos. Os pagamentos usam o Checkout Integrado da InfinitePay, que aceita conta de pessoa física. Em eventos gratuitos, o ingresso é emitido na hora e você não precisa conectar nenhuma conta."
     },
     {
-      question: "O Mercado Pago cobra alguma taxa?",
-      answer: "Sim. O próprio Mercado Pago cobra uma taxa de processamento por PIX recebido, conforme a tabela vigente dele. Hoje, para PIX com QR Code dinâmico, ela é de 0,99% por transação."
+      question: "A InfinitePay cobra alguma taxa?",
+      answer: "No PIX, não: a taxa é 0%. No cartão de crédito, a InfinitePay cobra uma taxa que depende do plano de recebimento e do faturamento mensal do produtor. No Plano Inicial (até R$ 20 mil por mês, recebimento em 1 dia útil), a tabela pública da InfinitePay indica, para Visa e Mastercard, 3,15% no crédito à vista, subindo a cada parcela até 12,40% em 12x. O produtor pode repassar os juros do parcelamento ao comprador nas configurações do app. Confira os valores atualizados em infinitepay.io/taxas."
     },
     {
       question: "Como eu recebo o dinheiro das minhas vendas?",
-      answer: "De forma direta. Nossa arquitetura conecta a sua conta pessoal do Mercado Pago à sua conta da EventAqui e vincula a todos os eventos organizados por você. Quando um cliente realiza o PIX, o valor é creditado imediatamente no saldo da sua conta Mercado Pago, já descontada a taxa do Mercado Pago. A responsabilidade é inteiramente sua. A EventAqui não retém nenhum valor."
+      answer: "De forma direta. No painel administrativo, você informa a sua InfiniteTag e a API Key do Checkout, gerada no app da InfinitePay, e ela passa a valer para todos os seus eventos. Quando um cliente paga, o valor é creditado na sua conta InfinitePay, já descontada a taxa do cartão, quando houver. A responsabilidade é inteiramente sua. A EventAqui não retém nenhum valor."
     },
     {
-      question: "O que acontece se o comprador não pagar o PIX?",
-      answer: "O PIX vale por 30 minutos. Depois disso, o pedido é cancelado automaticamente e a vaga volta a ficar disponível. Se um pagamento chegar atrasado e o evento já estiver lotado, o ingresso não é emitido e você recebe um e-mail avisando para fazer o estorno pelo Mercado Pago."
+      question: "O que acontece se o comprador não pagar?",
+      answer: "O link de pagamento vale por 30 minutos. Depois disso, ele expira, o pedido é cancelado automaticamente e a vaga volta a ficar disponível. Se um pagamento chegar atrasado e o evento já estiver lotado, o ingresso não é emitido e você recebe um e-mail avisando para fazer o estorno pelo app da InfinitePay."
     },
     {
       question: "Como funciona o ingresso casadinha?",
@@ -290,25 +291,14 @@ export default function ProducersLandingPage() {
                 height={40}
                 className="h-10 w-auto object-contain block drop-shadow-sm"
               />
-              <Image
-                src="/mercado-pago.svg"
-                alt="Mercado Pago"
-                width={160}
-                height={64}
-                className="h-16 w-auto object-contain block dark:hidden drop-shadow-sm"
-              />
-              <Image
-                src="/mercado-pago-dark.png"
-                alt="Mercado Pago"
-                width={160}
-                height={64}
-                className="h-16 w-auto object-contain hidden dark:block drop-shadow-sm"
+              <CreditCard
+                aria-label="Cartão de crédito"
+                className="h-10 w-10 text-gray-600 dark:text-gray-300 drop-shadow-sm"
               />
             </div>
 
             <p className="text-xl text-gray-600 dark:text-gray-400 font-medium leading-relaxed max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 transition-colors">
-              Sem taxa da plataforma. Venda ingressos via PIX com o valor caindo direto no saldo da sua conta Mercado Pago,
-              crie cupons de desconto e controle a entrada do seu evento com o nosso validador de ingressos via QR Code.
+              Sem taxa da plataforma. Venda ingressos por PIX e cartão de crédito com o valor caindo direto na sua conta InfinitePay, crie cupons de desconto e controle a entrada do seu evento com o nosso validador de ingressos via QR Code.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6 animate-in fade-in slide-in-from-bottom-10 duration-700 delay-300">

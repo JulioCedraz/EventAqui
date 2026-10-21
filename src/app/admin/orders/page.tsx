@@ -345,7 +345,7 @@ export default function OrdersPage() {
           <Card className="shadow-sm border-0 dark:border dark:border-border rounded-2xl overflow-hidden relative transition-colors">
             <div className="absolute top-0 right-0 p-4 opacity-10 dark:opacity-20 transition-opacity"><Clock className="w-24 h-24 text-yellow-600 dark:text-yellow-500" /></div>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors">Aguardando PIX</CardTitle>
+              <CardTitle className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors">Aguardando Pagamento</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-black text-yellow-600 dark:text-yellow-400 tracking-tight transition-colors">

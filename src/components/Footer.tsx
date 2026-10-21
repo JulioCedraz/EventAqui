@@ -129,35 +129,17 @@ export default function Footer() {
             </p>
           </div>
 
-          <div className="flex flex-col items-center md:items-end gap-3">
-            <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest transition-colors">
-              Transações Protegidas Por
-            </span>
-            <div className="flex items-center gap-4">
-              <div className="h-8 flex items-center">
-                {/* SVG Original: Visível apenas no Light Mode */}
-                <img
-                  src="/mercado-pago.svg"
-                  alt="Mercado Pago"
-                  className="h-14 w-auto opacity-90 hover:opacity-100 transition-opacity block dark:hidden"
-                />
-                {/* PNG Branco: Visível apenas no Dark Mode */}
-                <img
-                  src="/mercado-pago-dark.png"
-                  alt="Mercado Pago"
-                  className="h-14 w-auto opacity-80 hover:opacity-100 transition-opacity hidden dark:block"
-                />
-              </div>
-
-              <div className="h-8 flex items-center">
-                <img
-                  src="/pix.svg"
-                  alt="PIX"
-                  className="object-contain h-8 w-auto opacity-90 dark:opacity-80 hover:opacity-100 dark:hover:opacity-100 transition-opacity"
-                />
-              </div>
-            </div>
-          </div>
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 text-center md:text-right transition-colors">
+            Pagamentos via{" "}
+            <a
+              href="https://www.infinitepay.io/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            >
+              InfinitePay
+            </a>
+          </p>
         </div>
       </div>
     </footer>
