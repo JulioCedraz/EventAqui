@@ -1,7 +1,7 @@
 -- =========================================================
 -- 00 - SCHEMA BASE DO EVENTAQUI
 -- Estado completo do banco para um projeto Supabase novo.
--- Mudanças futuras entram em novas migrations numeradas.
+-- Única migration do projeto: toda mudança de schema ou policy é feita aqui.
 -- =========================================================
 
 BEGIN;
@@ -25,7 +25,7 @@ CREATE TABLE public.profiles (
     enrollment_number text,
     role text CHECK (role IN ('admin', 'producer', 'agent', 'customer')),
     producer_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
-    status text DEFAULT 'active',
+    status text DEFAULT 'active' CHECK (status IN ('active', 'pending_deletion')),
     deletion_scheduled_at timestamp with time zone,
     infinitepay_handle text CHECK (infinitepay_handle ~ '^[a-z0-9._-]{2,40}$'),
     infinitepay_api_key_enc text,
@@ -66,7 +66,7 @@ CREATE TABLE public.tickets (
     coupon_id uuid REFERENCES public.coupons(id) ON DELETE SET NULL,
     buyer_name text NOT NULL,
     buyer_email text NOT NULL,
-    payment_status text,
+    payment_status text CHECK (payment_status IN ('pending', 'approved', 'cancelled')),
     is_used boolean DEFAULT false,
     quantity integer NOT NULL DEFAULT 1,
     amount_cents integer CHECK (amount_cents >= 0),
@@ -112,6 +112,8 @@ CREATE INDEX idx_coupons_event_id ON public.coupons(event_id);
 CREATE INDEX idx_coupons_code ON public.coupons(code);
 CREATE INDEX idx_tickets_event_id ON public.tickets(event_id);
 CREATE INDEX idx_tickets_user_id ON public.tickets(user_id);
+CREATE INDEX idx_tickets_coupon_id ON public.tickets(coupon_id);
+CREATE INDEX idx_tickets_pending_expiry ON public.tickets(expires_at) WHERE payment_status = 'pending';
 CREATE INDEX idx_guests_ticket_id ON public.guests(ticket_id);
 CREATE INDEX idx_guests_buyer_id ON public.guests(buyer_id);
 CREATE INDEX idx_guests_claimed_by_user_id ON public.guests(claimed_by_user_id);
@@ -378,14 +380,14 @@ CREATE TRIGGER enforce_guest_protection
   BEFORE UPDATE ON public.guests
   FOR EACH ROW EXECUTE FUNCTION public.protect_guest_fields();
 
--- =========================================================
--- 4. ROW LEVEL SECURITY
 -- Funções de trigger não são RPC. O disparo do trigger não depende de EXECUTE.
 REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.protect_sensitive_profile_fields() FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.protect_ticket_fields() FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.protect_guest_fields() FROM PUBLIC, anon, authenticated;
 
+-- =========================================================
+-- 4. ROW LEVEL SECURITY
 -- =========================================================
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -422,13 +424,13 @@ CREATE POLICY "Events - Inserção" ON public.events FOR INSERT WITH CHECK (
 );
 
 CREATE POLICY "Events - Atualização" ON public.events FOR UPDATE USING (
-  public.is_admin() OR producer_id = auth.uid()
+  public.is_admin() OR (public.get_user_role() = 'producer' AND producer_id = auth.uid())
 ) WITH CHECK (
-  public.is_admin() OR producer_id = auth.uid()
+  public.is_admin() OR (public.get_user_role() = 'producer' AND producer_id = auth.uid())
 );
 
 CREATE POLICY "Events - Exclusão" ON public.events FOR DELETE USING (
-  public.get_user_role() = 'admin' OR producer_id = auth.uid()
+  public.is_admin() OR (public.get_user_role() = 'producer' AND producer_id = auth.uid())
 );
 
 -- COUPONS: todo cupom pertence a um evento; a validação pública passa pela API.
@@ -472,7 +474,10 @@ CREATE POLICY "Tickets - Atualização" ON public.tickets FOR UPDATE USING (
 
 -- Comprador cancela, exclui e edita convidado só pela API (/api/tickets, /api/guests), que valida os dados.
 CREATE POLICY "Tickets - Exclusão" ON public.tickets FOR DELETE USING (
-  public.get_user_role() = 'admin' OR event_id IN (SELECT id FROM public.events WHERE producer_id = auth.uid())
+  public.is_admin() OR (
+    public.get_user_role() = 'producer'
+    AND event_id IN (SELECT id FROM public.events WHERE producer_id = auth.uid())
+  )
 );
 
 -- GUESTS: dados pessoais visíveis só para os envolvidos
@@ -495,6 +500,8 @@ CREATE POLICY "Capas - Inserção (Admin/Produtor)" ON storage.objects FOR INSER
 );
 
 CREATE POLICY "Capas - Atualização (Admin/Dono)" ON storage.objects FOR UPDATE TO authenticated USING (
+  bucket_id = 'covers' AND (public.get_user_role() = 'admin' OR (public.get_user_role() = 'producer' AND owner = auth.uid()))
+) WITH CHECK (
   bucket_id = 'covers' AND (public.get_user_role() = 'admin' OR (public.get_user_role() = 'producer' AND owner = auth.uid()))
 );
 
@@ -533,7 +540,8 @@ SELECT cron.schedule(
 
 -- Exclusão definitiva das contas cuja carência de 30 dias acabou.
 -- Ingressos futuros deixam de valer; o histórico fica para o produtor, sem identificar a pessoa.
--- Ingressos já resgatados por convidados pertencem a eles e não são tocados.
+-- Convites que a pessoa resgatou de outro comprador continuam válidos, só anonimizados.
+-- Convites dos ingressos que ela comprou somem junto, pela cascata de guests.buyer_id.
 CREATE FUNCTION public.purge_deleted_accounts()
 RETURNS void
 LANGUAGE plpgsql
