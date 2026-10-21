@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Ticket, ArrowUp, CreditCard } from "lucide-react";
+import { Ticket, ArrowUp } from "lucide-react";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -129,27 +129,17 @@ export default function Footer() {
             </p>
           </div>
 
-          <div className="flex flex-col items-center md:items-end gap-3">
-            <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest transition-colors">
-              Pagamento por
-            </span>
-            <div className="flex items-center gap-4">
-              <div className="h-8 flex items-center">
-                <img
-                  src="/pix.svg"
-                  alt="PIX"
-                  className="object-contain h-8 w-auto opacity-90 dark:opacity-80 hover:opacity-100 dark:hover:opacity-100 transition-opacity"
-                />
-              </div>
-
-              <div className="h-8 flex items-center">
-                <CreditCard
-                  aria-label="Cartão de crédito"
-                  className="h-8 w-8 text-gray-500 dark:text-gray-400 opacity-90 dark:opacity-80 hover:opacity-100 dark:hover:opacity-100 transition-opacity"
-                />
-              </div>
-            </div>
-          </div>
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 text-center md:text-right transition-colors">
+            Pagamentos via{" "}
+            <a
+              href="https://www.infinitepay.io/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            >
+              InfinitePay
+            </a>
+          </p>
         </div>
       </div>
     </footer>
