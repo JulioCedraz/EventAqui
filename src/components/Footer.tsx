@@ -131,24 +131,9 @@ export default function Footer() {
 
           <div className="flex flex-col items-center md:items-end gap-3">
             <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest transition-colors">
-              Transações Protegidas Por
+              Pagamento por
             </span>
             <div className="flex items-center gap-4">
-              <div className="h-8 flex items-center">
-                {/* SVG Original: Visível apenas no Light Mode */}
-                <img
-                  src="/mercado-pago.svg"
-                  alt="Mercado Pago"
-                  className="h-14 w-auto opacity-90 hover:opacity-100 transition-opacity block dark:hidden"
-                />
-                {/* PNG Branco: Visível apenas no Dark Mode */}
-                <img
-                  src="/mercado-pago-dark.png"
-                  alt="Mercado Pago"
-                  className="h-14 w-auto opacity-80 hover:opacity-100 transition-opacity hidden dark:block"
-                />
-              </div>
-
               <div className="h-8 flex items-center">
                 <img
                   src="/pix.svg"

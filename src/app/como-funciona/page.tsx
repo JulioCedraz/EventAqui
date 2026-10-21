@@ -295,20 +295,6 @@ export default function ProducersLandingPage() {
                 aria-label="Cartão de crédito"
                 className="h-10 w-10 text-gray-600 dark:text-gray-300 drop-shadow-sm"
               />
-              <Image
-                src="/mercado-pago.svg"
-                alt="Mercado Pago"
-                width={160}
-                height={64}
-                className="h-16 w-auto object-contain block dark:hidden drop-shadow-sm"
-              />
-              <Image
-                src="/mercado-pago-dark.png"
-                alt="Mercado Pago"
-                width={160}
-                height={64}
-                className="h-16 w-auto object-contain hidden dark:block drop-shadow-sm"
-              />
             </div>
 
             <p className="text-xl text-gray-600 dark:text-gray-400 font-medium leading-relaxed max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 transition-colors">
