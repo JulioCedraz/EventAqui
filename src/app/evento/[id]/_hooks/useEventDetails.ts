@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import { cancelTicket } from '@/lib/api-client';
 import type { EventRow, PendingTicket } from '../types';
 
 export function useEventDetails(id: string | undefined) {
@@ -46,12 +45,9 @@ export function useEventDetails(id: string | undefined) {
       const pending = userTickets.find((t) => t.payment_status === 'pending');
       if (!pending) return;
 
-      if (pending.expires_at && new Date(pending.expires_at) < new Date()) {
-        await cancelTicket(pending.id).catch((error) => console.error('Falha ao cancelar PIX expirado:', error));
-        setPendingTicket(null);
-      } else {
-        setPendingTicket(pending);
-      }
+      // Pedido vencido não ocupa vaga; o cron o cancela com folga para um pagamento ainda em trânsito.
+      const isExpired = !!pending.expires_at && new Date(pending.expires_at) < new Date();
+      setPendingTicket(isExpired ? null : pending);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Erro ao carregar detalhes do evento.');
