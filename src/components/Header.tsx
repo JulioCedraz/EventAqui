@@ -19,7 +19,7 @@ export default function Header() {
   const [hasScannerAccess, setHasScannerAccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { setTheme, resolvedTheme } = useTheme();
+  const { setTheme, resolvedTheme, systemTheme } = useTheme();
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
 
   useEffect(() => {
@@ -77,6 +77,11 @@ export default function Header() {
     router.push("/");
   };
 
+  const toggleTheme = () => {
+    const nextTheme = resolvedTheme === "dark" ? "light" : "dark";
+    setTheme(nextTheme === systemTheme ? "system" : nextTheme);
+  };
+
   // A landing tem header próprio
   if (pathname === "/como-funciona") return null;
 
@@ -132,7 +137,7 @@ export default function Header() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+                  onClick={toggleTheme}
                   className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 mr-1"
                   title="Alternar tema"
                 >
