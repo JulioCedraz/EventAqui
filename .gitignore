@@ -42,3 +42,8 @@ next-env.d.ts
 
 # supabase cli
 /supabase/.temp/
+
+# vscode (só as configurações do projeto são versionadas)
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
