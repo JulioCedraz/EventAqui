@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useSyncExternalStore } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { fetchOwnRole, PANEL_ROLES, SCANNER_ROLES } from "@/lib/roles";
 import Link from "next/link";
@@ -12,6 +12,7 @@ import type { User } from '@supabase/supabase-js';
 
 export default function Header() {
   const router = useRouter();
+  const pathname = usePathname();
   const menuRef = useRef<HTMLDivElement>(null);
   const [user, setUser] = useState<User | null>(null);
   const [hasPanelAccess, setHasPanelAccess] = useState(false);
@@ -75,6 +76,9 @@ export default function Header() {
     setIsMenuOpen(false);
     router.push("/");
   };
+
+  // A landing tem header próprio
+  if (pathname === "/como-funciona") return null;
 
   return (
     <header className="sticky top-0 z-50 w-full">
