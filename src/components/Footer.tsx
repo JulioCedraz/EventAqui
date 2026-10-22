@@ -1,10 +1,30 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Ticket, ArrowUp } from "lucide-react";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const topButtonRef = useRef<HTMLButtonElement>(null);
+  const [isArrowAnimating, setIsArrowAnimating] = useState(false);
+
+  // Em telas de toque não há hover: a seta anima sempre que o botão aparece
+  useEffect(() => {
+    const button = topButtonRef.current;
+    if (!button || !window.matchMedia("(hover: none)").matches) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        setIsArrowAnimating(true);
+      },
+      { threshold: 0.6 }
+    );
+
+    observer.observe(button);
+    return () => observer.disconnect();
+  }, []);
 
   const scrollToTop = () => {
     window.scrollTo({
@@ -103,11 +123,15 @@ export default function Footer() {
 
         <div className="flex justify-center mb-12">
           <button
+            ref={topButtonRef}
             onClick={scrollToTop}
             className="group flex items-center gap-3 p-1.5 pr-6 rounded-full bg-white dark:bg-card border border-gray-200/80 dark:border-slate-800 hover:border-blue-100 dark:hover:border-slate-700 shadow-xs hover:shadow-md dark:hover:shadow-[0_0_15px_rgba(255,255,255,0.03)] text-sm font-medium text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-gray-200 transition-all duration-300 active:scale-95 cursor-pointer"
           >
-            <div className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-50 dark:bg-background group-hover:bg-blue-50 dark:group-hover:bg-slate-800 transition-colors">
-              <ArrowUp className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform duration-300" />
+            <div className="flex items-center justify-center w-9 h-9 overflow-hidden rounded-full bg-gray-50 dark:bg-background group-hover:bg-blue-50 dark:group-hover:bg-slate-800 transition-colors">
+              <ArrowUp
+                onAnimationEnd={() => setIsArrowAnimating(false)}
+                className={`w-4 h-4 group-hover:animate-arrow-up motion-reduce:animate-none! ${isArrowAnimating ? "animate-arrow-up" : ""}`}
+              />
             </div>
             Voltar ao topo
           </button>
