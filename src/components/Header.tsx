@@ -32,8 +32,14 @@ export default function Header() {
       }
     }
 
+    const closeMenu = () => setIsMenuOpen(false);
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    if (isMenuOpen) window.addEventListener("scroll", closeMenu, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", closeMenu);
+    };
   }, [isMenuOpen]);
 
   useEffect(() => {
@@ -175,10 +181,21 @@ export default function Header() {
                 id="mobile-menu-toggle"
                 variant="ghost" 
                 size="icon" 
-                onClick={() => setIsMenuOpen(!isMenuOpen)} 
-                className="min-[740px]:hidden text-gray-600 dark:text-gray-300"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                aria-label={isMenuOpen ? "Fechar menu" : "Abrir menu"}
+                aria-expanded={isMenuOpen}
+                className="relative min-[740px]:hidden text-gray-600 dark:text-gray-300"
               >
-                {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                <Menu
+                  className={`absolute h-6 w-6 transition-all duration-300 ease-in-out ${
+                    isMenuOpen ? "rotate-90 scale-50 opacity-0" : "rotate-0 scale-100 opacity-100"
+                  }`}
+                />
+                <X
+                  className={`absolute h-6 w-6 transition-all duration-300 ease-in-out ${
+                    isMenuOpen ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-50 opacity-0"
+                  }`}
+                />
               </Button>
             </div>
           </div>
