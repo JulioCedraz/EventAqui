@@ -144,7 +144,7 @@ const trackPointer = (e: MouseEvent<HTMLElement>) => {
 };
 
 export default function ProducersLandingPage() {
-  const { setTheme, resolvedTheme } = useTheme();
+  const { setTheme, resolvedTheme, systemTheme } = useTheme();
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -265,11 +265,16 @@ export default function ProducersLandingPage() {
   const accessHref = user ? "/" : "/login";
   const accessLabel = isAuthLoading ? "Carregando..." : user ? "Acessar Plataforma" : "Já tem conta? Acesse";
 
+  const toggleTheme = () => {
+    const nextTheme = resolvedTheme === "dark" ? "light" : "dark";
+    setTheme(nextTheme === systemTheme ? "system" : nextTheme);
+  };
+
   const themeToggle = mounted ? (
     <Button
       variant="ghost"
       size="icon"
-      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+      onClick={toggleTheme}
       className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
       title="Alternar tema"
       aria-label="Alternar tema"
